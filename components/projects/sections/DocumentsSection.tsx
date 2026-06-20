@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { DocumentCard } from "@/components/documents/DocumentCard";
+import { DocumentPreviewDialog } from "@/components/documents/DocumentPreviewDialog";
 import { UploadDropzone } from "@/components/app/UploadDropzone";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Select } from "@/components/ui/select";
 import { documentCategoryLabels } from "@/lib/utils/labels";
-import type { DocumentAsset, DocumentCategory, ProjectWithRelations } from "@/types";
+import type { DocumentAsset, ProjectWithRelations } from "@/types";
 import { FileText } from "lucide-react";
 
 interface DocumentsSectionProps {
@@ -17,23 +18,31 @@ interface DocumentsSectionProps {
 export function DocumentsSection({ project: initialProject }: DocumentsSectionProps) {
   const [documents, setDocuments] = useState(initialProject.documents ?? []);
   const [filter, setFilter] = useState<string>("all");
+  const [previewDoc, setPreviewDoc] = useState<DocumentAsset | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (files: File[]) => {
-    for (const file of files) {
-      const res = await fetch(`/api/projects/${initialProject.id}/documents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: file.name,
-          category: "others",
-          fileSize: file.size,
-          mimeType: file.type || "application/octet-stream",
-        }),
-      });
-      if (res.ok) {
-        const doc = await res.json();
-        setDocuments((prev) => [doc, ...prev]);
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("category", "others");
+
+        const res = await fetch(`/api/projects/${initialProject.id}/documents`, {
+          method: "POST",
+          body: formData,
+        });
+        if (res.ok) {
+          const doc = await res.json();
+          setDocuments((prev) => [
+            { ...doc, createdAt: new Date(doc.createdAt), updatedAt: new Date(doc.updatedAt) },
+            ...prev,
+          ]);
+        }
       }
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -47,7 +56,14 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
         description="Upload and organize old drawings, survey photos, and project records"
       />
 
-      <UploadDropzone onUpload={handleUpload} accept=".pdf,.dwg,.jpg,.jpeg,.png,.zip" />
+      <UploadDropzone
+        onUpload={handleUpload}
+        accept=".pdf,.dwg,.jpg,.jpeg,.png,.zip"
+        disabled={uploading}
+      />
+      {uploading && (
+        <p className="text-xs text-muted-foreground">Uploading files...</p>
+      )}
 
       <div className="flex items-center gap-3">
         <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-48 h-8 text-xs">
@@ -62,7 +78,11 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((doc) => (
-            <DocumentCard key={doc.id} document={doc} />
+            <DocumentCard
+              key={doc.id}
+              document={doc}
+              onPreview={setPreviewDoc}
+            />
           ))}
         </div>
       ) : (
@@ -72,6 +92,11 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
           description="Upload old drawings, survey photos, and project records to build your document archive."
         />
       )}
+
+      <DocumentPreviewDialog
+        document={previewDoc}
+        onClose={() => setPreviewDoc(null)}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import {
   mockUsers,
   mockOrganization,
@@ -10,11 +11,14 @@ import {
   mockIssues,
   mockReports,
 } from "../lib/mock-data";
+import { DEMO_PASSWORD } from "../lib/auth/demo-users";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
+
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
   await prisma.aIConversation.deleteMany();
   await prisma.report.deleteMany();
@@ -28,7 +32,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   for (const user of mockUsers) {
-    await prisma.user.create({ data: user });
+    await prisma.user.create({ data: { ...user, passwordHash } });
   }
 
   await prisma.organization.create({ data: mockOrganization });
@@ -62,6 +66,7 @@ async function main() {
   }
 
   console.log("Seed completed.");
+  console.log(`Demo password for all users: ${DEMO_PASSWORD}`);
 }
 
 main()

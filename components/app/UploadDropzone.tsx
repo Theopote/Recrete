@@ -8,9 +8,10 @@ interface UploadDropzoneProps {
   onUpload: (files: File[]) => void;
   accept?: string;
   className?: string;
+  disabled?: boolean;
 }
 
-export function UploadDropzone({ onUpload, accept, className }: UploadDropzoneProps) {
+export function UploadDropzone({ onUpload, accept, className, disabled }: UploadDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrop = useCallback(
@@ -30,16 +31,17 @@ export function UploadDropzone({ onUpload, accept, className }: UploadDropzonePr
 
   return (
     <label
-      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragOver={(e) => { if (!disabled) { e.preventDefault(); setIsDragging(true); } }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
       className={cn(
         "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 transition-colors",
+        disabled && "opacity-50 cursor-not-allowed",
         isDragging ? "border-copper bg-copper/5" : "border-border hover:border-copper/40 hover:bg-muted/30",
         className
       )}
     >
-      <input type="file" className="hidden" multiple accept={accept} onChange={handleChange} />
+      <input type="file" className="hidden" multiple accept={accept} onChange={handleChange} disabled={disabled} />
       <div className="mb-3 rounded-full bg-muted p-3">
         {isDragging ? (
           <FileUp className="h-5 w-5 text-copper" />
