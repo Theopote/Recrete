@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatFileSize, formatDate } from "@/lib/utils";
 import { documentCategoryLabels } from "@/lib/utils/labels";
-import { isPdf } from "@/lib/storage/upload";
+import { isPdf } from "@/lib/storage/file-utils";
 import type { DocumentAsset } from "@/types";
 import { FileText, Image, Archive, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";

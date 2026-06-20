@@ -17,6 +17,4 @@ export async function saveUploadedFile(projectId: string, file: File) {
   };
 }
 
-export function isPdf(mimeType: string, fileName: string): boolean {
-  return mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
-}
+export { isPdf } from "@/lib/storage/file-utils";
