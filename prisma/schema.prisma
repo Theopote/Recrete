@@ -151,13 +151,14 @@ enum HeritageLevel {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  avatarUrl String?
-  role      UserRole @default(architect)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String?
+  avatarUrl    String?
+  role         UserRole @default(architect)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   uploadedDocuments DocumentAsset[]
   assignedIssues    SiteIssue[]     @relation("AssignedIssues")
