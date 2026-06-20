@@ -40,17 +40,49 @@ cp .env.example .env
 # Generate Prisma client
 npm run db:generate
 
-# (Optional) Push schema to PostgreSQL and seed
-npm run db:push
-npm run db:seed
-
-# Start development server
+# Start development server (mock data + demo auth)
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to login.
 
-The MVP runs with **in-memory mock data** by default — no database required for development. Connect PostgreSQL when ready for production persistence.
+**Demo credentials:** `lin.wei@recrete.io` / `recrete2026`
+
+## PostgreSQL Persistence
+
+```bash
+# Start PostgreSQL (Docker)
+docker compose up -d
+
+# Enable database mode in .env
+USE_DATABASE="true"
+
+# Push schema and seed
+npm run db:push
+npm run db:seed
+```
+
+When `USE_DATABASE=true` and PostgreSQL is reachable, all data persists to the database. Otherwise the app falls back to in-memory mock data.
+
+## Authentication
+
+- **NextAuth.js** with JWT sessions and credentials provider
+- Protected routes via middleware (all pages except `/login`)
+- Demo users seeded with password `recrete2026`
+- With PostgreSQL enabled, users are validated against `User.passwordHash`
+
+## PDF Document Preview
+
+- Click any PDF document in the project Documents section to open the preview viewer
+- Supports page navigation, zoom, and download
+- Uploaded PDFs are saved to `public/uploads/[projectId]/`
+- Sample PDF at `/samples/existing-condition-sample.pdf`
+
+## PostgreSQL + Mock Fallback
+
+The repository layer (`lib/db/repository.ts`) automatically selects:
+- **Prisma/PostgreSQL** when `USE_DATABASE=true` and connection succeeds
+- **In-memory mock store** otherwise
 
 ## Demo Project
 
