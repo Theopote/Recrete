@@ -1,0 +1,333 @@
+// Prisma schema for Recrete (砼憶)
+// AI-assisted building renovation platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  architect
+  engineer
+  consultant
+  project_manager
+  owner
+  viewer
+}
+
+enum ProjectStatus {
+  draft
+  survey
+  diagnosis
+  strategy
+  design
+  construction
+  completed
+  archived
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum BudgetLevel {
+  low
+  medium
+  high
+  premium
+}
+
+enum DocumentCategory {
+  old_drawings
+  survey_photos
+  structure_documents
+  mep_documents
+  historical_documents
+  cost_documents
+  reports
+  others
+}
+
+enum DiagnosisCategory {
+  architecture
+  structure
+  facade
+  mep
+  fire_safety
+  accessibility
+  energy
+  heritage
+  operation
+}
+
+enum SeverityLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum DiagnosisStatus {
+  identified
+  under_review
+  confirmed
+  resolved
+}
+
+enum StrategyType {
+  light_renewal
+  medium_renovation
+  deep_recreation
+  adaptive_reuse
+  facade_upgrade
+  energy_retrofit
+  safety_upgrade
+}
+
+enum CostScheduleLevel {
+  low
+  medium
+  high
+}
+
+enum IssueCategory {
+  crack
+  leakage
+  spalling
+  corrosion
+  structure_exposure
+  mep_conflict
+  facade_damage
+  fire_safety
+  accessibility
+  drawing_mismatch
+  other
+}
+
+enum IssuePriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum IssueStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum ReportType {
+  existing_condition_report
+  diagnosis_report
+  renovation_strategy_report
+  owner_presentation
+  government_submission
+  site_issue_report
+}
+
+enum ReportStatus {
+  draft
+  generating
+  ready
+  published
+}
+
+enum HeritageLevel {
+  none
+  local
+  provincial
+  national
+  world
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  avatarUrl String?
+  role      UserRole @default(architect)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  uploadedDocuments DocumentAsset[]
+  assignedIssues    SiteIssue[]     @relation("AssignedIssues")
+  createdReports    Report[]
+  aiConversations   AIConversation[]
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id               String        @id @default(cuid())
+  organizationId   String
+  name             String
+  code             String        @unique
+  location         String
+  buildingType     String
+  originalFunction String
+  currentFunction  String
+  targetFunction   String
+  constructionYear Int
+  structureType    String
+  floorCount       Int
+  grossFloorArea   Float
+  status           ProjectStatus @default(draft)
+  renovationGoal   String
+  budgetLevel      BudgetLevel   @default(medium)
+  riskLevel        RiskLevel     @default(medium)
+  healthScore      Int           @default(50)
+  potentialScore   Int           @default(50)
+  description      String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  building     Building?
+  documents    DocumentAsset[]
+  diagnosis    DiagnosisItem[]
+  strategies   RenovationStrategy[]
+  issues       SiteIssue[]
+  reports      Report[]
+  aiConversations AIConversation[]
+}
+
+model Building {
+  id               String        @id @default(cuid())
+  projectId        String        @unique
+  name             String
+  address          String
+  constructionYear Int
+  structureType    String
+  floorCount       Int
+  basementCount    Int           @default(0)
+  grossFloorArea   Float
+  currentCondition String
+  heritageLevel    HeritageLevel @default(none)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model DocumentAsset {
+  id           String           @id @default(cuid())
+  projectId    String
+  name         String
+  type         String
+  fileUrl      String
+  fileSize     Int
+  mimeType     String
+  category     DocumentCategory
+  description  String?
+  uploadedById String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy User?   @relation(fields: [uploadedById], references: [id])
+}
+
+model DiagnosisItem {
+  id              String            @id @default(cuid())
+  projectId       String
+  title           String
+  category        DiagnosisCategory
+  severity        SeverityLevel
+  status          DiagnosisStatus   @default(identified)
+  description     String
+  evidence        String?
+  recommendation  String?
+  relatedLocation String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model RenovationStrategy {
+  id                   String            @id @default(cuid())
+  projectId            String
+  name                 String
+  type                 StrategyType
+  summary              String
+  designGoal           String
+  spatialStrategy      String
+  structuralStrategy   String
+  facadeStrategy       String
+  mepStrategy          String
+  costLevel            CostScheduleLevel
+  scheduleLevel        CostScheduleLevel
+  riskLevel            RiskLevel
+  pros                 String[]
+  cons                 String[]
+  recommendationReason String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model SiteIssue {
+  id           String        @id @default(cuid())
+  projectId    String
+  title        String
+  category     IssueCategory
+  priority     IssuePriority
+  status       IssueStatus   @default(open)
+  location     String?
+  description  String
+  photoUrl     String?
+  assignedToId String?
+  dueDate      DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedTo User?   @relation("AssignedIssues", fields: [assignedToId], references: [id])
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  projectId   String
+  title       String
+  type        ReportType
+  content     String       @db.Text
+  status      ReportStatus @default(draft)
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation(fields: [createdById], references: [id])
+}
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  title     String
+  messages  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+}

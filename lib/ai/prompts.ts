@@ -1,0 +1,59 @@
+import type { ProjectWithRelations, ReportType } from "@/types";
+
+export function buildDiagnosisPrompt(project: ProjectWithRelations): string {
+  return `Analyze the following existing building for renovation diagnosis:
+
+Project: ${project.name}
+Location: ${project.location}
+Building Type: ${project.buildingType}
+Construction Year: ${project.constructionYear}
+Structure: ${project.structureType}
+Current Function: ${project.currentFunction}
+Target Function: ${project.targetFunction}
+Renovation Goal: ${project.renovationGoal}
+Current Condition: ${project.building?.currentCondition ?? "Unknown"}
+
+Generate diagnosis items across architecture, structure, facade, MEP, fire safety, accessibility, energy, and heritage categories.`;
+}
+
+export function buildStrategyPrompt(
+  project: ProjectWithRelations,
+  diagnosisCount: number
+): string {
+  return `Generate renovation strategies for:
+
+Project: ${project.name}
+Target Function: ${project.targetFunction}
+Renovation Goal: ${project.renovationGoal}
+Budget Level: ${project.budgetLevel}
+Risk Level: ${project.riskLevel}
+
+Based on ${diagnosisCount} identified diagnosis items, propose multiple renovation strategies with cost, schedule, and risk assessments.`;
+}
+
+export function buildReportPrompt(
+  project: ProjectWithRelations,
+  reportType: ReportType
+): string {
+  return `Generate a ${reportType.replace(/_/g, " ")} for project ${project.name} (${project.code}) at ${project.location}.`;
+}
+
+export function buildAssistantSystemPrompt(project: ProjectWithRelations): string {
+  return `You are Recrete AI, an expert assistant for building renovation projects.
+You are helping with project "${project.name}" — a ${project.buildingType} in ${project.location}.
+Construction year: ${project.constructionYear}. Structure: ${project.structureType}.
+Renovation goal: ${project.renovationGoal}
+Current status: ${project.status}. Health score: ${project.healthScore}/100. Risk: ${project.riskLevel}.
+
+Provide professional, concise advice for architects, engineers, and project managers working on existing building renovation.`;
+}
+
+export const ASSISTANT_SUGGESTIONS = [
+  "What are the main risks of this building?",
+  "What information is missing?",
+  "Which renovation strategy is recommended?",
+  "What should we do next?",
+  "Generate a meeting summary",
+  "List structural issues needing engineer review",
+  "List documents required before schematic design",
+] as const;
