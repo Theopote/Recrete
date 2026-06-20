@@ -1,34 +1,44 @@
 "use client";
 
-import { Bell, Search, Plus } from "lucide-react";
+import { Bell, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { GlobalSearch } from "./GlobalSearch";
+import { useUIStore } from "@/lib/stores/ui-store";
 
 interface TopBarProps {
   title: string;
   subtitle?: string;
   showNewProject?: boolean;
+  showAiToggle?: boolean;
 }
 
-export function TopBar({ title, subtitle, showNewProject = false }: TopBarProps) {
+export function TopBar({ title, subtitle, showNewProject = false, showAiToggle = false }: TopBarProps) {
+  const { aiPanelOpen, toggleAiPanel } = useUIStore();
+
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-card/80 backdrop-blur-sm px-6">
-      <div>
-        <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
+    <header className="flex h-14 items-center justify-between border-b bg-card/80 backdrop-blur-sm px-4 md:px-6 shrink-0">
+      <div className="min-w-0">
+        <h1 className="text-sm font-semibold tracking-tight truncate">{title}</h1>
         {subtitle && (
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
+          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative hidden md:block">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search projects, documents..."
-            className="h-8 w-64 pl-8 text-xs"
-          />
-        </div>
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
+        <GlobalSearch />
+
+        {showAiToggle && (
+          <Button
+            variant={aiPanelOpen ? "copper" : "outline"}
+            size="sm"
+            className="gap-1.5 hidden lg:flex"
+            onClick={toggleAiPanel}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            AI
+          </Button>
+        )}
 
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Bell className="h-4 w-4" />
@@ -38,7 +48,7 @@ export function TopBar({ title, subtitle, showNewProject = false }: TopBarProps)
           <Link href="/projects/new">
             <Button variant="copper" size="sm" className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />
-              New Project
+              <span className="hidden sm:inline">New Project</span>
             </Button>
           </Link>
         )}

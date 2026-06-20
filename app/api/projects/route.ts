@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
-import { createProject } from "@/lib/db/repository";
+import { createProject, getProjects } from "@/lib/db/repository";
 import { createProjectSchema } from "@/lib/validators/project";
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const filters = {
+    status: searchParams.get("status") ?? undefined,
+    riskLevel: searchParams.get("riskLevel") ?? undefined,
+    buildingType: searchParams.get("buildingType") ?? undefined,
+    targetFunction: searchParams.get("targetFunction") ?? undefined,
+  };
+  const projects = await getProjects(filters);
+  return NextResponse.json(projects);
+}
 
 export async function POST(request: Request) {
   try {

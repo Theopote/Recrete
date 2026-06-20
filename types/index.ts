@@ -310,3 +310,43 @@ export interface StrategyComparisonMetrics {
 export interface StrategyWithMetrics extends RenovationStrategy {
   metrics: StrategyComparisonMetrics;
 }
+
+export interface DiagnosisWithProject extends DiagnosisItem {
+  projectName: string;
+  projectCode: string;
+}
+
+export interface IssueWithProject extends SiteIssue {
+  projectName: string;
+  projectCode: string;
+}
+
+export interface ReportWithProject extends Report {
+  projectName: string;
+}
+
+export interface StrategyWithProject extends RenovationStrategy {
+  projectName: string;
+}
+
+export interface DocumentWithProject extends DocumentAsset {
+  projectName: string;
+}
+
+export interface KnowledgeArticle {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  content: string;
+  tags: string[];
+  updatedAt: Date;
+}
+
+export interface SearchResult {
+  type: "project" | "document" | "diagnosis" | "issue";
+  id: string;
+  title: string;
+  subtitle: string;
+  href: string;
+}

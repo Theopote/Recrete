@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { IssueCard } from "@/components/issues/IssueCard";
+import { CreateIssueForm } from "@/components/issues/CreateIssueForm";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
-import type { ProjectWithRelations, IssueStatus } from "@/types";
+import type { ProjectWithRelations, IssueStatus, SiteIssue } from "@/types";
 import { issueStatusLabels } from "@/lib/utils/labels";
 import { AlertTriangle } from "lucide-react";
 
@@ -25,8 +26,12 @@ export function IssuesSection({ project: initialProject }: IssuesSectionProps) {
     });
     if (res.ok) {
       const updated = await res.json();
-      setIssues((prev) => prev.map((i) => (i.id === issueId ? updated : i)));
+      setIssues((prev) => prev.map((i) => (i.id === issueId ? { ...updated, createdAt: new Date(updated.createdAt), updatedAt: new Date(updated.updatedAt), dueDate: updated.dueDate ? new Date(updated.dueDate) : null } : i)));
     }
+  };
+
+  const handleCreated = (issue: SiteIssue) => {
+    setIssues((prev) => [issue, ...prev]);
   };
 
   return (
@@ -34,6 +39,7 @@ export function IssuesSection({ project: initialProject }: IssuesSectionProps) {
       <SectionHeader
         title="Site Issue Tracker"
         description="Track and manage on-site findings and construction issues"
+        action={<CreateIssueForm projectId={initialProject.id} onCreated={handleCreated} />}
       />
 
       {issues.length > 0 ? (
@@ -48,7 +54,7 @@ export function IssuesSection({ project: initialProject }: IssuesSectionProps) {
                   </h3>
                   <span className="text-xs text-muted-foreground tabular-nums">{columnIssues.length}</span>
                 </div>
-                <div className="space-y-2 min-h-[200px]">
+                <div className="space-y-2 min-h-[120px]">
                   {columnIssues.map((issue) => (
                     <IssueCard
                       key={issue.id}
@@ -65,7 +71,7 @@ export function IssuesSection({ project: initialProject }: IssuesSectionProps) {
         <EmptyState
           icon={AlertTriangle}
           title="No site issues"
-          description="Site issues will appear here as they are identified during survey and construction."
+          description="Report site issues as they are identified during survey and construction."
         />
       )}
     </div>
