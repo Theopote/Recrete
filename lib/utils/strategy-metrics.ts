@@ -3,7 +3,7 @@ import type { RenovationStrategy, StrategyComparisonMetrics } from "@/types";
 
 export function computeStrategyMetrics(strategy: Pick<
   RenovationStrategy,
-  "costLevel" | "scheduleLevel" | "riskLevel" | "type"
+  "costLevel" | "scheduleLevel" | "riskLevel" | "type" | "feasibilityScore"
 >): StrategyComparisonMetrics {
   const cost = levelToPercent(strategy.costLevel);
   const schedule = levelToPercent(strategy.scheduleLevel);
@@ -36,5 +36,6 @@ export function computeStrategyMetrics(strategy: Pick<
     designValue: designValueMap[strategy.type] ?? 55,
     constructionDifficulty: Math.round((cost + schedule) / 2),
     preservationLevel: preservationMap[strategy.type] ?? 60,
+    feasibility: strategy.feasibilityScore ?? (strategy.type === "light_renewal" ? 88 : strategy.type === "adaptive_reuse" ? 72 : 55),
   };
 }

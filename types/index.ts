@@ -327,6 +327,7 @@ export interface StrategyComparisonMetrics {
   designValue: number;
   constructionDifficulty: number;
   preservationLevel: number;
+  feasibility: number;
 }
 
 export interface StrategyWithMetrics extends RenovationStrategy {

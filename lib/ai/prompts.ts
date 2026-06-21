@@ -59,3 +59,9 @@ export const ASSISTANT_SUGGESTIONS = [
   "Generate a meeting agenda.",
   "Summarize this project for the owner.",
 ] as const;
+
+export const CREATE_PROJECT_SUGGESTIONS = [
+  "我有一栋 1986 年建成的混凝土框架办公楼，位于西安，原本是政府办公，现在想改成社区文化中心，预算有限，希望保留主体结构。",
+  "1998 brick warehouse in Shanghai, vacant 5 years, convert to creative office with rooftop event space.",
+  "1970s school building in Chengdu, need adaptive reuse as community library, medium budget.",
+] as const;

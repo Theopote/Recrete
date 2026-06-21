@@ -20,6 +20,13 @@ export async function createProject(input: Parameters<typeof mock.createProject>
   return (await resolveDb()) ? db.createProject(input) : mock.createProject(input);
 }
 
+export async function createProjectFromBrief(draft: Parameters<typeof mock.createProjectFromBrief>[0]) {
+  if (await resolveDb()) {
+    return db.createProject(draft.project);
+  }
+  return mock.createProjectFromBrief(draft);
+}
+
 export async function addDiagnosisItems(
   projectId: string,
   items: Parameters<typeof mock.addDiagnosisItems>[1]
@@ -39,6 +46,16 @@ export async function addStrategies(
   strategies: Parameters<typeof mock.addStrategies>[1]
 ) {
   return (await resolveDb()) ? db.addStrategies(projectId, strategies) : mock.addStrategies(projectId, strategies);
+}
+
+export async function replaceStrategies(
+  projectId: string,
+  strategies: Parameters<typeof mock.replaceStrategies>[1]
+) {
+  if (await resolveDb()) {
+    return db.replaceStrategies?.(projectId, strategies) ?? mock.replaceStrategies(projectId, strategies);
+  }
+  return mock.replaceStrategies(projectId, strategies);
 }
 
 export async function addDocument(

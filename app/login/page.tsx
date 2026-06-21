@@ -46,7 +46,10 @@ function LoginForm() {
           </div>
           <h1 className="text-xl font-semibold tracking-tight">Recrete · 砼憶</h1>
           <p className="text-xs text-muted-foreground">
-            Reimagine. Renew. Recreate.
+            AI Copilot for Existing Building Renovation
+          </p>
+          <p className="text-[10px] text-muted-foreground/80">
+            面向既有建筑更新的 AI 设计助手
           </p>
         </div>
 

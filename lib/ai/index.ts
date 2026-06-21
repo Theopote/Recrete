@@ -18,4 +18,4 @@ export { mockAIProvider, openAIProvider };
 export { buildProjectAIContext, buildProjectAIContextSync } from "./context-builder";
 export * as agents from "./agents";
 export type { AIService, ProjectContext, AIMessage } from "./types";
-export { ASSISTANT_SUGGESTIONS } from "./prompts";
+export { ASSISTANT_SUGGESTIONS, CREATE_PROJECT_SUGGESTIONS } from "./prompts";

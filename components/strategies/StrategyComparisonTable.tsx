@@ -6,12 +6,13 @@ interface StrategyComparisonTableProps {
 }
 
 const METRICS = [
-  { key: "cost" as const, label: "Cost", invert: true },
-  { key: "schedule" as const, label: "Schedule", invert: true },
-  { key: "risk" as const, label: "Risk", invert: true },
-  { key: "designValue" as const, label: "Design Value", invert: false },
-  { key: "constructionDifficulty" as const, label: "Construction Difficulty", invert: true },
-  { key: "preservationLevel" as const, label: "Preservation Level", invert: false },
+  { key: "cost" as const, label: "Cost · 成本", invert: true },
+  { key: "schedule" as const, label: "Schedule · 工期", invert: true },
+  { key: "risk" as const, label: "Risk · 风险", invert: true },
+  { key: "designValue" as const, label: "Design Value · 价值", invert: false },
+  { key: "feasibility" as const, label: "Feasibility · 可实施性", invert: false },
+  { key: "constructionDifficulty" as const, label: "Construction Difficulty · 施工难度", invert: true },
+  { key: "preservationLevel" as const, label: "Preservation · 保留程度", invert: false },
 ];
 
 export function StrategyComparisonTable({ strategies }: StrategyComparisonTableProps) {

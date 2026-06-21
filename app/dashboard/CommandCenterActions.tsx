@@ -2,17 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { AICommandInput } from "@/components/ai/AICommandInput";
-import { ASSISTANT_SUGGESTIONS } from "@/lib/ai";
+import { CREATE_PROJECT_SUGGESTIONS } from "@/lib/ai/prompts";
 
 export function CommandCenterActions() {
   const router = useRouter();
 
   return (
     <AICommandInput
-      suggestions={ASSISTANT_SUGGESTIONS}
+      placeholder="Describe a building and renovation goal in one sentence — AI will create your project, Building Memory, and next steps."
+      suggestions={CREATE_PROJECT_SUGGESTIONS}
+      submitLabel="Create with AI"
       onSubmit={(value) => {
-        const demoId = "proj-demo";
-        router.push(`/projects/${demoId}?section=overview&prompt=${encodeURIComponent(value)}`);
+        router.push(`/projects/new?brief=${encodeURIComponent(value)}`);
       }}
     />
   );

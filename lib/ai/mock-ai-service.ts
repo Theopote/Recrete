@@ -64,41 +64,65 @@ export class MockAIService implements AIService {
       (d) => d.severity === "critical" || d.severity === "high"
     ).length;
 
+    const target = project.targetFunction.toLowerCase();
+    const budgetNote =
+      project.budgetLevel === "low"
+        ? "Optimized for limited budget with phased implementation."
+        : "Full program delivery within standard renovation budget.";
+
     return [
       {
-        name: "Energy Retrofit Focus",
-        type: "energy_retrofit",
-        summary: `Prioritize envelope and MEP upgrades for ${project.name} to improve energy performance while maintaining existing spatial layout.`,
-        designGoal: "Achieve 40% energy reduction with minimal spatial disruption.",
-        spatialStrategy: "Retain existing layout. Upgrade windows and insulation via new facade layer.",
-        structuralStrategy: "No structural changes required.",
-        facadeStrategy: "External insulation and new window system over existing frame.",
-        mepStrategy: "Replace HVAC with VRF system. Upgrade electrical for efficiency.",
-        costLevel: "medium",
-        scheduleLevel: "medium",
+        name: "Light Intervention — 轻介入更新",
+        type: "light_renewal",
+        summary: `Preserve existing layout with targeted repairs to facade, roof, and essential MEP upgrades for ${project.name}. ${budgetNote}`,
+        designGoal: `Quick reopening with minimal spatial changes for basic ${target} programming.`,
+        spatialStrategy: "Retain existing partition layout. Convert largest rooms to primary program spaces.",
+        structuralStrategy: "Localized repairs only. No structural modifications.",
+        facadeStrategy: "Repair and refresh existing facade. Replace windows in critical zones.",
+        mepStrategy: "Upgrade electrical panel and HVAC in program-critical zones only.",
+        costLevel: "low",
+        scheduleLevel: "low",
         riskLevel: "low",
-        pros: ["Lower cost than full renovation", "Improves energy rating", "Minimal program disruption"],
-        cons: ["Limited spatial transformation", "May not meet full cultural program needs"],
+        pros: ["Lowest cost", "Fastest timeline", "Maximum preservation of existing structure"],
+        cons: ["Limited program flexibility", "May not meet full accessibility requirements", "Energy performance remains moderate"],
         recommendationReason: null,
       },
       {
-        name: "Safety & Compliance Upgrade",
-        type: "safety_upgrade",
-        summary: `Address ${criticalCount} high/critical diagnosis items with focused safety and code compliance improvements.`,
-        designGoal: "Bring building to current fire, accessibility, and structural safety standards.",
-        spatialStrategy: "Modify egress paths. Add accessible entrance and elevator upgrade.",
-        structuralStrategy: "Localized structural repairs per engineer recommendations.",
-        facadeStrategy: "Remove hazardous facade elements. Install safety screening.",
-        mepStrategy: "Upgrade fire detection, electrical, and emergency systems.",
+        name: "Medium Reconfiguration — 中度功能重组",
+        type: "adaptive_reuse",
+        summary: `Transform interior into open, flexible spaces for ${target} while preserving the ${project.structureType.toLowerCase()} and adding a new facade identity.`,
+        designGoal: `Create a vibrant ${target} with exhibition, gathering, and flexible program spaces.`,
+        spatialStrategy: "Remove non-structural partitions on lower floors for open gallery. Reconfigure circulation for public access.",
+        structuralStrategy: "Verify capacity for selective floor openings. Strengthen select beams for new loads.",
+        facadeStrategy: "New perforated screen or cladding over existing structure. Replace all windows.",
+        mepStrategy: "Complete MEP replacement with energy-efficient systems.",
         costLevel: "medium",
-        scheduleLevel: "low",
+        scheduleLevel: "medium",
         riskLevel: "medium",
-        pros: ["Addresses critical safety issues", "Enables occupancy permit", "Phased implementation possible"],
-        cons: ["Limited design transformation", "Does not optimize for new program"],
+        pros: ["Strong design value", "Meets program goals", "Improves energy performance"],
+        cons: ["Moderate cost", "Requires structural verification", "Temporary relocation during construction"],
         recommendationReason:
-          criticalCount >= 2
-            ? "Recommended as Phase 1 given multiple critical diagnosis items requiring immediate attention."
-            : null,
+          criticalCount >= 2 || project.budgetLevel !== "low"
+            ? `Best balance of preservation, program fit, and feasibility for ${target}. Aligns with owner's renovation vision.`
+            : project.budgetLevel === "low"
+              ? "Recommended when budget allows phased medium intervention after light-renewal compliance work."
+              : null,
+      },
+      {
+        name: "Deep Recreation — 深度再造",
+        type: "deep_recreation",
+        summary: `Comprehensive transformation of ${project.name} with new vertical circulation, potential rooftop extension, and complete envelope replacement.`,
+        designGoal: `Maximize building potential as a landmark ${target} destination.`,
+        spatialStrategy: "Full interior reconfiguration. New atrium and vertical circulation core. Rooftop terrace addition if structurally feasible.",
+        structuralStrategy: "Major structural modifications including new core and rooftop load analysis.",
+        facadeStrategy: "Complete new facade system with high-performance envelope.",
+        mepStrategy: "All-new systems with smart building integration.",
+        costLevel: "high",
+        scheduleLevel: "high",
+        riskLevel: "high",
+        pros: ["Maximum design potential", "Best long-term performance", "Landmark-quality outcome"],
+        cons: ["Highest cost", "Longest schedule", "Highest construction and permitting risk"],
+        recommendationReason: null,
       },
     ];
   }

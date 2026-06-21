@@ -28,7 +28,7 @@ export default async function DashboardPage() {
     <AppShell>
       <TopBar
         title="AI Command Center"
-        subtitle="Reimagine. Renew. Recreate. · 重构想象，焕新再造"
+        subtitle="AI Copilot for Existing Building Renovation · 面向既有建筑更新的 AI 设计助手"
         showNewProject
       />
       <main className="flex-1 overflow-y-auto p-6 bg-grid-pattern bg-grid">

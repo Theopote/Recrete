@@ -74,12 +74,12 @@ export function SidebarNav() {
       <div className="border-t p-4">
         <div className="mb-2 flex items-center gap-1.5">
           <Brain className="h-3 w-3 text-copper" />
-          <p className="text-[10px] font-medium text-copper">AI Renovation Command Center</p>
+          <p className="text-[10px] font-medium text-copper">AI Copilot for Existing Building Renovation</p>
         </div>
         <p className="text-[10px] text-muted-foreground leading-relaxed">
-          Reimagine. Renew. Recreate.
+          面向既有建筑更新的 AI 设计助手
           <br />
-          <span className="text-muted-foreground/70">重构想象，焕新再造</span>
+          <span className="text-muted-foreground/70">Reimagine. Renew. Recreate. · 重构想象，焕新再造</span>
         </p>
       </div>
     </aside>

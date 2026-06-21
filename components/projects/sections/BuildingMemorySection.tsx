@@ -21,7 +21,9 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
       <div className="space-y-4">
         <SectionHeader
           title="Building Memory"
-          description="Persistent AI understanding of this building"
+          titleZh="砼憶 · 建筑记忆"
+          description="Persistent AI understanding — what Recrete knows, doesn't know, and recommends next."
+          descriptionZh="AI 已经知道什么、还不知道什么、关键风险、改造潜力与下一步建议。"
           action={<UpdateBuildingMemoryButton projectId={project.id} />}
         />
         <EmptyState
@@ -37,7 +39,9 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
     <div className="space-y-6">
       <SectionHeader
         title="Building Memory"
+        titleZh="砼憶 · 建筑记忆"
         description="Central intelligence layer — AI-maintained understanding of this building"
+        descriptionZh="持续显示 AI 已知事实、缺失信息、关键风险、改造潜力与下一步任务。"
         action={<UpdateBuildingMemoryButton projectId={project.id} />}
       />
 
@@ -75,7 +79,7 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
 
         <div className="space-y-4">
           <MissingInformationList items={memory.missingInformation} />
-          <RecommendedActions tasks={project.tasks ?? []} />
+          <RecommendedActions tasks={project.tasks ?? []} projectId={project.id} />
         </div>
       </div>
 

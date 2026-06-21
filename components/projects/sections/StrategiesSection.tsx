@@ -28,7 +28,7 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
       });
       if (res.ok) {
         const data = await res.json();
-        setStrategies((prev) => [...data.map(parseStrategy), ...prev]);
+        setStrategies(data.map(parseStrategy));
       }
     } finally {
       setIsGenerating(false);
@@ -45,7 +45,9 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
     <div className="space-y-6">
       <SectionHeader
         title="Strategy Lab"
-        description="Define parameters and generate AI renovation strategies with comparison metrics"
+        titleZh="AI 策略实验室"
+        description="Generate three professional renovation strategies — light, medium, and deep — with automatic comparison."
+        descriptionZh="一键生成轻介入、中度重组、深度再造三套方案，并自动比较成本、风险、工期与可实施性。"
         action={
           <div className="flex flex-wrap gap-2">
             <CreateStrategyForm projectId={project.id} onCreated={handleCreated} />
@@ -88,7 +90,7 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         <EmptyState
           icon={Lightbulb}
           title="No strategies yet"
-          description="Create a strategy manually or generate AI-powered options based on diagnosis findings."
+          description="Click Generate Strategies to compare three AI options: light intervention, medium reconfiguration, and deep recreation."
           action={{ label: "Generate Strategies", onClick: handleGenerate }}
         />
       )}

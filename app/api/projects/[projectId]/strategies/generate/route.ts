@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getProjectById, addStrategies } from "@/lib/db/repository";
-import { getAIService } from "@/lib/ai";
+import { getProjectById, replaceStrategies } from "@/lib/db/repository";
+import { getAIPlatform } from "@/lib/ai";
+import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 
 export async function POST(
   _request: Request,
@@ -12,23 +13,15 @@ export async function POST(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const ai = getAIService();
-  const strategies = await ai.generateRenovationStrategies(
+  const strategies = await getAIPlatform().strategy.generateRenovationStrategies(
     project,
     project.diagnosis ?? []
   );
-  const created = await addStrategies(projectId, strategies);
+  const created = await replaceStrategies(projectId, strategies);
 
   const withMetrics = created.map((s) => ({
     ...s,
-    metrics: {
-      cost: Math.floor(Math.random() * 60 + 20),
-      schedule: Math.floor(Math.random() * 60 + 20),
-      risk: Math.floor(Math.random() * 60 + 20),
-      designValue: Math.floor(Math.random() * 60 + 30),
-      constructionDifficulty: Math.floor(Math.random() * 60 + 20),
-      preservationLevel: Math.floor(Math.random() * 60 + 30),
-    },
+    metrics: computeStrategyMetrics(s),
   }));
 
   return NextResponse.json(withMetrics);

@@ -679,9 +679,9 @@ export function getAIInsightsSummary(): string {
 }
 
 export const strategyMetrics: Record<string, import("@/types").StrategyComparisonMetrics> = {
-  "strat-1": { cost: 25, schedule: 20, risk: 15, designValue: 40, constructionDifficulty: 20, preservationLevel: 90 },
-  "strat-2": { cost: 55, schedule: 50, risk: 45, designValue: 85, constructionDifficulty: 55, preservationLevel: 75 },
-  "strat-3": { cost: 90, schedule: 85, risk: 75, designValue: 95, constructionDifficulty: 90, preservationLevel: 40 },
+  "strat-1": { cost: 25, schedule: 20, risk: 15, designValue: 40, constructionDifficulty: 20, preservationLevel: 90, feasibility: 88 },
+  "strat-2": { cost: 55, schedule: 50, risk: 45, designValue: 85, constructionDifficulty: 55, preservationLevel: 75, feasibility: 72 },
+  "strat-3": { cost: 90, schedule: 85, risk: 75, designValue: 95, constructionDifficulty: 90, preservationLevel: 40, feasibility: 55 },
 };
 
 export type MockStore = {

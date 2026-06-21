@@ -16,6 +16,7 @@ import type {
   SiteIssue,
   StrategyWithProject,
 } from "@/types";
+import type { AIProjectDraft } from "@/lib/ai/agents/project-creation-agent";
 import { knowledgeArticles } from "@/lib/mock-data/knowledge";
 import {
   createMockStore,
@@ -29,6 +30,7 @@ import {
   mockProjects,
   strategyMetrics,
 } from "@/lib/mock-data";
+import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 import type { StrategyWithMetrics } from "@/types";
 
 let store = createMockStore();
@@ -132,6 +134,98 @@ export async function createProject(input: CreateProjectInput): Promise<ProjectW
   return (await getProjectById(project.id))!;
 }
 
+export async function createProjectFromBrief(draft: AIProjectDraft): Promise<ProjectWithRelations> {
+  const now = new Date();
+  const input = draft.project;
+
+  const project: Project = {
+    id: generateId("proj"),
+    organizationId: "org-1",
+    name: input.name,
+    code: input.code,
+    location: input.location,
+    buildingType: input.buildingType,
+    originalFunction: input.originalFunction,
+    currentFunction: input.currentFunction,
+    targetFunction: input.targetFunction,
+    constructionYear: input.constructionYear,
+    structureType: input.structureType,
+    floorCount: input.floorCount,
+    grossFloorArea: input.grossFloorArea,
+    status: "survey",
+    renovationGoal: input.renovationGoal,
+    budgetLevel: input.budgetLevel,
+    riskLevel: draft.riskLevel,
+    healthScore: draft.healthScore,
+    potentialScore: draft.potentialScore,
+    aiReadinessScore: draft.aiReadinessScore,
+    dataCompletenessScore: draft.dataCompletenessScore,
+    description: input.description ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  store.projects.push(project);
+
+  store.buildings.push({
+    id: generateId("bld"),
+    projectId: project.id,
+    name: input.buildingName ?? project.name,
+    address: input.address ?? input.location,
+    constructionYear: input.constructionYear,
+    structureType: input.structureType,
+    floorCount: input.floorCount,
+    basementCount: input.basementCount ?? 0,
+    grossFloorArea: input.grossFloorArea,
+    currentCondition: input.currentCondition ?? "",
+    heritageLevel: input.heritageLevel ?? "none",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  store.buildingMemories.push({
+    ...draft.buildingMemory,
+    id: generateId("bm"),
+    projectId: project.id,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  for (const task of draft.tasks) {
+    store.tasks.push({
+      ...task,
+      id: generateId("task"),
+      projectId: project.id,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  for (const insight of draft.insights) {
+    store.insights.push({
+      ...insight,
+      id: generateId("insight"),
+      projectId: project.id,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  store.analysisRuns.push({
+    id: generateId("run"),
+    projectId: project.id,
+    analysisType: "copilot_chat",
+    inputSummary: input.renovationGoal.slice(0, 120),
+    outputSummary: draft.analysisSummary,
+    generatedItemCount: draft.tasks.length + draft.insights.length + 1,
+    modelName: "recrete-mock-v1",
+    confidence: 0.91,
+    createdAt: now,
+  });
+
+  return (await getProjectById(project.id))!;
+}
+
 export async function addDiagnosisItems(
   projectId: string,
   items: Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]
@@ -172,6 +266,14 @@ export async function addStrategies(
   }));
   store.strategies.push(...created);
   return created;
+}
+
+export async function replaceStrategies(
+  projectId: string,
+  strategies: Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]
+): Promise<RenovationStrategy[]> {
+  store.strategies = store.strategies.filter((s) => s.projectId !== projectId);
+  return addStrategies(projectId, strategies);
 }
 
 export async function addDocument(
@@ -463,14 +565,7 @@ export async function getStrategiesWithMetrics(
   const strategies = store.strategies.filter((s) => s.projectId === projectId);
   return strategies.map((s) => ({
     ...s,
-    metrics: strategyMetrics[s.id] ?? {
-      cost: 50,
-      schedule: 50,
-      risk: 50,
-      designValue: 50,
-      constructionDifficulty: 50,
-      preservationLevel: 50,
-    },
+    metrics: strategyMetrics[s.id] ?? computeStrategyMetrics(s),
   }));
 }
 

@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Recrete — 砼憶 | Building Renovation Platform",
-  description: "Reimagine. Renew. Recreate. AI-assisted platform for existing building renovation.",
+  title: "Recrete — 砼憶 | AI Copilot for Existing Building Renovation",
+  description: "面向既有建筑更新的 AI 设计助手。Reimagine. Renew. Recreate. AI agent that reads, understands, diagnoses, and manages building renovation projects.",
 };
 
 export default function RootLayout({

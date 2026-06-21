@@ -10,6 +10,7 @@ interface AICommandInputProps {
   placeholder?: string;
   suggestions?: readonly string[];
   onSubmit?: (value: string) => void;
+  submitLabel?: string;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export function AICommandInput({
   placeholder = "Describe a renovation project, upload documents, or ask Recrete what to do next.",
   suggestions = [],
   onSubmit,
+  submitLabel = "Ask Recrete",
   className,
 }: AICommandInputProps) {
   const [value, setValue] = useState("");
@@ -66,7 +68,7 @@ export function AICommandInput({
         )}
         <Button variant="copper" size="sm" onClick={handleSubmit} disabled={!value.trim()}>
           <Send className="mr-1.5 h-3.5 w-3.5" />
-          Ask Recrete
+          {submitLabel}
         </Button>
       </div>
     </div>
