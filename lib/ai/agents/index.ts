@@ -31,6 +31,8 @@ export {
   analyzeEnergyPerformance,
   simulateBuildingEnergy,
   generateEnergyDiagnosis,
+  formatEnergyAnalysisMarkdown,
+  appendEnergySectionToReport,
   energyAgent,
 } from "./energy-agent";
 export { estimateProjectCost, costEstimatorAgent } from "./cost-estimator-agent";

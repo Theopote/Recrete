@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProjectById, addReport } from "@/lib/db/repository";
-import { getAIService } from "@/lib/ai";
+import { getAIPlatform } from "@/lib/ai";
 import type { ReportType } from "@/types";
 
 export async function POST(
@@ -13,10 +13,11 @@ export async function POST(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const { reportType } = await request.json() as { reportType: ReportType };
-  const ai = getAIService();
-  const { title, content } = await ai.generateReport(
+  const { reportType } = (await request.json()) as { reportType: ReportType };
+  const platform = getAIPlatform();
+  const { title, content } = await platform.report.generateReport(
     project,
+    project.buildingMemory ?? null,
     project.diagnosis ?? [],
     project.strategies ?? [],
     project.issues ?? [],

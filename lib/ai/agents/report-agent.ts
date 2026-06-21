@@ -2,6 +2,12 @@ import type { DiagnosisItem, ProjectWithRelations, RenovationStrategy, SiteIssue
 import type { BuildingMemory } from "@/types/ai";
 import { mockAIService } from "../mock-ai-service";
 import { withMockDelay } from "../providers/utils";
+import { analyzeEnergyPerformance, appendEnergySectionToReport } from "./energy-agent";
+
+const REPORT_TYPES_WITH_ENERGY = new Set<ReportType>([
+  "diagnosis_report",
+  "existing_condition_report",
+]);
 
 export async function generateReport(
   project: ProjectWithRelations,
@@ -11,7 +17,23 @@ export async function generateReport(
   issues: SiteIssue[],
   reportType: ReportType
 ) {
-  return mockAIService.generateReport(project, diagnosisItems, strategies, issues, reportType);
+  const base = await mockAIService.generateReport(
+    project,
+    diagnosisItems,
+    strategies,
+    issues,
+    reportType
+  );
+
+  if (!REPORT_TYPES_WITH_ENERGY.has(reportType)) {
+    return base;
+  }
+
+  const energyAnalysis = analyzeEnergyPerformance(project);
+  return {
+    title: base.title,
+    content: appendEnergySectionToReport(base.content, energyAnalysis),
+  };
 }
 
 export async function generatePresentationOutline(

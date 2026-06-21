@@ -14,6 +14,7 @@ function cellColor(value: number) {
 export function RiskMatrix({ matrix }: RiskMatrixProps) {
   const dimensions = ["costRisk", "scheduleRisk", "constructionRisk", "complianceRisk"] as const;
   const labels = ["Cost", "Schedule", "Construction", "Compliance"];
+  const showLifecycle = matrix.strategies.some((s) => s.lifecycleCostScore != null);
 
   return (
     <div className="overflow-x-auto rounded-md border">
@@ -26,13 +27,18 @@ export function RiskMatrix({ matrix }: RiskMatrixProps) {
                 {l}
               </th>
             ))}
+            {showLifecycle && (
+              <th className="p-2 text-center font-medium" title="Capex risk adjusted for energy ROI">
+                Lifecycle
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {matrix.strategies.map((row) => (
             <tr key={row.strategyId} className="border-b last:border-0">
               <td className="p-2 font-medium">{row.strategyName}</td>
-              {dimensions.map((dim, i) => (
+              {dimensions.map((dim) => (
                 <td key={dim} className="p-2 text-center">
                   <span
                     className={cn(
@@ -44,6 +50,19 @@ export function RiskMatrix({ matrix }: RiskMatrixProps) {
                   </span>
                 </td>
               ))}
+              {showLifecycle && (
+                <td className="p-2 text-center">
+                  <span
+                    className={cn(
+                      "inline-block min-w-[2.5rem] rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold",
+                      cellColor(row.lifecycleCostScore ?? row.costRisk)
+                    )}
+                    title="Energy ROI-adjusted lifecycle cost risk"
+                  >
+                    {row.lifecycleCostScore ?? row.costRisk}
+                  </span>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

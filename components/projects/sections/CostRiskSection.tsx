@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { RiskMatrix } from "@/components/ai/RiskMatrix";
+import { EnergyRoiPanel } from "@/components/ai/EnergyRoiPanel";
 import { AIInsightList } from "@/components/ai/AIInsightList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ProjectWithRelations, StrategyWithMetrics } from "@/types";
-import type { CostRiskMatrix } from "@/types/ai";
+import type { AIInsight, CostRiskMatrix } from "@/types/ai";
 import { Sparkles, Loader2 } from "lucide-react";
 
 interface CostRiskSectionProps {
@@ -18,11 +19,15 @@ interface CostRiskSectionProps {
 export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSectionProps) {
   const [matrix, setMatrix] = useState<CostRiskMatrix | null>(null);
   const [phasing, setPhasing] = useState<string[]>([]);
+  const [energyOpportunities, setEnergyOpportunities] = useState<AIInsight[]>([]);
   const [loading, setLoading] = useState(false);
 
   const costInsights = (project.insights ?? []).filter(
     (i) => i.type === "cost_warning" || i.type === "schedule_warning"
   );
+
+  const matrixCostWarnings = matrix?.costWarnings ?? [];
+  const allCostWarnings = [...costInsights, ...matrixCostWarnings];
 
   const loadMatrix = async () => {
     setLoading(true);
@@ -30,7 +35,8 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
       const res = await fetch(`/api/projects/${project.id}/cost-risk`, { method: "POST" });
       const data = await res.json();
       setMatrix(data.matrix);
-      setPhasing(data.phasingPlan ?? []);
+      setPhasing(data.phasingPlan ?? data.matrix?.phasingPlan ?? []);
+      setEnergyOpportunities(data.matrix?.energyOpportunities ?? []);
     } finally {
       setLoading(false);
     }
@@ -47,7 +53,9 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
     <div className="space-y-6">
       <SectionHeader
         title="Cost & Risk"
-        description="AI-estimated cost warnings, schedule risks, and phased implementation planning"
+        titleZh="成本与风险"
+        description="AI-estimated cost warnings, energy ROI, schedule risks, and phased implementation planning"
+        descriptionZh="AI 成本预警、能效 ROI、进度风险与分阶段实施规划"
         action={
           <Button variant="copper" size="sm" onClick={loadMatrix} disabled={loading}>
             {loading ? (
@@ -60,6 +68,8 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
         }
       />
 
+      {matrix?.energyRoi && <EnergyRoiPanel energyRoi={matrix.energyRoi} />}
+
       {matrix ? (
         <RiskMatrix matrix={matrix} />
       ) : (
@@ -70,10 +80,17 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
         </Card>
       )}
 
-      {costInsights.length > 0 && (
+      {energyOpportunities.length > 0 && (
         <div>
-          <SectionHeader title="Cost & Schedule Warnings" />
-          <AIInsightList insights={costInsights} compact />
+          <SectionHeader title="Energy ROI Opportunities" titleZh="能效 ROI 机会" />
+          <AIInsightList insights={energyOpportunities} compact />
+        </div>
+      )}
+
+      {allCostWarnings.length > 0 && (
+        <div>
+          <SectionHeader title="Cost & Schedule Warnings" titleZh="成本与进度预警" />
+          <AIInsightList insights={allCostWarnings} compact />
         </div>
       )}
 

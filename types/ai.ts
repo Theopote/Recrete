@@ -171,10 +171,29 @@ export interface CostRiskMatrix {
     scheduleRisk: number;
     constructionRisk: number;
     complianceRisk: number;
+    /** Lifecycle-adjusted score when energy ROI improves operational cost profile */
+    lifecycleCostScore?: number;
   }[];
   costWarnings: AIInsight[];
   scheduleWarnings: AIInsight[];
   phasingPlan: string[];
+  energyRoi?: EnergyRoiSummary | null;
+  energyOpportunities?: AIInsight[];
+}
+
+/** Energy ROI linked from Cost & Risk analysis */
+export interface EnergyRoiSummary {
+  totalInvestment: number;
+  annualEnergySavingsKwh: number;
+  annualCostSavings: number;
+  simplePaybackYears: number;
+  roiPercent10Year: number;
+  currentEui: number;
+  targetEui: number;
+  rating: "poor" | "average" | "good";
+  recommendedMeasures: Array<{ nameZh: string; savingsPercent: number }>;
+  linkedStrategyId?: string;
+  linkedStrategyName?: string;
 }
 
 export interface CommandCenterData {
