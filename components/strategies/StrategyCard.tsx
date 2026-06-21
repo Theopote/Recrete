@@ -1,23 +1,26 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/app/RiskBadge";
+import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDialog";
 import { strategyTypeLabels } from "@/lib/utils/labels";
 import { cn, levelToPercent } from "@/lib/utils";
-import type { RenovationStrategy } from "@/types";
+import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
 import { Check, X, Star } from "lucide-react";
 
 interface StrategyCardProps {
   strategy: RenovationStrategy;
   isRecommended?: boolean;
+  projectId?: string;
+  onRefined?: (strategy: StrategyWithMetrics) => void;
 }
 
-export function StrategyCard({ strategy, isRecommended }: StrategyCardProps) {
+export function StrategyCard({ strategy, isRecommended, projectId, onRefined }: StrategyCardProps) {
   return (
     <Card className={cn(isRecommended && "border-copper ring-1 ring-copper/20")}>
       <CardContent className="p-5 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-sm font-semibold">{strategy.name}</h4>
               {isRecommended && (
                 <Badge className="bg-copper text-copper-foreground text-[10px] gap-1">
@@ -28,6 +31,13 @@ export function StrategyCard({ strategy, isRecommended }: StrategyCardProps) {
             <p className="text-xs text-muted-foreground mt-0.5">
               {strategyTypeLabels[strategy.type]}
             </p>
+            {projectId && onRefined && (
+              <StrategyRefineDialog
+                projectId={projectId}
+                strategy={strategy as StrategyWithMetrics}
+                onRefined={onRefined}
+              />
+            )}
           </div>
           <RiskBadge level={strategy.riskLevel} />
         </div>

@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { StrategyCard } from "@/components/strategies/StrategyCard";
 import { StrategyComparisonTable } from "@/components/strategies/StrategyComparisonTable";
 import { CreateStrategyForm } from "@/components/strategies/CreateStrategyForm";
+import { StrategyLabParamsForm } from "@/components/strategies/StrategyLabParamsForm";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import type { ProjectWithRelations, StrategyWithMetrics } from "@/types";
+import type { StrategyLabParams } from "@/types/ai";
 import { Lightbulb, Sparkles, GitCompare } from "lucide-react";
 
 interface StrategiesSectionProps {
@@ -16,23 +19,33 @@ interface StrategiesSectionProps {
 }
 
 export function StrategiesSection({ project, strategiesWithMetrics: initialMetrics }: StrategiesSectionProps) {
+  const router = useRouter();
   const [strategies, setStrategies] = useState(initialMetrics);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showComparison, setShowComparison] = useState(true);
+  const [labParams, setLabParams] = useState<Partial<StrategyLabParams>>({});
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
       const res = await fetch(`/api/projects/${project.id}/strategies/generate`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ params: labParams }),
       });
       if (res.ok) {
         const data = await res.json();
-        setStrategies(data.map(parseStrategy));
+        setStrategies(data.strategies.map(parseStrategy));
+        router.refresh();
       }
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleRefined = (updated: StrategyWithMetrics) => {
+    setStrategies((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    router.refresh();
   };
 
   const handleCreated = (strategy: StrategyWithMetrics) => {
@@ -67,6 +80,8 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         }
       />
 
+      <StrategyLabParamsForm onChange={setLabParams} />
+
       {showComparison && strategies.length > 1 && (
         <div>
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
@@ -83,6 +98,8 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
               key={strategy.id}
               strategy={strategy}
               isRecommended={strategy.id === recommended?.id}
+              projectId={project.id}
+              onRefined={handleRefined}
             />
           ))}
         </div>

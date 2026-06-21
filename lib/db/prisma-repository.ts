@@ -483,6 +483,14 @@ export async function addTasks(
   return mockAdd(projectId, tasks);
 }
 
+export async function updateStrategy(
+  strategyId: string,
+  data: Parameters<typeof import("@/lib/db/mock-repository").updateStrategy>[1]
+) {
+  const { updateStrategy: mockUpdate } = await import("@/lib/db/mock-repository");
+  return mockUpdate(strategyId, data);
+}
+
 export async function getStrategiesWithMetrics(projectId: string): Promise<StrategyWithMetrics[]> {
   const strategies = await prisma.renovationStrategy.findMany({
     where: { projectId },

@@ -17,6 +17,7 @@ export async function askProjectCopilot(
       buildingMemory: projectContext.buildingMemory,
       insights: projectContext.insights,
       evidence: projectContext.evidence,
+      knowledgeSnippets: projectContext.knowledgeSnippets,
     },
     messages
   );

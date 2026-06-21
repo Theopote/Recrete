@@ -72,6 +72,13 @@ export async function replaceStrategies(
   return mock.replaceStrategies(projectId, strategies);
 }
 
+export async function updateStrategy(
+  strategyId: string,
+  data: Parameters<typeof mock.updateStrategy>[1]
+) {
+  return (await resolveDb()) ? db.updateStrategy(strategyId, data) : mock.updateStrategy(strategyId, data);
+}
+
 export async function addDocument(
   projectId: string,
   doc: Parameters<typeof mock.addDocument>[1]

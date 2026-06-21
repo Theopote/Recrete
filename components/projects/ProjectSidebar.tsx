@@ -13,6 +13,7 @@ import {
   Scale,
   AlertTriangle,
   FileBarChart,
+  Bot,
 } from "lucide-react";
 
 const sections: {
@@ -24,6 +25,7 @@ const sections: {
   { id: "building-memory", label: "Building Memory", icon: Brain },
   { id: "survey-intelligence", label: "Survey Intelligence", icon: ClipboardList },
   { id: "diagnosis", label: "Diagnosis", icon: Stethoscope },
+  { id: "expert-agents", label: "Expert Agents", icon: Bot },
   { id: "strategy-lab", label: "Strategy Lab", icon: FlaskConical },
   { id: "cost-risk", label: "Cost & Risk", icon: Scale },
   { id: "issues", label: "Issues", icon: AlertTriangle },

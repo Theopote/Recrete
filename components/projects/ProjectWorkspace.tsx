@@ -1,4 +1,5 @@
 import type { ProjectSection, ProjectWithRelations, StrategyWithMetrics } from "@/types";
+import { ExpertAgentsSection } from "./sections/ExpertAgentsSection";
 import { OverviewSection } from "./sections/OverviewSection";
 import { BuildingMemorySection } from "./sections/BuildingMemorySection";
 import { SurveyIntelligenceSection } from "./sections/SurveyIntelligenceSection";
@@ -42,6 +43,8 @@ export function ProjectWorkspace({
       return <DocumentsSection project={project} />;
     case "diagnosis":
       return <DiagnosisSection project={project} />;
+    case "expert-agents":
+      return <ExpertAgentsSection project={project} />;
     case "strategy-lab":
     case "strategies":
       return <StrategiesSection project={project} strategiesWithMetrics={strategiesWithMetrics} />;

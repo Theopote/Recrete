@@ -128,6 +128,15 @@ export interface ProjectAIContext {
   tasks: AITask[];
   analysisRuns: AIAnalysisRun[];
   evidence: SourceEvidence[];
+  knowledgeSnippets?: KnowledgeSnippet[];
+}
+
+export interface KnowledgeSnippet {
+  id: string;
+  sourceType: "case" | "knowledge" | "code";
+  title: string;
+  excerpt: string;
+  relevance: number;
 }
 
 export interface StrategyLabParams {

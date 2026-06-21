@@ -7,7 +7,7 @@ import type {
   SiteIssue,
 } from "@/types";
 import type { AIMessage } from "@/types";
-import type { BuildingMemory, AIInsight, SourceEvidence } from "@/types/ai";
+import type { BuildingMemory, AIInsight, SourceEvidence, KnowledgeSnippet } from "@/types/ai";
 
 export interface ProjectContext {
   project: ProjectWithRelations;
@@ -18,6 +18,7 @@ export interface ProjectContext {
   buildingMemory?: BuildingMemory | null;
   insights?: AIInsight[];
   evidence?: SourceEvidence[];
+  knowledgeSnippets?: KnowledgeSnippet[];
 }
 
 export interface AIService {

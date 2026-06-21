@@ -121,7 +121,7 @@ Provide professional, concise advice for architects, engineers, and project mana
 }
 
 export function buildAssistantSystemPromptFromContext(context: ProjectAIContext): string {
-  const { project, buildingMemory, insights, evidence } = context;
+  const { project, buildingMemory, insights, evidence, knowledgeSnippets } = context;
   const base = buildAssistantSystemPrompt(project);
 
   const memorySection = buildingMemory
@@ -151,18 +151,26 @@ ${evidence
   .join("\n")}`
       : "";
 
-  return `${base}${memorySection}${insightSection}${evidenceSection}`;
+  const knowledgeSection =
+    knowledgeSnippets && knowledgeSnippets.length > 0
+      ? `\n\n## Retrieved Knowledge (cases, articles, codes)
+${knowledgeSnippets
+  .map((k) => `- [${k.sourceType}] ${k.title}: ${k.excerpt}`)
+  .join("\n")}`
+      : "";
+
+  return `${base}${memorySection}${insightSection}${evidenceSection}${knowledgeSection}`;
 }
 
 export const ASSISTANT_SUGGESTIONS = [
   "What are the main risks of this building?",
   "What information is missing?",
-  "Generate three renovation strategies.",
   "Which strategy is most feasible?",
+  "Show comparable renovation cases",
+  "Refine option 2 to be more ambitious",
   "What should we do before schematic design?",
   "List structural issues requiring engineer review.",
   "Generate a client presentation outline.",
-  "Generate a meeting agenda.",
   "Summarize this project for the owner.",
 ] as const;
 

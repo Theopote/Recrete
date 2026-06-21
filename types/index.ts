@@ -315,6 +315,7 @@ export type ProjectSection =
   | "cost-risk"
   | "issues"
   | "reports"
+  | "expert-agents"
   | "building"
   | "documents"
   | "strategies"

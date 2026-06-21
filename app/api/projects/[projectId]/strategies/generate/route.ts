@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { getProjectById, replaceStrategies } from "@/lib/db/repository";
-import { getAIPlatform } from "@/lib/ai";
-import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
-import type { RenovationStrategy } from "@/types";
+import { getProjectById } from "@/lib/db/repository";
+import { runStrategyWorkflow } from "@/lib/ai/workflow/strategy-workflow";
+import type { StrategyLabParams } from "@/types/ai";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
@@ -14,16 +13,13 @@ export async function POST(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const strategies = await getAIPlatform().strategy.generateRenovationStrategies(
-    project,
-    project.diagnosis ?? []
-  );
-  const created = await replaceStrategies(projectId, strategies);
+  const body = await request.json().catch(() => ({}));
+  const paramsInput = body.params as Partial<StrategyLabParams> | undefined;
 
-  const withMetrics = created.map((s: RenovationStrategy) => ({
-    ...s,
-    metrics: computeStrategyMetrics(s),
-  }));
+  const result = await runStrategyWorkflow(projectId, { params: paramsInput });
+  if (!result) {
+    return NextResponse.json({ error: "Strategy workflow failed" }, { status: 500 });
+  }
 
-  return NextResponse.json(withMetrics);
+  return NextResponse.json(result);
 }

@@ -139,6 +139,7 @@ export class OpenAIService implements AIService {
           tasks: [],
           analysisRuns: [],
           evidence: projectContext.evidence ?? [],
+          knowledgeSnippets: projectContext.knowledgeSnippets ?? [],
         })
       : buildAssistantSystemPrompt(projectContext.project);
     const chatMessages = [

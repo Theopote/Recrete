@@ -13,3 +13,12 @@ export {
   type SurveyWorkflowOptions,
   type SurveyWorkflowResult,
 } from "./survey-workflow";
+export {
+  runStrategyWorkflow,
+  runStrategyIterationWorkflow,
+  findStrategyForInstruction,
+  type StrategyWorkflowOptions,
+  type StrategyWorkflowResult,
+  type StrategyIterationOptions,
+  type StrategyIterationResult,
+} from "./strategy-workflow";

@@ -381,6 +381,7 @@ ${issues.filter((i) => i.status === "resolved" || i.status === "closed").map((i)
     const issues = projectContext.issues ?? project.issues ?? [];
     const memory = projectContext.buildingMemory;
     const evidence = projectContext.evidence ?? [];
+    const knowledge = projectContext.knowledgeSnippets ?? [];
 
     if (lastMessage.includes("risk")) {
       if (memory?.keyRisks.length) {
@@ -420,10 +421,26 @@ ${issues.filter((i) => i.status === "resolved" || i.status === "closed").map((i)
 
     if (lastMessage.includes("strategy") || lastMessage.includes("recommend") || lastMessage.includes("feasible")) {
       const recommended = strategies.find((s) => s.recommendationReason);
+      const caseNote =
+        knowledge.length > 0
+          ? `\n\n**Reference from knowledge base:** ${knowledge[0].title} — ${knowledge[0].excerpt}`
+          : "";
       if (recommended) {
-        return `**Recommended strategy: ${recommended.name}**\n\n${recommended.recommendationReason}\n\n**Summary:** ${recommended.summary}\n\n**Cost:** ${recommended.costLevel} | **Schedule:** ${recommended.scheduleLevel} | **Risk:** ${recommended.riskLevel}`;
+        return `**Recommended strategy: ${recommended.name}**\n\n${recommended.recommendationReason}\n\n**Summary:** ${recommended.summary}\n\n**Cost:** ${recommended.costLevel} | **Schedule:** ${recommended.scheduleLevel} | **Risk:** ${recommended.riskLevel}${caseNote}`;
       }
-      return `Based on the project profile, I recommend evaluating the **Adaptive Reuse** approach as it best balances preservation of the ${project.constructionYear} concrete frame with the goal of creating a ${project.targetFunction.toLowerCase()}.`;
+      return `Based on the project profile, I recommend evaluating the **Adaptive Reuse** approach as it best balances preservation of the ${project.constructionYear} concrete frame with the goal of creating a ${project.targetFunction.toLowerCase()}.${caseNote}\n\nTo refine a strategy, say e.g. "Make option 2 more ambitious" or use Strategy Lab refine.`;
+    }
+
+    if (
+      lastMessage.includes("comparable") ||
+      lastMessage.includes("case") ||
+      lastMessage.includes("案例") ||
+      lastMessage.includes("historical")
+    ) {
+      if (knowledge.length > 0) {
+        return `**Relevant reference cases & knowledge:**\n\n${knowledge.map((k, i) => `${i + 1}. **[${k.sourceType}] ${k.title}**\n   ${k.excerpt}`).join("\n\n")}`;
+      }
+      return `No closely matching cases found yet. Upload more project documents or specify building type and target function for better retrieval.`;
     }
 
     if (lastMessage.includes("next") || lastMessage.includes("should we do")) {
@@ -449,7 +466,9 @@ ${issues.filter((i) => i.status === "resolved" || i.status === "closed").map((i)
     }
 
     if (memory) {
-      return `I'm here to help with **${project.name}**. ${memory.summary}\n\n**Building Memory highlights:**\n• Known facts: ${memory.knownFacts.slice(0, 3).join("; ")}\n• Open gaps: ${memory.missingInformation.slice(0, 2).join("; ")}\n\nAsk about risks, missing information, strategies, next steps, or required documents.`;
+      const knowledgeNote =
+        knowledge.length > 0 ? `\n• Reference: ${knowledge[0].title}` : "";
+      return `I'm here to help with **${project.name}**. ${memory.summary}\n\n**Building Memory highlights:**\n• Known facts: ${memory.knownFacts.slice(0, 3).join("; ")}\n• Open gaps: ${memory.missingInformation.slice(0, 2).join("; ")}${knowledgeNote}\n\nAsk about risks, strategies, comparable cases, or say "refine option 2 to be more ambitious".`;
     }
 
     return `I'm here to help with **${project.name}**. This ${project.constructionYear} ${project.buildingType.toLowerCase()} is in **${project.status}** phase with a health score of ${project.healthScore}/100.\n\nYou can ask me about risks, missing information, strategy recommendations, next steps, meeting summaries, structural issues, or required documents.`;

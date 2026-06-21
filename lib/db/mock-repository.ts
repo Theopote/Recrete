@@ -300,6 +300,16 @@ export async function addStrategies(
   return created;
 }
 
+export async function updateStrategy(
+  strategyId: string,
+  data: Partial<Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">>
+): Promise<RenovationStrategy | null> {
+  const strategy = store.strategies.find((s) => s.id === strategyId);
+  if (!strategy) return null;
+  Object.assign(strategy, data, { updatedAt: new Date() });
+  return strategy;
+}
+
 export async function replaceStrategies(
   projectId: string,
   strategies: Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]
