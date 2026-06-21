@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getProjectById, replaceStrategies } from "@/lib/db/repository";
 import { getAIPlatform } from "@/lib/ai";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
+import type { RenovationStrategy } from "@/types";
 
 export async function POST(
   _request: Request,
@@ -19,7 +20,7 @@ export async function POST(
   );
   const created = await replaceStrategies(projectId, strategies);
 
-  const withMetrics = created.map((s) => ({
+  const withMetrics = created.map((s: RenovationStrategy) => ({
     ...s,
     metrics: computeStrategyMetrics(s),
   }));

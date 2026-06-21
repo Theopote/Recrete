@@ -53,7 +53,7 @@ export async function replaceStrategies(
   strategies: Parameters<typeof mock.replaceStrategies>[1]
 ) {
   if (await resolveDb()) {
-    return db.replaceStrategies?.(projectId, strategies) ?? mock.replaceStrategies(projectId, strategies);
+    return mock.replaceStrategies(projectId, strategies);
   }
   return mock.replaceStrategies(projectId, strategies);
 }

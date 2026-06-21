@@ -9,10 +9,12 @@ interface BuildingMemoryCardProps {
 
 function MemoryList({
   title,
+  titleZh,
   items,
   icon: Icon,
 }: {
   title: string;
+  titleZh?: string;
   items: string[];
   icon: React.ComponentType<{ className?: string }>;
 }) {
@@ -23,6 +25,7 @@ function MemoryList({
         <Icon className="h-3.5 w-3.5 text-copper" />
         <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
+          {titleZh && <span className="normal-case font-normal text-muted-foreground/70"> · {titleZh}</span>}
         </h4>
       </div>
       <ul className="space-y-1.5">
@@ -42,7 +45,7 @@ export function BuildingMemoryCard({ memory }: BuildingMemoryCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-copper" />
-          <CardTitle className="text-sm">Building Memory</CardTitle>
+          <CardTitle className="text-sm">Building Memory · 建筑记忆</CardTitle>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{memory.summary}</p>
         <p className="text-[10px] font-mono text-muted-foreground/70">
@@ -50,15 +53,15 @@ export function BuildingMemoryCard({ memory }: BuildingMemoryCardProps) {
         </p>
       </CardHeader>
       <CardContent className="grid gap-6 md:grid-cols-2">
-        <MemoryList title="Known Facts" items={memory.knownFacts} icon={Brain} />
-        <MemoryList title="Key Risks" items={memory.keyRisks} icon={AlertTriangle} />
-        <MemoryList title="Missing Information" items={memory.missingInformation} icon={HelpCircle} />
-        <MemoryList title="Unresolved Questions" items={memory.unresolvedQuestions} icon={HelpCircle} />
+        <MemoryList title="Known Facts" titleZh="AI 已知" items={memory.knownFacts} icon={Brain} />
+        <MemoryList title="Key Risks" titleZh="关键风险" items={memory.keyRisks} icon={AlertTriangle} />
+        <MemoryList title="Missing Information" titleZh="AI 未知" items={memory.missingInformation} icon={HelpCircle} />
+        <MemoryList title="Unresolved Questions" titleZh="待解问题" items={memory.unresolvedQuestions} icon={HelpCircle} />
         <div className="md:col-span-2">
           <div className="mb-2 flex items-center gap-1.5">
             <Lightbulb className="h-3.5 w-3.5 text-sage" />
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Renovation Potential
+              Renovation Potential · 改造潜力
             </h4>
           </div>
           <p className="text-xs leading-relaxed text-foreground/85">{memory.renovationPotential}</p>
