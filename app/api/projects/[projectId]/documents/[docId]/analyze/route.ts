@@ -56,7 +56,6 @@ export async function POST(
         title: issue.title,
         category: issue.category,
         priority: issue.priority,
-        status: "open",
         location: issue.location ?? null,
         description: issue.description,
         photoUrl: doc.fileUrl,

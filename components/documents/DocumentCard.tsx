@@ -65,7 +65,7 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed }: Doc
               <h4 className="text-sm font-medium truncate">{document.name}</h4>
               <div className="flex items-center gap-1 shrink-0">
                 {document.aiSummary && (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" title="AI analyzed" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-label="AI analyzed" />
                 )}
                 {previewable && onPreview && (
                   <Eye className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
