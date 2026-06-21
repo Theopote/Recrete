@@ -19,7 +19,7 @@ export interface ProjectContext {
 export interface AIService {
   generateDiagnosis(
     project: ProjectWithRelations,
-    documents?: ProjectWithRelations["documents"]
+    _documents?: ProjectWithRelations["documents"]
   ): Promise<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]>;
 
   generateRenovationStrategies(

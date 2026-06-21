@@ -1,21 +1,12 @@
 /** OpenAI-compatible provider placeholder for future LLM integration */
 import type { AIService } from "../types";
-import { mockAIProvider } from "./mock-provider";
+import { mockAIService } from "../mock-ai-service";
 
 export class OpenAIProvider implements AIService {
-  private fallback = mockAIProvider;
-
-  generateDiagnosis = (...args: Parameters<AIService["generateDiagnosis"]>) =>
-    this.fallback.generateDiagnosis(...args);
-
-  generateRenovationStrategies = (...args: Parameters<AIService["generateRenovationStrategies"]>) =>
-    this.fallback.generateRenovationStrategies(...args);
-
-  generateReport = (...args: Parameters<AIService["generateReport"]>) =>
-    this.fallback.generateReport(...args);
-
-  askProjectAssistant = (...args: Parameters<AIService["askProjectAssistant"]>) =>
-    this.fallback.askProjectAssistant(...args);
+  generateDiagnosis = mockAIService.generateDiagnosis.bind(mockAIService);
+  generateRenovationStrategies = mockAIService.generateRenovationStrategies.bind(mockAIService);
+  generateReport = mockAIService.generateReport.bind(mockAIService);
+  askProjectAssistant = mockAIService.askProjectAssistant.bind(mockAIService);
 }
 
 export const openAIProvider = new OpenAIProvider();

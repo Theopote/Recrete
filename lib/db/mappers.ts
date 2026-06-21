@@ -33,6 +33,7 @@ export function mapUser(u: PrismaUser): User {
 }
 
 export function mapProject(p: PrismaProject): Project {
+  const ext = p as PrismaProject & { aiReadinessScore?: number; dataCompletenessScore?: number };
   return {
     id: p.id,
     organizationId: p.organizationId,
@@ -53,6 +54,8 @@ export function mapProject(p: PrismaProject): Project {
     riskLevel: p.riskLevel,
     healthScore: p.healthScore,
     potentialScore: p.potentialScore,
+    aiReadinessScore: ext.aiReadinessScore ?? 50,
+    dataCompletenessScore: ext.dataCompletenessScore ?? 50,
     description: p.description,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
@@ -64,23 +67,44 @@ export function mapBuilding(b: PrismaBuilding): Building {
 }
 
 export function mapDocument(d: PrismaDocument): DocumentAsset {
-  return { ...d };
+  return {
+    ...d,
+    aiSummary: d.aiSummary,
+    extractedText: d.extractedText,
+  };
 }
 
 export function mapDiagnosis(d: PrismaDiagnosis): DiagnosisItem {
-  return { ...d };
+  return {
+    ...d,
+    insightId: d.insightId,
+    requiresEngineerReview: d.requiresEngineerReview ?? false,
+  };
 }
 
 export function mapStrategy(s: PrismaStrategy): RenovationStrategy {
-  return { ...s };
+  return {
+    ...s,
+    designValueScore: s.designValueScore ?? undefined,
+    feasibilityScore: s.feasibilityScore ?? undefined,
+    preservationScore: s.preservationScore ?? undefined,
+    recommendationReason: s.recommendationReason,
+  };
 }
 
 export function mapIssue(i: PrismaIssue): SiteIssue {
-  return { ...i };
+  return {
+    ...i,
+    aiDetected: i.aiDetected ?? false,
+    relatedInsightId: i.relatedInsightId,
+  };
 }
 
 export function mapReport(r: PrismaReport): Report {
-  return { ...r };
+  return {
+    ...r,
+    generatedByAI: r.generatedByAI ?? false,
+  };
 }
 
 type ProjectFull = PrismaProject & {

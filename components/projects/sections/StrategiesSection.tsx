@@ -46,7 +46,6 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
       <SectionHeader
         title="Strategy Lab"
         description="Define parameters and generate AI renovation strategies with comparison metrics"
-        description="Compare multiple renovation approaches with cost, schedule, and risk analysis"
         action={
           <div className="flex flex-wrap gap-2">
             <CreateStrategyForm projectId={project.id} onCreated={handleCreated} />
