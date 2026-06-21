@@ -39,6 +39,18 @@ const GltfModelViewer = dynamic(
   }
 );
 
+const OpenBimViewer = dynamic(
+  () => import("@/components/bim/OpenBimViewer").then((m) => m.OpenBimViewer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[420px] items-center justify-center rounded-md border bg-muted/20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  }
+);
+
 interface BimViewerSectionProps {
   project: ProjectWithRelations;
 }
@@ -107,6 +119,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
   const [models, setModels] = useState<BimModel[]>([]);
   const [selectedId, setSelectedId] = useState<string | "sample">("sample");
   const [loading, setLoading] = useState(true);
+  const [viewerEngine, setViewerEngine] = useState<"web-ifc" | "openbim">("web-ifc");
 
   const loadModels = useCallback(async () => {
     setLoading(true);
@@ -222,18 +235,44 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
         </Card>
 
         <div className="space-y-4">
-          {selectedId === "sample" && (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant={viewerEngine === "web-ifc" ? "default" : "outline"}
+              onClick={() => setViewerEngine("web-ifc")}
+            >
+              web-ifc Viewer
+            </Button>
+            <Button
+              size="sm"
+              variant={viewerEngine === "openbim" ? "default" : "outline"}
+              onClick={() => setViewerEngine("openbim")}
+            >
+              OpenBIM Components
+            </Button>
+          </div>
+
+          {selectedId === "sample" && viewerEngine === "openbim" && (
+            <OpenBimViewer modelUrl={SAMPLE_IFC_URL} />
+          )}
+          {selectedId === "sample" && viewerEngine === "web-ifc" && (
             <IfcModelViewer modelUrl={SAMPLE_IFC_URL} />
           )}
 
-          {selected?.format === "ifc" && selected.status === "ready" && selected.gltfUrl && (
+          {selected?.format === "ifc" && selected.status === "ready" && selected.gltfUrl && viewerEngine === "web-ifc" && (
             <GltfModelViewer modelUrl={selected.gltfUrl} />
           )}
 
           {selected?.format === "ifc" &&
             selected.status === "ready" &&
             !selected.gltfUrl &&
-            selected.fileUrl && <IfcModelViewer modelUrl={selected.fileUrl} />}
+            selected.fileUrl &&
+            viewerEngine === "web-ifc" && <IfcModelViewer modelUrl={selected.fileUrl} />}
+
+          {selected?.format === "ifc" &&
+            selected.status === "ready" &&
+            selected.fileUrl &&
+            viewerEngine === "openbim" && <OpenBimViewer modelUrl={selected.fileUrl} />}
 
           {selected?.format === "ifc" && selected.status === "processing" && selected.fileUrl && (
             <>

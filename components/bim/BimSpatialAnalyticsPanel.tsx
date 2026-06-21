@@ -59,6 +59,9 @@ export function BimSpatialAnalyticsPanel({
     if (strategyId) params.set("strategyId", strategyId);
     if (fromRoomId) params.set("fromRoomId", fromRoomId);
     if (toRoomId) params.set("toRoomId", toRoomId);
+    if (tab === "layout" || tab === "flow" || tab === "furniture") {
+      params.set("withAi", "true");
+    }
 
     fetch(`/api/projects/${projectId}/bim-models/${model.id}/spatial-analytics?${params}`)
       .then((res) => (res.ok ? res.json() : null))
@@ -75,7 +78,7 @@ export function BimSpatialAnalyticsPanel({
     return () => {
       cancelled = true;
     };
-  }, [projectId, model.id, strategyId, fromRoomId, toRoomId, rooms.length]);
+  }, [projectId, model.id, strategyId, fromRoomId, toRoomId, rooms.length, tab]);
 
   const selectedStrategy = strategies.find((strategy) => strategy.id === strategyId) ?? null;
   const planMode =
@@ -318,6 +321,7 @@ export function BimSpatialAnalyticsPanel({
                   layout={analytics?.layout}
                   flow={analytics?.flow}
                   furniture={analytics?.furniture}
+                  planningAdvice={analytics?.planningAdvice}
                   activeTab={tab}
                 />
               )}

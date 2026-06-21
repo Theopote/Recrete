@@ -5,6 +5,10 @@ import {
   searchIndexedDocuments,
   type IndexedDocument,
 } from "./vector-index";
+import {
+  isPineconeConfigured,
+  searchPineconeKnowledge,
+} from "./pinecone-store";
 
 export type KnowledgeSourceType = "case" | "knowledge" | "code";
 
@@ -32,6 +36,10 @@ function buildCaseCorpus(c: RenovationCase): string {
 }
 
 let cachedIndex: IndexedDocument[] | null = null;
+
+export function getKnowledgeIndexForSync(): IndexedDocument[] {
+  return getKnowledgeIndex();
+}
 
 function getKnowledgeIndex(): IndexedDocument[] {
   if (cachedIndex) return cachedIndex;
@@ -114,6 +122,13 @@ export function searchKnowledge(
   query: string,
   options: { limit?: number; sourceTypes?: KnowledgeSourceType[]; mode?: "vector" | "keyword" | "hybrid" } = {}
 ): KnowledgeSearchResult[] {
+  return searchKnowledgeSync(query, options);
+}
+
+function searchKnowledgeSync(
+  query: string,
+  options: { limit?: number; sourceTypes?: KnowledgeSourceType[]; mode?: "vector" | "keyword" | "hybrid" } = {}
+): KnowledgeSearchResult[] {
   const { limit = 5, sourceTypes = ["case", "knowledge", "code"], mode = "hybrid" } = options;
   if (!query.trim()) return [];
 
@@ -151,6 +166,39 @@ export function searchKnowledge(
     .slice(0, limit);
 }
 
+/** Async search — uses Pinecone when configured, otherwise falls back to local hybrid search. */
+export async function searchKnowledgeAsync(
+  query: string,
+  options: { limit?: number; sourceTypes?: KnowledgeSourceType[]; mode?: "vector" | "keyword" | "hybrid" } = {}
+): Promise<KnowledgeSearchResult[]> {
+  const { limit = 5, sourceTypes = ["case", "knowledge", "code"], mode = "hybrid" } = options;
+  if (!query.trim()) return [];
+
+  if (isPineconeConfigured() && mode !== "keyword") {
+    try {
+      const pineconeResults = await searchPineconeKnowledge(query, { limit, sourceTypes });
+      if (pineconeResults.length > 0) {
+        if (mode === "vector") return pineconeResults;
+        const keywordResults = keywordSearch(query, { limit, sourceTypes });
+        const merged = new Map<string, KnowledgeSearchResult>();
+        for (const r of pineconeResults) {
+          merged.set(`${r.sourceType}:${r.id}`, { ...r, relevance: r.relevance * 1.1 });
+        }
+        for (const r of keywordResults) {
+          const key = `${r.sourceType}:${r.id}`;
+          const existing = merged.get(key);
+          merged.set(key, existing ? { ...existing, relevance: Math.max(existing.relevance, r.relevance) } : r);
+        }
+        return [...merged.values()].sort((a, b) => b.relevance - a.relevance).slice(0, limit);
+      }
+    } catch (error) {
+      console.error("Pinecone search fallback:", error);
+    }
+  }
+
+  return searchKnowledgeSync(query, { limit, sourceTypes, mode });
+}
+
 export function searchKnowledgeForProject(
   project: {
     name: string;
@@ -175,4 +223,30 @@ export function searchKnowledgeForProject(
   ].join(" ");
 
   return searchKnowledge(baseQuery, { limit, mode: "hybrid" });
+}
+
+export async function searchKnowledgeForProjectAsync(
+  project: {
+    name: string;
+    location: string;
+    buildingType: string;
+    currentFunction: string;
+    targetFunction: string;
+    renovationGoal: string;
+    structureType: string;
+  },
+  userQuery?: string,
+  limit = 5
+): Promise<KnowledgeSearchResult[]> {
+  const baseQuery = [
+    project.buildingType,
+    project.currentFunction,
+    project.targetFunction,
+    project.location,
+    project.structureType,
+    project.renovationGoal,
+    userQuery ?? "",
+  ].join(" ");
+
+  return searchKnowledgeAsync(baseQuery, { limit, mode: "hybrid" });
 }

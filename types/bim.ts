@@ -131,6 +131,7 @@ export interface BimSpatialAnalytics {
   layout?: BimLayoutOptimization;
   flow?: BimFlowSimulation;
   furniture?: BimFurniturePlanning;
+  planningAdvice?: string;
 }
 
 export interface BimModelMetadata {

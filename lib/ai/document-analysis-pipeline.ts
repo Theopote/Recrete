@@ -6,6 +6,8 @@ import { drawingAnalyzer } from "./vision/drawing-analyzer";
 import { documentExtractor } from "./vision/document-extractor";
 import { photoDefectDetector } from "./vision/photo-detector";
 import { extractPdfText, readFileAsDataUrl } from "./vision/pdf-utils";
+import { analyzeDrawingFileWithOpenCv } from "./vision/opencv-analyzer";
+import { runDocumentSummaryChain } from "./langchain/chains";
 import { buildDrawingKnowledgeGraph } from "./knowledge/drawing-knowledge-graph";
 import { isPdf } from "@/lib/storage/file-utils";
 import type { DocumentAnalysisOutput, VisionAnalysisOptions } from "./vision/types";
@@ -102,20 +104,30 @@ async function analyzeDrawingDocument(
   );
 
   const drawing = await drawingAnalyzer.analyzeDrawing(imageData, options);
+  const openCv = await analyzeDrawingFileWithOpenCv(doc.fileUrl);
   const graph = buildDrawingKnowledgeGraph(projectId, doc.id, doc.name, drawing);
 
   const evidence = buildDrawingEvidence(projectId, doc.id, drawing);
+  const openCvNotes = openCv
+    ? `\n\n--- OpenCV Analysis ---\nRooms suggested: ${openCv.suggestedRoomCount}\nContours: ${openCv.contourCount}\nConfidence: ${(openCv.confidence * 100).toFixed(0)}%\n${openCv.notes.join("\n")}`
+    : "";
   const extractedText = [
     ...drawing.extractedText,
+    openCvNotes,
     "",
     "--- Knowledge Graph ---",
     JSON.stringify(graph, null, 2),
   ].join("\n");
 
+  const aiSummary =
+    openCv && openCv.confidence > 0.5
+      ? `${drawing.summary}\n\nCV: ~${openCv.suggestedRoomCount} rooms detected, ${openCv.lineCount} structural lines.`
+      : drawing.summary;
+
   return {
     documentId: doc.id,
     kind: "drawing",
-    aiSummary: drawing.summary,
+    aiSummary,
     extractedText,
     confidence: drawing.confidence,
     modelName: drawingAnalyzer.modelName,
@@ -205,13 +217,19 @@ async function analyzeReportDocument(
           category: doc.category,
         });
 
+        const aiSummary = await runDocumentSummaryChain({
+          title: doc.name,
+          extractedText: pdfText.fullText,
+          category: doc.category,
+        });
+
         return {
           documentId: doc.id,
           kind: "report",
-          aiSummary: extracted.summary,
+          aiSummary: aiSummary || extracted.summary,
           extractedText: extracted.extractedText,
           confidence: 0.88,
-          modelName: "pdf-text-extraction",
+          modelName: `${pdfText.extractor}${aiSummary ? "+langchain" : ""}`,
           document: extracted,
           evidence: buildReportEvidence(projectId, doc.id, extracted),
         };

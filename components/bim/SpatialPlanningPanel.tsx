@@ -8,6 +8,7 @@ interface SpatialPlanningTabsProps {
   layout?: BimLayoutOptimization;
   flow?: BimFlowSimulation;
   furniture?: BimFurniturePlanning;
+  planningAdvice?: string;
   activeTab: "layout" | "flow" | "furniture";
 }
 
@@ -22,6 +23,7 @@ export function SpatialPlanningPanel({
   layout,
   flow,
   furniture,
+  planningAdvice,
   activeTab,
 }: SpatialPlanningTabsProps) {
   if (activeTab === "layout" && layout) {
@@ -55,6 +57,7 @@ export function SpatialPlanningPanel({
             ))}
           </ul>
         )}
+        <AiAdviceBlock advice={planningAdvice} />
       </div>
     );
   }
@@ -92,6 +95,7 @@ export function SpatialPlanningPanel({
             <li key={r}>{r}</li>
           ))}
         </ul>
+        <AiAdviceBlock advice={planningAdvice} />
       </div>
     );
   }
@@ -129,6 +133,7 @@ export function SpatialPlanningPanel({
             <li key={n}>{n}</li>
           ))}
         </ul>
+        <AiAdviceBlock advice={planningAdvice} />
       </div>
     );
   }
@@ -136,7 +141,22 @@ export function SpatialPlanningPanel({
   return (
     <p className="text-xs text-muted-foreground py-4 text-center">
       暂无空间规划数据，请确保模型包含房间信息
+      {planningAdvice && (
+        <span className="block mt-2 text-left text-foreground whitespace-pre-wrap">{planningAdvice}</span>
+      )}
     </p>
+  );
+}
+
+function AiAdviceBlock({ advice }: { advice?: string }) {
+  if (!advice) return null;
+  return (
+    <div className="rounded-md border border-copper/30 bg-copper/5 p-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-copper mb-1">
+        LangChain · AI 建议
+      </p>
+      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{advice}</p>
+    </div>
   );
 }
 

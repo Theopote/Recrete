@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getProjectById } from "@/lib/db/repository";
 import { getBimModel } from "@/lib/bim/bim-model-repository";
 import { buildSpatialAnalytics } from "@/lib/bim/spatial-analytics";
+import { enrichSpatialAnalyticsWithAi } from "@/lib/bim/spatial-planning-ai";
 
 export async function GET(
   request: Request,
@@ -22,13 +23,14 @@ export async function GET(
   const strategyId = url.searchParams.get("strategyId");
   const fromRoomId = url.searchParams.get("fromRoomId") ?? undefined;
   const toRoomId = url.searchParams.get("toRoomId") ?? undefined;
+  const withAi = url.searchParams.get("withAi") === "true";
 
   const strategy =
     strategyId != null && strategyId !== ""
       ? project.strategies?.find((item) => item.id === strategyId) ?? null
       : null;
 
-  const analytics = buildSpatialAnalytics(project, model, strategy, {
+  let analytics = buildSpatialAnalytics(project, model, strategy, {
     fromRoomId,
     toRoomId,
   });
@@ -37,6 +39,13 @@ export async function GET(
     return NextResponse.json(
       { error: "No room data available for spatial analytics" },
       { status: 400 }
+    );
+  }
+
+  if (withAi) {
+    analytics = await enrichSpatialAnalyticsWithAi(
+      analytics,
+      strategy?.designGoal ?? project.targetFunction
     );
   }
 

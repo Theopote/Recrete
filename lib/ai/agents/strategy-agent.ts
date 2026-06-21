@@ -2,7 +2,8 @@ import type { DiagnosisItem, ProjectWithRelations, RenovationStrategy } from "@/
 import type { AIInsight, StrategyLabParams } from "@/types/ai";
 import { withMockDelay } from "../providers/utils";
 import { mockAIService } from "../mock-ai-service";
-import { searchKnowledgeForProject } from "../knowledge/embedding-search";
+import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
+import { runStrategyContextChain } from "../langchain/chains";
 
 function defaultParams(project: ProjectWithRelations): StrategyLabParams {
   return {
@@ -58,11 +59,31 @@ export async function generateRenovationStrategies(
   const strategies = await mockAIService.generateRenovationStrategies(project, diagnosisItems);
   const enriched = applyParamsToStrategies(strategies, resolvedParams);
 
-  const cases = searchKnowledgeForProject(project, resolvedParams.targetFunction, 2);
+  const cases = await searchKnowledgeForProjectAsync(project, resolvedParams.targetFunction, 3);
+
+  const diagnosisSummary = diagnosisItems
+    .filter((d) => d.severity === "critical" || d.severity === "high")
+    .map((d) => `${d.title} (${d.severity})`)
+    .join("; ");
+
+  const contextBrief = await runStrategyContextChain({
+    project,
+    params: resolvedParams,
+    knowledge: cases,
+    diagnosisSummary,
+  });
+
   if (cases.length > 0) {
     enriched[1] = {
       ...enriched[1],
       summary: `${enriched[1].summary}\n\nReference case: ${cases[0].title} — ${cases[0].excerpt}`,
+    };
+  }
+
+  if (contextBrief && enriched[0]) {
+    enriched[0] = {
+      ...enriched[0],
+      designGoal: `${enriched[0].designGoal}\n\n[AI Context] ${contextBrief.slice(0, 300)}`,
     };
   }
 
