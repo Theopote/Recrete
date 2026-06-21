@@ -336,6 +336,9 @@ export interface StrategyComparisonMetrics {
 
 export interface StrategyWithMetrics extends RenovationStrategy {
   metrics: StrategyComparisonMetrics;
+  rank?: number;
+  compositeScore?: number;
+  areaFitScore?: number;
 }
 
 export interface DiagnosisWithProject extends DiagnosisItem {

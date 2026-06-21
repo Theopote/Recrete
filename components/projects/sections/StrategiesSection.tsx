@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import type { ProjectWithRelations, StrategyWithMetrics } from "@/types";
 import type { StrategyLabParams } from "@/types/ai";
+import { StrategyRankingPanel } from "@/components/strategies/StrategyRankingPanel";
 import { StrategySpatialCompareSection } from "@/components/strategies/StrategySpatialCompareSection";
 import { Lightbulb, Sparkles, GitCompare } from "lucide-react";
 
@@ -81,7 +82,16 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         }
       />
 
-      <StrategyLabParamsForm onChange={setLabParams} />
+      <StrategyLabParamsForm
+        onChange={setLabParams}
+        projectArea={project.grossFloorArea}
+        projectBudget={project.budgetLevel}
+        targetFunction={project.targetFunction}
+      />
+
+      {strategies.some((s) => s.rank != null) && (
+        <StrategyRankingPanel strategies={strategies} />
+      )}
 
       {showComparison && strategies.length > 1 && (
         <div>
@@ -98,7 +108,9 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
 
       {strategies.length > 0 ? (
         <div className="space-y-4">
-          {strategies.map((strategy) => (
+          {[...strategies]
+            .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
+            .map((strategy) => (
             <StrategyCard
               key={strategy.id}
               strategy={strategy}

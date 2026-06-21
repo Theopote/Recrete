@@ -164,23 +164,24 @@ export function OverviewSection({ project }: OverviewSectionProps) {
             </div>
           )}
 
-          {displayInsights.length > 0 ? (
-            <div>
-              {costRiskInsights.length > 0 && (
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                  Priority · 优先关注
-                </p>
-              )}
-              <AIInsightList
-                insights={
-                  costRiskInsights.length > 0
-                    ? displayInsights.filter((i) => i.sourceType !== COST_RISK_INSIGHT_SOURCE)
-                    : displayInsights
-                }
-                compact
-              />
-            </div>
-          ) : (
+          {(() => {
+            const priorityOnly = displayInsights.filter(
+              (i) => i.sourceType !== COST_RISK_INSIGHT_SOURCE
+            );
+            if (priorityOnly.length === 0) return null;
+            return (
+              <div>
+                {costRiskInsights.length > 0 && (
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2 mt-4">
+                    Priority · 优先关注
+                  </p>
+                )}
+                <AIInsightList insights={priorityOnly} compact />
+              </div>
+            );
+          })()}
+
+          {costRiskInsights.length === 0 && displayInsights.length === 0 && (
             <p className="text-xs text-muted-foreground">
               Run Cost &amp; Risk or Diagnosis workflows to populate insights.
             </p>

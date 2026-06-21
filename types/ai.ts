@@ -147,11 +147,30 @@ export interface KnowledgeSnippet {
 export interface StrategyLabParams {
   targetFunction: string;
   budgetLevel: string;
+  /** Optional area override (m²); defaults to project.grossFloorArea */
+  grossFloorArea?: number;
   preservationLevel: "low" | "medium" | "high";
   constructionIntensity: "low" | "medium" | "high";
   scheduleRequirement: "flexible" | "moderate" | "urgent";
   designAmbition: "conservative" | "balanced" | "ambitious";
   riskTolerance: "low" | "medium" | "high";
+}
+
+export interface StrategyRankEntry {
+  strategyId: string;
+  rank: number;
+  compositeScore: number;
+  areaFitScore: number;
+  breakdown: {
+    cost: number;
+    schedule: number;
+    risk: number;
+    designValue: number;
+    feasibility: number;
+    preservation: number;
+    areaFit: number;
+  };
+  summary: string;
 }
 
 export interface StrategyVersion {

@@ -8,6 +8,7 @@ function defaultParams(project: ProjectWithRelations): StrategyLabParams {
   return {
     targetFunction: project.targetFunction,
     budgetLevel: project.budgetLevel,
+    grossFloorArea: project.grossFloorArea,
     preservationLevel: project.building?.heritageLevel !== "none" ? "high" : "medium",
     constructionIntensity: "medium",
     scheduleRequirement: "moderate",
@@ -65,19 +66,37 @@ export async function generateRenovationStrategies(
     };
   }
 
-  return enriched.map((s) => ({
-    ...s,
-    designValueScore: s.type === "adaptive_reuse" ? 85 : s.type === "deep_recreation" ? 95 : 45,
-    feasibilityScore: s.type === "light_renewal" ? 90 : s.type === "adaptive_reuse" ? 72 : 55,
-    preservationScore:
-      resolvedParams.preservationLevel === "high"
-        ? 88
-        : s.type === "light_renewal"
-          ? 90
-          : s.type === "adaptive_reuse"
-            ? 75
-            : 40,
-  }));
+  const areaM2 = resolvedParams.grossFloorArea ?? project.grossFloorArea ?? 0;
+
+  return enriched.map((s) => {
+    let feasibilityScore =
+      s.type === "light_renewal" ? 90 : s.type === "adaptive_reuse" ? 72 : 55;
+    if (areaM2 > 0) {
+      if (s.type === "deep_recreation" && areaM2 < 1500) feasibilityScore -= 15;
+      if (s.type === "light_renewal" && areaM2 > 10000) feasibilityScore -= 10;
+      if (s.type === "energy_retrofit" && areaM2 > 500) feasibilityScore += 5;
+    }
+
+    const areaNote =
+      areaM2 > 0
+        ? ` Total floor area ${areaM2.toLocaleString()} m² considered in feasibility scoring.`
+        : "";
+
+    return {
+      ...s,
+      summary: `${s.summary}${areaNote}`,
+      designValueScore: s.type === "adaptive_reuse" ? 85 : s.type === "deep_recreation" ? 95 : 45,
+      feasibilityScore: Math.max(30, Math.min(100, feasibilityScore)),
+      preservationScore:
+        resolvedParams.preservationLevel === "high"
+          ? 88
+          : s.type === "light_renewal"
+            ? 90
+            : s.type === "adaptive_reuse"
+              ? 75
+              : 40,
+    };
+  });
 }
 
 export async function refineStrategy(

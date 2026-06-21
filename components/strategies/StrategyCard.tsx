@@ -9,7 +9,7 @@ import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
 import { Check, X, Star } from "lucide-react";
 
 interface StrategyCardProps {
-  strategy: RenovationStrategy;
+  strategy: StrategyWithMetrics | (RenovationStrategy & { rank?: number; compositeScore?: number; metrics?: StrategyWithMetrics["metrics"] });
   isRecommended?: boolean;
   projectId?: string;
   onRefined?: (strategy: StrategyWithMetrics) => void;
@@ -23,6 +23,12 @@ export function StrategyCard({ strategy, isRecommended, projectId, onRefined }: 
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-sm font-semibold">{strategy.name}</h4>
+              {strategy.rank != null && strategy.rank <= 3 && (
+                <Badge variant="outline" className="text-[10px]">
+                  #{strategy.rank}
+                  {strategy.compositeScore != null && ` · ${strategy.compositeScore}分`}
+                </Badge>
+              )}
               {isRecommended && (
                 <Badge className="bg-copper text-copper-foreground text-[10px] gap-1">
                   <Star className="h-3 w-3" /> Recommended

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { RenovationStrategy } from "@/types";
 import type { BimModel, BimSpatialAnalytics } from "@/types/bim";
-import { Loader2, Route, Flame, GitCompare } from "lucide-react";
+import { Loader2, Route, Flame, GitCompare, LayoutGrid, Users, Armchair } from "lucide-react";
+import { SpatialPlanningPanel } from "@/components/bim/SpatialPlanningPanel";
 
 const GltfModelViewer = dynamic(
   () => import("@/components/bim/GltfModelViewer").then((m) => m.GltfModelViewer),
@@ -19,7 +20,7 @@ const IfcModelViewer = dynamic(
   { ssr: false, loading: () => <div className="min-h-[280px] animate-pulse rounded-md border bg-muted/20" /> }
 );
 
-type AnalyticsTab = "circulation" | "cost" | "compare";
+type AnalyticsTab = "circulation" | "cost" | "compare" | "layout" | "flow" | "furniture";
 
 interface BimSpatialAnalyticsPanelProps {
   projectId: string;
@@ -120,6 +121,30 @@ export function BimSpatialAnalyticsPanel({
           >
             <GitCompare className="mr-1.5 h-3.5 w-3.5" />
             Strategy 3D Compare
+          </Button>
+          <Button
+            size="sm"
+            variant={tab === "layout" ? "default" : "outline"}
+            onClick={() => setTab("layout")}
+          >
+            <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+            Layout
+          </Button>
+          <Button
+            size="sm"
+            variant={tab === "flow" ? "default" : "outline"}
+            onClick={() => setTab("flow")}
+          >
+            <Users className="mr-1.5 h-3.5 w-3.5" />
+            Flow
+          </Button>
+          <Button
+            size="sm"
+            variant={tab === "furniture" ? "default" : "outline"}
+            onClick={() => setTab("furniture")}
+          >
+            <Armchair className="mr-1.5 h-3.5 w-3.5" />
+            Furniture
           </Button>
         </div>
 
@@ -260,6 +285,42 @@ export function BimSpatialAnalyticsPanel({
                 <span className="inline-block h-3 w-8 rounded" style={{ background: "hsla(0,82%,52%,0.55)" }} />
                 High
               </div>
+            </div>
+          </div>
+        )}
+
+        {(tab === "layout" || tab === "flow" || tab === "furniture") && (
+          <div className="grid gap-3 md:grid-cols-[1fr_280px]">
+            <SpatialPlanViewer
+              previewUrl={model.previewUrl}
+              rooms={rooms}
+              bounds={model.metadata?.bounds}
+              analytics={analytics}
+              mode={tab === "flow" ? "circulation" : tab === "layout" ? "impact" : "cost"}
+              activePathId={activePathId}
+              label={
+                tab === "layout"
+                  ? "功能布局"
+                  : tab === "flow"
+                    ? "人流动线"
+                    : "家具布置"
+              }
+              className="min-h-[360px]"
+            />
+            <div className="rounded-md border p-3">
+              {loading ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  分析中…
+                </div>
+              ) : (
+                <SpatialPlanningPanel
+                  layout={analytics?.layout}
+                  flow={analytics?.flow}
+                  furniture={analytics?.furniture}
+                  activeTab={tab}
+                />
+              )}
             </div>
           </div>
         )}

@@ -53,12 +53,84 @@ export interface BimRoomCostCell {
   strategyImpact?: number;
 }
 
+export interface BimLayoutAssignment {
+  roomId: string;
+  roomLabel: string;
+  area: number;
+  assignedFunction: string;
+  assignedFunctionZh: string;
+  fitScore: number;
+  rationale: string;
+}
+
+export interface BimLayoutOptimization {
+  targetFunction: string;
+  totalArea: number;
+  assignments: BimLayoutAssignment[];
+  overallScore: number;
+  suggestions: string[];
+  unassignedZones: string[];
+}
+
+export interface BimFlowNodeMetrics {
+  roomId: string;
+  label: string;
+  area: number;
+  betweenness: number;
+  estimatedPeakFlow: number;
+  densityLevel: "low" | "medium" | "high" | "critical";
+  isBottleneck: boolean;
+}
+
+export interface BimFlowSimulation {
+  peakOccupancyEstimate: number;
+  averagePathLength: number;
+  bottleneckCount: number;
+  nodes: BimFlowNodeMetrics[];
+  hotspots: string[];
+  recommendations: string[];
+  unitScale: number;
+}
+
+export interface BimFurnitureItem {
+  id: string;
+  name: string;
+  nameZh: string;
+  category: string;
+  width: number;
+  depth: number;
+  unit: "m";
+  position?: BimPoint2D;
+  rotation?: number;
+  note?: string;
+}
+
+export interface BimRoomFurniturePlan {
+  roomId: string;
+  roomLabel: string;
+  area: number;
+  functionType: string;
+  items: BimFurnitureItem[];
+  utilizationRate: number;
+  clearanceNote: string;
+}
+
+export interface BimFurniturePlanning {
+  plans: BimRoomFurniturePlan[];
+  totalItems: number;
+  averageUtilization: number;
+  globalNotes: string[];
+}
+
 export interface BimSpatialAnalytics {
   circulation: BimCirculationAnalysis;
   roomCosts: BimRoomCostCell[];
   estimatedCostPerSqm: number;
   estimatedTotalCost: number;
   currency: "CNY";
+  layout?: BimLayoutOptimization;
+  flow?: BimFlowSimulation;
+  furniture?: BimFurniturePlanning;
 }
 
 export interface BimModelMetadata {

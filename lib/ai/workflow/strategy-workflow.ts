@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/repository";
 import { getAIPlatform } from "@/lib/ai";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
+import { rankStrategies } from "@/lib/utils/strategy-ranking";
 import { diffStrategySnapshots, summarizeStrategyDiff } from "@/lib/utils/strategy-diff";
 import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
 import type { AIInsight, BuildingMemory, AIAnalysisRun, StrategyLabParams } from "@/types/ai";
@@ -54,6 +55,7 @@ function resolveParams(
   return {
     targetFunction: params?.targetFunction ?? project.targetFunction,
     budgetLevel: params?.budgetLevel ?? project.budgetLevel,
+    grossFloorArea: params?.grossFloorArea ?? project.grossFloorArea,
     preservationLevel: params?.preservationLevel ?? (project.building?.heritageLevel !== "none" ? "high" : "medium"),
     constructionIntensity: params?.constructionIntensity ?? "medium",
     scheduleRequirement: params?.scheduleRequirement ?? "moderate",
@@ -93,6 +95,20 @@ export async function runStrategyWorkflow(
     metrics: computeStrategyMetrics(s, project, created),
   }));
 
+  const rankings = rankStrategies(withMetrics, project, resolvedParams);
+  const rankMap = new Map(rankings.map((r) => [r.strategyId, r]));
+  const rankedStrategies: StrategyWithMetrics[] = withMetrics
+    .map((s) => {
+      const rankEntry = rankMap.get(s.id);
+      return {
+        ...s,
+        rank: rankEntry?.rank,
+        compositeScore: rankEntry?.compositeScore,
+        areaFitScore: rankEntry?.areaFitScore,
+      };
+    })
+    .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+
   const recommendation = await platform.strategy.recommendStrategy(project, created);
   let recommendationResult = null;
 
@@ -121,7 +137,7 @@ export async function runStrategyWorkflow(
   }
 
   return {
-    strategies: withMetrics,
+    strategies: rankedStrategies,
     recommendation: recommendationResult,
     analysisRun,
     buildingMemory,
