@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildProjectAIContext } from "@/lib/ai";
-import { askProjectCopilot } from "@/lib/ai/agents/copilot-agent";
+import { askProjectCopilot, getCopilotRagSources } from "@/lib/ai/agents/copilot-agent";
 import {
   runStrategyIterationWorkflow,
   findStrategyForInstruction,
@@ -39,7 +39,10 @@ export async function POST(
     const strategies = projectContext.project.strategies ?? [];
     if (strategies.length === 0) {
       const response = await askProjectCopilot(projectContext, messages);
-      return NextResponse.json({ response });
+      return NextResponse.json({
+        response,
+        sources: getCopilotRagSources(projectContext),
+      });
     }
 
     const target = findStrategyForInstruction(strategies, lastUserMessage.content);
@@ -74,5 +77,8 @@ export async function POST(
   }
 
   const response = await askProjectCopilot(projectContext, messages);
-  return NextResponse.json({ response });
+  return NextResponse.json({
+    response,
+    sources: getCopilotRagSources(projectContext),
+  });
 }

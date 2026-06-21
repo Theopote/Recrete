@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ASSISTANT_SUGGESTIONS } from "@/lib/ai";
 import { cn } from "@/lib/utils";
 import type { AIMessage } from "@/types";
+import type { KnowledgeSnippet, SourceEvidence } from "@/types/ai";
 import { Bot, Send, Sparkles, User, X } from "lucide-react";
 
 interface AIAssistantPanelProps {
@@ -14,8 +15,22 @@ interface AIAssistantPanelProps {
   onClose?: () => void;
 }
 
+interface CopilotSources {
+  knowledge: KnowledgeSnippet[];
+  evidence: SourceEvidence[];
+}
+
+type ChatMessage = AIMessage & { sources?: CopilotSources };
+
+const SOURCE_LABELS: Record<KnowledgeSnippet["sourceType"], string> = {
+  case: "案例",
+  knowledge: "知识",
+  code: "规范",
+  project_doc: "文档",
+};
+
 export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistantPanelProps) {
-  const [messages, setMessages] = useState<AIMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
       content: `Hello! I'm your Recrete AI assistant for **${projectName}**. I can help with risks, missing information, strategy recommendations, and project planning. What would you like to know?`,
@@ -47,7 +62,12 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
       const data = await res.json();
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.response, timestamp: new Date() },
+        {
+          role: "assistant",
+          content: data.response,
+          timestamp: new Date(),
+          sources: data.sources as CopilotSources | undefined,
+        },
       ]);
     } catch {
       setMessages((prev) => [
@@ -72,7 +92,7 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
           </div>
           <div>
             <p className="text-xs font-semibold">AI Copilot</p>
-            <p className="text-[10px] text-muted-foreground">Building Memory aware</p>
+            <p className="text-[10px] text-muted-foreground">Building Memory + RAG</p>
           </div>
         </div>
         {onClose && (
@@ -109,6 +129,31 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
               )}
             >
               <div className="whitespace-pre-wrap">{msg.content.replace(/\*\*(.*?)\*\*/g, "$1")}</div>
+              {msg.role === "assistant" && msg.sources && (msg.sources.knowledge.length > 0 || msg.sources.evidence.length > 0) && (
+                <div className="mt-2 border-t border-border/60 pt-2 space-y-1">
+                  <p className="text-[10px] font-medium text-muted-foreground">RAG 引用</p>
+                  <div className="flex flex-wrap gap-1">
+                    {msg.sources.knowledge.slice(0, 4).map((k) => (
+                      <span
+                        key={`${k.sourceType}-${k.id}`}
+                        className="rounded bg-background/80 px-1.5 py-0.5 text-[9px] text-muted-foreground"
+                        title={k.excerpt}
+                      >
+                        [{SOURCE_LABELS[k.sourceType]}] {k.title.length > 18 ? `${k.title.slice(0, 18)}…` : k.title}
+                      </span>
+                    ))}
+                    {msg.sources.evidence.slice(0, 2).map((e, idx) => (
+                      <span
+                        key={e.id ?? idx}
+                        className="rounded bg-background/80 px-1.5 py-0.5 text-[9px] text-muted-foreground"
+                        title={e.quote ?? undefined}
+                      >
+                        [证据] {e.locationLabel ?? e.sourceType}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}

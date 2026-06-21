@@ -506,8 +506,20 @@ ${issues.filter((i) => i.status === "resolved" || i.status === "closed").map((i)
 
     if (memory) {
       const knowledgeNote =
-        knowledge.length > 0 ? `\n• Reference: ${knowledge[0].title}` : "";
+        knowledge.length > 0
+          ? `\n\n**Retrieved references:**\n${knowledge
+              .slice(0, 4)
+              .map((k) => `• [${k.sourceType}] ${k.title}: ${k.excerpt.slice(0, 100)}…`)
+              .join("\n")}`
+          : "";
       return `I'm here to help with **${project.name}**. ${memory.summary}\n\n**Building Memory highlights:**\n• Known facts: ${memory.knownFacts.slice(0, 3).join("; ")}\n• Open gaps: ${memory.missingInformation.slice(0, 2).join("; ")}${knowledgeNote}\n\nAsk about risks, strategies, comparable cases, or say "refine option 2 to be more ambitious".`;
+    }
+
+    if (knowledge.length > 0) {
+      return `**${project.name}** — here's what I found in the knowledge base:\n\n${knowledge
+        .slice(0, 4)
+        .map((k, i) => `${i + 1}. **[${k.sourceType}] ${k.title}**\n   ${k.excerpt}`)
+        .join("\n\n")}\n\nAsk a follow-up about risks, compliance, or strategy.`;
     }
 
     return `I'm here to help with **${project.name}**. This ${project.constructionYear} ${project.buildingType.toLowerCase()} is in **${project.status}** phase with a health score of ${project.healthScore}/100.\n\nYou can ask me about risks, missing information, strategy recommendations, next steps, meeting summaries, structural issues, or required documents.`;

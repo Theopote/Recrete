@@ -1,5 +1,5 @@
 import { getProjectById, getProjectEvidence } from "@/lib/db/repository";
-import { searchKnowledgeForProject } from "@/lib/ai/knowledge/embedding-search";
+import { retrieveCopilotRagContext } from "@/lib/ai/knowledge/copilot-rag";
 import type { ProjectAIContext } from "@/types/ai";
 
 export async function buildProjectAIContext(
@@ -9,8 +9,12 @@ export async function buildProjectAIContext(
   const project = await getProjectById(projectId);
   if (!project) return null;
 
-  const evidence = await getProjectEvidence(projectId);
-  const knowledgeSnippets = searchKnowledgeForProject(project, userQuery, 5);
+  const allEvidence = await getProjectEvidence(projectId);
+  const rag = await retrieveCopilotRagContext({
+    project,
+    userQuery,
+    evidence: allEvidence,
+  });
 
   return {
     project,
@@ -18,17 +22,21 @@ export async function buildProjectAIContext(
     insights: project.insights ?? [],
     tasks: project.tasks ?? [],
     analysisRuns: project.analysisRuns ?? [],
-    evidence,
-    knowledgeSnippets,
+    evidence: rag.evidence,
+    knowledgeSnippets: rag.knowledgeSnippets,
   };
 }
 
-export function buildProjectAIContextSync(
+export async function buildProjectAIContextSync(
   project: NonNullable<Awaited<ReturnType<typeof getProjectById>>>,
   evidence: ProjectAIContext["evidence"] = [],
   userQuery?: string
-): ProjectAIContext {
-  const knowledgeSnippets = searchKnowledgeForProject(project, userQuery, 5);
+): Promise<ProjectAIContext> {
+  const rag = await retrieveCopilotRagContext({
+    project,
+    userQuery,
+    evidence,
+  });
 
   return {
     project,
@@ -36,7 +44,7 @@ export function buildProjectAIContextSync(
     insights: project.insights ?? [],
     tasks: project.tasks ?? [],
     analysisRuns: project.analysisRuns ?? [],
-    evidence,
-    knowledgeSnippets,
+    evidence: rag.evidence,
+    knowledgeSnippets: rag.knowledgeSnippets,
   };
 }

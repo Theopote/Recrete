@@ -144,19 +144,27 @@ ${insights
 
   const evidenceSection =
     evidence.length > 0
-      ? `\n\n## Source Evidence (${evidence.length} records from document analysis)
+      ? `\n\n## Project Evidence (from document / site analysis — cite as [evidence])
 ${evidence
-  .slice(0, 5)
-  .map((e) => `- ${e.sourceType}: ${e.locationLabel ?? e.quote?.slice(0, 80) ?? "record"}`)
+  .slice(0, 6)
+  .map(
+    (e, i) =>
+      `- [evidence:${i + 1}] ${e.sourceType}${e.locationLabel ? ` @ ${e.locationLabel}` : ""}: ${e.quote?.slice(0, 160) ?? "record"}`
+  )
   .join("\n")}`
       : "";
 
   const knowledgeSection =
     knowledgeSnippets && knowledgeSnippets.length > 0
-      ? `\n\n## Retrieved Knowledge (cases, articles, codes)
+      ? `\n\n## Retrieved Knowledge (RAG — cite with [source_type] when used)
 ${knowledgeSnippets
-  .map((k) => `- [${k.sourceType}] ${k.title}: ${k.excerpt}`)
-  .join("\n")}`
+  .map(
+    (k) =>
+      `- [${k.sourceType}] ${k.title} (relevance ${(k.relevance * 100).toFixed(0)}%): ${k.excerpt}`
+  )
+  .join("\n")}
+
+When answering, prefer retrieved knowledge and project evidence over general assumptions. Cite sources inline, e.g. [code], [case], [project_doc].`
       : "";
 
   return `${base}${memorySection}${insightSection}${evidenceSection}${knowledgeSection}`;

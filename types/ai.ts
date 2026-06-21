@@ -138,7 +138,7 @@ export interface ProjectAIContext {
 
 export interface KnowledgeSnippet {
   id: string;
-  sourceType: "case" | "knowledge" | "code";
+  sourceType: "case" | "knowledge" | "code" | "project_doc";
   title: string;
   excerpt: string;
   relevance: number;
