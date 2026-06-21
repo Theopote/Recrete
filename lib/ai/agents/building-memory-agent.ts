@@ -35,15 +35,21 @@ export async function updateBuildingMemory(
     const diagnosis = project.diagnosis ?? [];
     const documents = project.documents ?? [];
     const critical = diagnosis.filter((d) => d.severity === "critical" || d.severity === "high");
+    const analyzedDocs = documents.filter((d) => d.aiSummary);
+
+    const documentFacts = analyzedDocs.slice(-4).map(
+      (d) => `"${d.name}": ${d.aiSummary!.slice(0, 140)}${d.aiSummary!.length > 140 ? "…" : ""}`
+    );
 
     return {
       projectId: project.id,
-      summary: `Updated AI understanding of ${project.name}: ${critical.length} high/critical diagnosis items, ${documents.length} documents on file. Primary focus areas: ${[...new Set(critical.map((d) => d.category))].slice(0, 3).join(", ") || "survey completion"}.`,
+      summary: `Updated AI understanding of ${project.name}: ${critical.length} high/critical diagnosis items, ${documents.length} documents on file (${analyzedDocs.length} analyzed). Primary focus areas: ${[...new Set(critical.map((d) => d.category))].slice(0, 3).join(", ") || "survey completion"}.`,
       knownFacts: [
         `${project.constructionYear} ${project.structureType}, ${project.grossFloorArea.toLocaleString()} sqm`,
         `${diagnosis.length} diagnosis items recorded`,
-        `${documents.length} documents uploaded`,
+        `${documents.length} documents uploaded (${analyzedDocs.length} AI-analyzed)`,
         project.building?.currentCondition ?? "Condition assessment in progress",
+        ...documentFacts,
       ].filter(Boolean) as string[],
       missingInformation: [
         ...(documents.length < 8 ? ["Complete document archive"] : []),

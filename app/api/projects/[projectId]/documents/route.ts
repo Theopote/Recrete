@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { getProjectById, addDocument } from "@/lib/db/repository";
 import { getCurrentUserId } from "@/lib/auth/session";
 import { saveUploadedFile } from "@/lib/storage/upload";
+import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
 
 export async function POST(
   request: Request,
@@ -37,7 +38,14 @@ export async function POST(
       uploadedById: userId ?? "user-1",
     });
 
-    return NextResponse.json(doc);
+    const autoAnalyze = formData.get("autoAnalyze") !== "false";
+    if (autoAnalyze) {
+      after(async () => {
+        await runDocumentIngestWorkflow(projectId, doc.id);
+      });
+    }
+
+    return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze });
   }
 
   const body = await request.json();
@@ -52,5 +60,12 @@ export async function POST(
     uploadedById: userId ?? "user-1",
   });
 
-  return NextResponse.json(doc);
+  const autoAnalyze = body.autoAnalyze !== false;
+  if (autoAnalyze) {
+    after(async () => {
+      await runDocumentIngestWorkflow(projectId, doc.id);
+    });
+  }
+
+  return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze });
 }

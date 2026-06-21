@@ -9,6 +9,7 @@ import type {
 import type { AIMessage } from "@/types";
 import {
   buildAssistantSystemPrompt,
+  buildAssistantSystemPromptFromContext,
   buildDiagnosisPrompt,
   buildReportPrompt,
   buildStrategyPrompt,
@@ -130,7 +131,16 @@ export class OpenAIService implements AIService {
     projectContext: ProjectContext,
     messages: AIMessage[]
   ): Promise<string> {
-    const systemPrompt = buildAssistantSystemPrompt(projectContext.project);
+    const systemPrompt = projectContext.buildingMemory
+      ? buildAssistantSystemPromptFromContext({
+          project: projectContext.project,
+          buildingMemory: projectContext.buildingMemory,
+          insights: projectContext.insights ?? [],
+          tasks: [],
+          analysisRuns: [],
+          evidence: projectContext.evidence ?? [],
+        })
+      : buildAssistantSystemPrompt(projectContext.project);
     const chatMessages = [
       { role: "system", content: systemPrompt },
       ...messages.map((m) => ({ role: m.role, content: m.content })),

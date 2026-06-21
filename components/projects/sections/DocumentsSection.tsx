@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DocumentCard } from "@/components/documents/DocumentCard";
 import { DocumentPreviewDialog } from "@/components/documents/DocumentPreviewDialog";
 import { UploadDropzone } from "@/components/app/UploadDropzone";
@@ -16,10 +17,12 @@ interface DocumentsSectionProps {
 }
 
 export function DocumentsSection({ project: initialProject }: DocumentsSectionProps) {
+  const router = useRouter();
   const [documents, setDocuments] = useState(initialProject.documents ?? []);
   const [filter, setFilter] = useState<string>("all");
   const [previewDoc, setPreviewDoc] = useState<DocumentAsset | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [analysisNotice, setAnalysisNotice] = useState<string | null>(null);
 
   const handleUpload = async (files: File[]) => {
     setUploading(true);
@@ -39,8 +42,12 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
             { ...doc, createdAt: new Date(doc.createdAt), updatedAt: new Date(doc.updatedAt) },
             ...prev,
           ]);
+          if (doc.autoAnalysisQueued) {
+            setAnalysisNotice("AI analysis and Building Memory update queued for uploaded files.");
+          }
         }
       }
+      router.refresh();
     } finally {
       setUploading(false);
     }
@@ -63,6 +70,9 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
       />
       {uploading && (
         <p className="text-xs text-muted-foreground">Uploading files...</p>
+      )}
+      {analysisNotice && !uploading && (
+        <p className="text-xs text-muted-foreground">{analysisNotice}</p>
       )}
 
       <div className="flex items-center gap-3">

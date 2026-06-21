@@ -379,13 +379,21 @@ ${issues.filter((i) => i.status === "resolved" || i.status === "closed").map((i)
     const diagnosis = projectContext.diagnosisItems ?? project.diagnosis ?? [];
     const strategies = projectContext.strategies ?? project.strategies ?? [];
     const issues = projectContext.issues ?? project.issues ?? [];
+    const memory = projectContext.buildingMemory;
+    const evidence = projectContext.evidence ?? [];
 
     if (lastMessage.includes("risk")) {
+      if (memory?.keyRisks.length) {
+        return `**Main risks for ${project.name}** (from Building Memory):\n\n${memory.keyRisks.map((r) => `• ${r}`).join("\n")}\n\nOverall project risk level is **${project.riskLevel}**. ${evidence.length} evidence records support current AI understanding.`;
+      }
       const critical = diagnosis.filter((d) => d.severity === "critical" || d.severity === "high");
       return `**Main risks for ${project.name}:**\n\n${critical.map((d) => `• **${d.title}** (${d.category}, ${d.severity}): ${d.description.slice(0, 120)}...`).join("\n\n")}\n\nOverall project risk level is **${project.riskLevel}**. Priority actions: address ${issues.filter((i) => i.priority === "urgent").length} urgent site issues and complete structural review.`;
     }
 
     if (lastMessage.includes("missing") || lastMessage.includes("information")) {
+      if (memory?.missingInformation.length) {
+        return `**Missing information for ${project.name}** (from Building Memory):\n\n${memory.missingInformation.map((m, i) => `${i + 1}. ${m}`).join("\n")}\n\n${memory.summary}`;
+      }
       const missing: string[] = [];
       if ((project.documents?.length ?? 0) < 5) missing.push("Complete document archive (as-built drawings, MEP records)");
       if (!diagnosis.some((d) => d.category === "structure")) missing.push("Detailed structural survey report");
@@ -432,7 +440,16 @@ ${issues.filter((i) => i.status === "resolved" || i.status === "closed").map((i)
     }
 
     if (lastMessage.includes("document") || lastMessage.includes("schematic")) {
-      return `**Documents required before schematic design:**\n\n1. Complete architectural as-built drawings (all floors)\n2. Structural drawings and latest inspection report\n3. MEP as-built with load calculations\n4. Hazardous materials survey report\n5. Survey photos and measured drawings\n6. Approved renovation strategy brief\n7. Program requirements document\n8. Code compliance checklist for target occupancy\n\nCurrently ${project.documents?.length ?? 0} documents uploaded. Priority: structural and MEP records.`;
+      const analyzed = (projectContext.documents ?? project.documents ?? []).filter((d) => d.aiSummary);
+      const evidenceNote =
+        evidence.length > 0
+          ? `\n\n**AI evidence on file:** ${evidence.length} extracted records from document analysis.`
+          : "";
+      return `**Documents required before schematic design:**\n\n1. Complete architectural as-built drawings (all floors)\n2. Structural drawings and latest inspection report\n3. MEP as-built with load calculations\n4. Hazardous materials survey report\n5. Survey photos and measured drawings\n6. Approved renovation strategy brief\n7. Program requirements document\n8. Code compliance checklist for target occupancy\n\nCurrently ${project.documents?.length ?? 0} documents uploaded (${analyzed.length} AI-analyzed). Priority: structural and MEP records.${evidenceNote}`;
+    }
+
+    if (memory) {
+      return `I'm here to help with **${project.name}**. ${memory.summary}\n\n**Building Memory highlights:**\n• Known facts: ${memory.knownFacts.slice(0, 3).join("; ")}\n• Open gaps: ${memory.missingInformation.slice(0, 2).join("; ")}\n\nAsk about risks, missing information, strategies, next steps, or required documents.`;
     }
 
     return `I'm here to help with **${project.name}**. This ${project.constructionYear} ${project.buildingType.toLowerCase()} is in **${project.status}** phase with a health score of ${project.healthScore}/100.\n\nYou can ask me about risks, missing information, strategy recommendations, next steps, meeting summaries, structural issues, or required documents.`;

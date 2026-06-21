@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
-import { getAIService } from "@/lib/ai";
+import { buildProjectAIContext } from "@/lib/ai";
+import { askProjectCopilot } from "@/lib/ai/agents/copilot-agent";
 import type { AIMessage } from "@/types";
 
 export async function POST(
@@ -8,22 +8,13 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
+  const projectContext = await buildProjectAIContext(projectId);
+  if (!projectContext) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
   const { messages } = await request.json() as { messages: AIMessage[] };
-  const ai = getAIService();
-  const response = await ai.askProjectAssistant(
-    {
-      project,
-      diagnosisItems: project.diagnosis,
-      strategies: project.strategies,
-      issues: project.issues,
-    },
-    messages
-  );
+  const response = await askProjectCopilot(projectContext, messages);
 
   return NextResponse.json({ response });
 }

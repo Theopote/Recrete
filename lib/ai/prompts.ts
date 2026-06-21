@@ -1,4 +1,5 @@
 import type { ProjectWithRelations, ReportType } from "@/types";
+import type { ProjectAIContext } from "@/types/ai";
 
 export function buildDiagnosisPrompt(project: ProjectWithRelations): string {
   const buildingAge = new Date().getFullYear() - project.constructionYear;
@@ -117,6 +118,40 @@ Renovation goal: ${project.renovationGoal}
 Current status: ${project.status}. Health score: ${project.healthScore}/100. Risk: ${project.riskLevel}.
 
 Provide professional, concise advice for architects, engineers, and project managers working on existing building renovation.`;
+}
+
+export function buildAssistantSystemPromptFromContext(context: ProjectAIContext): string {
+  const { project, buildingMemory, insights, evidence } = context;
+  const base = buildAssistantSystemPrompt(project);
+
+  const memorySection = buildingMemory
+    ? `\n\n## Building Memory (last updated ${new Date(buildingMemory.lastUpdatedByAI).toLocaleDateString()})
+Summary: ${buildingMemory.summary}
+Known facts: ${buildingMemory.knownFacts.slice(0, 8).join("; ")}
+Missing information: ${buildingMemory.missingInformation.join("; ")}
+Key risks: ${buildingMemory.keyRisks.slice(0, 5).join("; ")}
+Design constraints: ${buildingMemory.designConstraints.join("; ")}`
+    : "";
+
+  const insightSection =
+    insights.length > 0
+      ? `\n\n## AI Insights (${insights.length})
+${insights
+  .slice(0, 5)
+  .map((i) => `- [${i.priority}] ${i.title}: ${i.summary}`)
+  .join("\n")}`
+      : "";
+
+  const evidenceSection =
+    evidence.length > 0
+      ? `\n\n## Source Evidence (${evidence.length} records from document analysis)
+${evidence
+  .slice(0, 5)
+  .map((e) => `- ${e.sourceType}: ${e.locationLabel ?? e.quote?.slice(0, 80) ?? "record"}`)
+  .join("\n")}`
+      : "";
+
+  return `${base}${memorySection}${insightSection}${evidenceSection}`;
 }
 
 export const ASSISTANT_SUGGESTIONS = [

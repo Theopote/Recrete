@@ -1,9 +1,11 @@
-import { getProjectById } from "@/lib/db/repository";
+import { getProjectById, getProjectEvidence } from "@/lib/db/repository";
 import type { ProjectAIContext } from "@/types/ai";
 
 export async function buildProjectAIContext(projectId: string): Promise<ProjectAIContext | null> {
   const project = await getProjectById(projectId);
   if (!project) return null;
+
+  const evidence = await getProjectEvidence(projectId);
 
   return {
     project,
@@ -11,12 +13,13 @@ export async function buildProjectAIContext(projectId: string): Promise<ProjectA
     insights: project.insights ?? [],
     tasks: project.tasks ?? [],
     analysisRuns: project.analysisRuns ?? [],
-    evidence: [],
+    evidence,
   };
 }
 
 export function buildProjectAIContextSync(
-  project: NonNullable<Awaited<ReturnType<typeof getProjectById>>>
+  project: NonNullable<Awaited<ReturnType<typeof getProjectById>>>,
+  evidence: ProjectAIContext["evidence"] = []
 ): ProjectAIContext {
   return {
     project,
@@ -24,6 +27,6 @@ export function buildProjectAIContextSync(
     insights: project.insights ?? [],
     tasks: project.tasks ?? [],
     analysisRuns: project.analysisRuns ?? [],
-    evidence: [],
+    evidence,
   };
 }

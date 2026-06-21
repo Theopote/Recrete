@@ -14,6 +14,9 @@ export async function askProjectCopilot(
       diagnosisItems: projectContext.project.diagnosis,
       strategies: projectContext.project.strategies,
       issues: projectContext.project.issues,
+      buildingMemory: projectContext.buildingMemory,
+      insights: projectContext.insights,
+      evidence: projectContext.evidence,
     },
     messages
   );
