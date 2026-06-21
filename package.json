@@ -12,10 +12,12 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:up": "docker compose up -d",
-    "postinstall": "prisma generate || true"
+    "postinstall": "prisma generate || true && node scripts/setup-bim-wasm.mjs",
+    "setup:bim-wasm": "node scripts/setup-bim-wasm.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@mlightcad/libredwg-web": "^0.7.6",
     "@prisma/client": "^6.1.0",
     "@radix-ui/react-avatar": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.4",
@@ -29,6 +31,8 @@
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.6",
     "@tanstack/react-query": "^5.62.8",
+    "@thatopen/components": "^2.4.10",
+    "@thatopen/fragments": "^2.4.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -44,6 +48,8 @@
     "react-pdf": "^10.4.1",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.175.0",
+    "web-ifc": "^0.0.68",
     "zod": "^3.24.1",
     "zustand": "^5.0.2"
   },

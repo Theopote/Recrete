@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   FileBarChart,
   Bot,
+  Box,
 } from "lucide-react";
 
 const sections: {
@@ -24,6 +25,7 @@ const sections: {
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "building-memory", label: "Building Memory", icon: Brain },
   { id: "survey-intelligence", label: "Survey Intelligence", icon: ClipboardList },
+  { id: "bim-viewer", label: "BIM Viewer", icon: Box },
   { id: "diagnosis", label: "Diagnosis", icon: Stethoscope },
   { id: "expert-agents", label: "Expert Agents", icon: Bot },
   { id: "strategy-lab", label: "Strategy Lab", icon: FlaskConical },

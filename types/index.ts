@@ -310,6 +310,7 @@ export type ProjectSection =
   | "overview"
   | "building-memory"
   | "survey-intelligence"
+  | "bim-viewer"
   | "diagnosis"
   | "strategy-lab"
   | "cost-risk"

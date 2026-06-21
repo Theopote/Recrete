@@ -11,6 +11,7 @@ import { CostRiskSection } from "./sections/CostRiskSection";
 import { IssuesSection } from "./sections/IssuesSection";
 import { ReportsSection } from "./sections/ReportsSection";
 import { TimelineSection } from "./sections/TimelineSection";
+import { BimViewerSection } from "./sections/BimViewerSection";
 
 interface ProjectWorkspaceProps {
   project: ProjectWithRelations;
@@ -37,6 +38,8 @@ export function ProjectWorkspace({
       return <BuildingMemorySection project={project} />;
     case "survey-intelligence":
       return <SurveyIntelligenceSection project={project} />;
+    case "bim-viewer":
+      return <BimViewerSection project={project} />;
     case "building":
       return <BuildingSection project={project} />;
     case "documents":
