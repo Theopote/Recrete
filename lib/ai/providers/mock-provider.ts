@@ -26,6 +26,21 @@ export class MockAIProvider implements AIService {
     generateComplianceDiagnosis: agents.generateComplianceDiagnosis,
     searchCodeRequirements: agents.searchCodeRequirements,
   };
+  fire = {
+    analyzeFireSafety: agents.analyzeFireSafety,
+    generateFireDiagnosis: agents.generateFireDiagnosis,
+  };
+  mep = {
+    assessMepCapacity: agents.assessMepCapacity,
+    generateMepDiagnosis: agents.generateMepDiagnosis,
+  };
+  costEstimator = {
+    estimateProjectCost: agents.estimateProjectCost,
+  };
+  conflict = {
+    detectDataConflicts: agents.detectDataConflicts,
+    conflictsToInsights: agents.conflictsToInsights,
+  };
 }
 
 export const mockAIProvider = new MockAIProvider();

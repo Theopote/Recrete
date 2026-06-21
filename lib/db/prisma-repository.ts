@@ -491,6 +491,25 @@ export async function updateStrategy(
   return mockUpdate(strategyId, data);
 }
 
+export async function addStrategyVersion(
+  projectId: string,
+  strategy: Parameters<typeof import("@/lib/db/mock-repository").addStrategyVersion>[1],
+  meta?: Parameters<typeof import("@/lib/db/mock-repository").addStrategyVersion>[2]
+) {
+  const { addStrategyVersion: mockAdd } = await import("@/lib/db/mock-repository");
+  return mockAdd(projectId, strategy, meta);
+}
+
+export async function getStrategyVersions(strategyId: string) {
+  const { getStrategyVersions: mockGet } = await import("@/lib/db/mock-repository");
+  return mockGet(strategyId);
+}
+
+export async function getStrategyVersionById(versionId: string) {
+  const { getStrategyVersionById: mockGet } = await import("@/lib/db/mock-repository");
+  return mockGet(versionId);
+}
+
 export async function getStrategiesWithMetrics(projectId: string): Promise<StrategyWithMetrics[]> {
   const strategies = await prisma.renovationStrategy.findMany({
     where: { projectId },

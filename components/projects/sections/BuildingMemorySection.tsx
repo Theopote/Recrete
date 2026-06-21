@@ -4,6 +4,7 @@ import { MissingInformationList } from "@/components/ai/MissingInformationList";
 import { AIInsightList } from "@/components/ai/AIInsightList";
 import { RecommendedActions } from "@/components/ai/RecommendedActions";
 import { UpdateBuildingMemoryButton } from "@/components/ai/UpdateBuildingMemoryButton";
+import { DataConflictPanel } from "@/components/ai/DataConflictPanel";
 import { EmptyState } from "@/components/app/EmptyState";
 import type { ProjectWithRelations } from "@/types";
 import { Brain } from "lucide-react";
@@ -46,6 +47,8 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
       />
 
       <BuildingMemoryCard memory={memory} />
+
+      <DataConflictPanel project={project} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

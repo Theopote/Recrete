@@ -7,9 +7,12 @@ import {
   addInsights,
   addAnalysisRun,
   updateBuildingMemory,
+  addStrategyVersion,
+  getStrategyVersions,
 } from "@/lib/db/repository";
 import { getAIPlatform } from "@/lib/ai";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
+import { diffStrategySnapshots, summarizeStrategyDiff } from "@/lib/utils/strategy-diff";
 import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
 import type { AIInsight, BuildingMemory, AIAnalysisRun, StrategyLabParams } from "@/types/ai";
 
@@ -40,6 +43,8 @@ export interface StrategyIterationResult {
   insight: AIInsight;
   analysisRun: AIAnalysisRun;
   buildingMemory?: BuildingMemory | null;
+  version?: import("@/types/ai").StrategyVersion;
+  diffs?: import("@/lib/utils/strategy-diff").StrategyFieldDiff[];
 }
 
 function resolveParams(
@@ -75,6 +80,13 @@ export async function runStrategyWorkflow(
     resolvedParams
   );
   const created = await replaceStrategies(projectId, strategies);
+
+  for (const strategy of created) {
+    await addStrategyVersion(projectId, strategy, {
+      label: "Initial generation",
+      changeSummary: "Strategy Lab batch generation",
+    });
+  }
 
   const withMetrics = created.map((s) => ({
     ...s,
@@ -129,9 +141,19 @@ export async function runStrategyIterationWorkflow(
   if (!existing) return null;
 
   const platform = getAIPlatform();
+  const previousVersions = await getStrategyVersions(strategyId);
+  const previousSnapshot = previousVersions[0]?.snapshot ?? existing;
+
   const refined = await platform.strategy.refineStrategy(project, existing, instruction);
   const updated = await updateStrategy(strategyId, refined);
   if (!updated) return null;
+
+  const diffs = diffStrategySnapshots(previousSnapshot, updated);
+  const version = await addStrategyVersion(projectId, updated, {
+    label: `Iteration v${previousVersions.length + 1}`,
+    instruction,
+    changeSummary: summarizeStrategyDiff(diffs),
+  });
 
   const strategy: StrategyWithMetrics = {
     ...updated,
@@ -168,7 +190,7 @@ export async function runStrategyIterationWorkflow(
     buildingMemory = await updateBuildingMemory(projectId);
   }
 
-  return { strategy, insight, analysisRun, buildingMemory };
+  return { strategy, insight, analysisRun, buildingMemory, version, diffs };
 }
 
 export function findStrategyForInstruction(

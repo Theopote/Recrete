@@ -22,3 +22,7 @@ export {
   type StrategyIterationOptions,
   type StrategyIterationResult,
 } from "./strategy-workflow";
+export {
+  runConflictDetectionWorkflow,
+  type ConflictWorkflowResult,
+} from "./conflict-workflow";

@@ -310,6 +310,39 @@ export async function updateStrategy(
   return strategy;
 }
 
+export async function addStrategyVersion(
+  projectId: string,
+  strategy: RenovationStrategy,
+  meta?: { label?: string; instruction?: string | null; changeSummary?: string | null }
+): Promise<import("@/types/ai").StrategyVersion> {
+  const now = new Date();
+  const existing = store.strategyVersions.filter((v) => v.strategyId === strategy.id);
+  const versionNumber = existing.length + 1;
+  const created: import("@/types/ai").StrategyVersion = {
+    id: generateId("sv"),
+    projectId,
+    strategyId: strategy.id,
+    versionNumber,
+    label: meta?.label ?? `v${versionNumber}`,
+    snapshot: { ...strategy },
+    instruction: meta?.instruction ?? null,
+    changeSummary: meta?.changeSummary ?? null,
+    createdAt: now,
+  };
+  store.strategyVersions.push(created);
+  return created;
+}
+
+export async function getStrategyVersions(strategyId: string) {
+  return store.strategyVersions
+    .filter((v) => v.strategyId === strategyId)
+    .sort((a, b) => b.versionNumber - a.versionNumber);
+}
+
+export async function getStrategyVersionById(versionId: string) {
+  return store.strategyVersions.find((v) => v.id === versionId) ?? null;
+}
+
 export async function replaceStrategies(
   projectId: string,
   strategies: Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]

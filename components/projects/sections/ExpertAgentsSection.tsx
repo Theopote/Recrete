@@ -8,19 +8,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectWithRelations } from "@/types";
-import { Building2, ShieldCheck, Loader2, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins } from "lucide-react";
+
+type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "cost";
 
 interface ExpertAgentsSectionProps {
   project: ProjectWithRelations;
 }
 
 export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
-  const [activeTab, setActiveTab] = useState<"structural" | "compliance">("structural");
+  const [activeTab, setActiveTab] = useState<ExpertTab>("structural");
   const [structuralLoading, setStructuralLoading] = useState(false);
   const [complianceLoading, setComplianceLoading] = useState(false);
   const [structuralResult, setStructuralResult] = useState<Record<string, unknown> | null>(null);
   const [complianceResult, setComplianceResult] = useState<Record<string, unknown> | null>(null);
+  const [fireLoading, setFireLoading] = useState(false);
+  const [mepLoading, setMepLoading] = useState(false);
+  const [costLoading, setCostLoading] = useState(false);
+  const [fireResult, setFireResult] = useState<Record<string, unknown> | null>(null);
+  const [mepResult, setMepResult] = useState<Record<string, unknown> | null>(null);
+  const [costResult, setCostResult] = useState<Record<string, unknown> | null>(null);
 
   const [structuralInput, setStructuralInput] = useState({
     carbonationDepth: "",
@@ -34,6 +41,21 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     fireCompartmentArea: "",
     hasAccessibleEntrance: false,
     windowUValue: "",
+  });
+
+  const [fireInput, setFireInput] = useState({
+    stairWidth: "",
+    travelDistance: "",
+    floorArea: "",
+    occupantLoad: "",
+    hasSprinkler: false,
+  });
+
+  const [mepInput, setMepInput] = useState({
+    electricalCapacityKva: "",
+    hvacAgeYears: "",
+    requiredElectricalKva: "",
+    plumbingCondition: "fair" as "good" | "fair" | "poor",
   });
 
   const runStructural = async () => {
@@ -86,6 +108,86 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     }
   };
 
+  const runFire = async () => {
+    setFireLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/experts/fire`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stairWidth: fireInput.stairWidth ? Number(fireInput.stairWidth) : undefined,
+          travelDistance: fireInput.travelDistance ? Number(fireInput.travelDistance) : undefined,
+          floorArea: fireInput.floorArea ? Number(fireInput.floorArea) : undefined,
+          occupantLoad: fireInput.occupantLoad ? Number(fireInput.occupantLoad) : undefined,
+          hasSprinkler: fireInput.hasSprinkler,
+        }),
+      });
+      if (res.ok) setFireResult(await res.json());
+    } finally {
+      setFireLoading(false);
+    }
+  };
+
+  const runMep = async () => {
+    setMepLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/experts/mep`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          electricalCapacityKva: mepInput.electricalCapacityKva
+            ? Number(mepInput.electricalCapacityKva)
+            : undefined,
+          hvacAgeYears: mepInput.hvacAgeYears ? Number(mepInput.hvacAgeYears) : undefined,
+          requiredElectricalKva: mepInput.requiredElectricalKva
+            ? Number(mepInput.requiredElectricalKva)
+            : undefined,
+          plumbingCondition: mepInput.plumbingCondition,
+        }),
+      });
+      if (res.ok) setMepResult(await res.json());
+    } finally {
+      setMepLoading(false);
+    }
+  };
+
+  const runCost = async () => {
+    setCostLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/experts/cost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) setCostResult(await res.json());
+    } finally {
+      setCostLoading(false);
+    }
+  };
+
+  const fireAnalysis = fireResult?.analysis as {
+    egressRating?: string;
+    compartmentRating?: string;
+    findings?: string[];
+    recommendations?: string[];
+  } | undefined;
+
+  const mepAnalysis = mepResult?.analysis as {
+    overallRating?: string;
+    findings?: string[];
+    recommendations?: string[];
+    estimatedUpgradeScope?: string[];
+  } | undefined;
+
+  const costEstimate = costResult?.estimate as {
+    estimatedCostPerSqm?: number;
+    estimatedTotalCost?: number;
+    costLevel?: string;
+    confidence?: number;
+    referenceCases?: Array<{ title: string; costPerSqm?: number }>;
+    breakdown?: Array<{ item: string; sharePercent: number }>;
+  } | undefined;
+
   const assessment = structuralResult?.assessment as {
     safetyRating?: string;
     findings?: string[];
@@ -131,6 +233,30 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           onClick={() => setActiveTab("compliance")}
         >
           <ShieldCheck className="h-3.5 w-3.5" /> Compliance
+        </Button>
+        <Button
+          variant={activeTab === "fire" ? "default" : "outline"}
+          size="sm"
+          className="text-xs gap-1.5"
+          onClick={() => setActiveTab("fire")}
+        >
+          <Flame className="h-3.5 w-3.5" /> Fire
+        </Button>
+        <Button
+          variant={activeTab === "mep" ? "default" : "outline"}
+          size="sm"
+          className="text-xs gap-1.5"
+          onClick={() => setActiveTab("mep")}
+        >
+          <Zap className="h-3.5 w-3.5" /> MEP
+        </Button>
+        <Button
+          variant={activeTab === "cost" ? "default" : "outline"}
+          size="sm"
+          className="text-xs gap-1.5"
+          onClick={() => setActiveTab("cost")}
+        >
+          <Coins className="h-3.5 w-3.5" /> Cost
         </Button>
       </div>
 
@@ -337,6 +463,106 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 )}
               </CardContent>
             </Card>
+          )}
+        </div>
+      )}
+
+      {activeTab === "fire" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm">Fire Protection Agent</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs">Stair width (m)</Label>
+                  <Input className="h-8 text-xs mt-1" value={fireInput.stairWidth} onChange={(e) => setFireInput((s) => ({ ...s, stairWidth: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Travel distance (m)</Label>
+                  <Input className="h-8 text-xs mt-1" value={fireInput.travelDistance} onChange={(e) => setFireInput((s) => ({ ...s, travelDistance: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Floor area (m²)</Label>
+                  <Input className="h-8 text-xs mt-1" value={fireInput.floorArea} onChange={(e) => setFireInput((s) => ({ ...s, floorArea: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Occupant load</Label>
+                  <Input className="h-8 text-xs mt-1" value={fireInput.occupantLoad} onChange={(e) => setFireInput((s) => ({ ...s, occupantLoad: e.target.value }))} />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-xs">
+                <input type="checkbox" checked={fireInput.hasSprinkler} onChange={(e) => setFireInput((s) => ({ ...s, hasSprinkler: e.target.checked }))} />
+                Sprinkler system present
+              </label>
+              <Button variant="copper" size="sm" onClick={runFire} disabled={fireLoading}>
+                {fireLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+                Run Fire Analysis
+              </Button>
+            </CardContent>
+          </Card>
+          {fireAnalysis && (
+            <Card><CardContent className="p-4 space-y-2 text-xs">
+              <div className="flex gap-2"><Badge variant="outline">Egress: {fireAnalysis.egressRating}</Badge><Badge variant="outline">Compartment: {fireAnalysis.compartmentRating}</Badge></div>
+              <ul className="text-muted-foreground space-y-1">{fireAnalysis.findings?.map((f) => <li key={f}>• {f}</li>)}</ul>
+            </CardContent></Card>
+          )}
+        </div>
+      )}
+
+      {activeTab === "mep" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm">MEP Expert Agent</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Electrical capacity (kVA)</Label>
+                  <Input className="h-8 text-xs mt-1" value={mepInput.electricalCapacityKva} onChange={(e) => setMepInput((s) => ({ ...s, electricalCapacityKva: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Required kVA</Label>
+                  <Input className="h-8 text-xs mt-1" value={mepInput.requiredElectricalKva} onChange={(e) => setMepInput((s) => ({ ...s, requiredElectricalKva: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">HVAC age (years)</Label>
+                  <Input className="h-8 text-xs mt-1" value={mepInput.hvacAgeYears} onChange={(e) => setMepInput((s) => ({ ...s, hvacAgeYears: e.target.value }))} />
+                </div>
+              </div>
+              <Button variant="copper" size="sm" onClick={runMep} disabled={mepLoading}>
+                {mepLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+                Run MEP Assessment
+              </Button>
+            </CardContent>
+          </Card>
+          {mepAnalysis && (
+            <Card><CardContent className="p-4 space-y-2 text-xs">
+              <Badge variant="outline">{mepAnalysis.overallRating}</Badge>
+              <ul className="text-muted-foreground space-y-1">{mepAnalysis.findings?.map((f) => <li key={f}>• {f}</li>)}</ul>
+            </CardContent></Card>
+          )}
+        </div>
+      )}
+
+      {activeTab === "cost" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm">Cost Estimator Agent</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">Estimates based on historical case library and project GFA.</p>
+              <Button variant="copper" size="sm" onClick={runCost} disabled={costLoading}>
+                {costLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+                Estimate Renovation Cost
+              </Button>
+            </CardContent>
+          </Card>
+          {costEstimate && (
+            <Card><CardContent className="p-4 space-y-2 text-xs">
+              <p className="text-lg font-semibold tabular-nums">¥{costEstimate.estimatedTotalCost?.toLocaleString()}</p>
+              <p className="text-muted-foreground">~¥{costEstimate.estimatedCostPerSqm?.toLocaleString()}/sqm · {costEstimate.costLevel} · confidence {(costEstimate.confidence ?? 0) * 100}%</p>
+              {costEstimate.referenceCases && costEstimate.referenceCases.length > 0 && (
+                <p className="text-muted-foreground">Reference: {costEstimate.referenceCases.map((c) => c.title).join("; ")}</p>
+              )}
+            </CardContent></Card>
           )}
         </div>
       )}

@@ -9,7 +9,8 @@ export type AIInsightType =
   | "schedule_warning"
   | "compliance_warning"
   | "site_issue"
-  | "report_suggestion";
+  | "report_suggestion"
+  | "data_conflict";
 
 export type AIInsightPriority = "low" | "medium" | "high" | "critical";
 
@@ -36,7 +37,8 @@ export type AIAnalysisType =
   | "strategy_generation"
   | "cost_risk_estimation"
   | "report_generation"
-  | "copilot_chat";
+  | "copilot_chat"
+  | "conflict_detection";
 
 export type SourceEvidenceType =
   | "document"
@@ -147,6 +149,18 @@ export interface StrategyLabParams {
   scheduleRequirement: "flexible" | "moderate" | "urgent";
   designAmbition: "conservative" | "balanced" | "ambitious";
   riskTolerance: "low" | "medium" | "high";
+}
+
+export interface StrategyVersion {
+  id: string;
+  projectId: string;
+  strategyId: string;
+  versionNumber: number;
+  label: string;
+  snapshot: import("@/types").RenovationStrategy;
+  instruction?: string | null;
+  changeSummary?: string | null;
+  createdAt: Date;
 }
 
 export interface CostRiskMatrix {

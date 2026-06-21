@@ -79,6 +79,22 @@ export async function updateStrategy(
   return (await resolveDb()) ? db.updateStrategy(strategyId, data) : mock.updateStrategy(strategyId, data);
 }
 
+export async function addStrategyVersion(
+  projectId: string,
+  strategy: Parameters<typeof mock.addStrategyVersion>[1],
+  meta?: Parameters<typeof mock.addStrategyVersion>[2]
+) {
+  return (await resolveDb()) ? db.addStrategyVersion(projectId, strategy, meta) : mock.addStrategyVersion(projectId, strategy, meta);
+}
+
+export async function getStrategyVersions(strategyId: string) {
+  return (await resolveDb()) ? db.getStrategyVersions(strategyId) : mock.getStrategyVersions(strategyId);
+}
+
+export async function getStrategyVersionById(versionId: string) {
+  return (await resolveDb()) ? db.getStrategyVersionById(versionId) : mock.getStrategyVersionById(versionId);
+}
+
 export async function addDocument(
   projectId: string,
   doc: Parameters<typeof mock.addDocument>[1]

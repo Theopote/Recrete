@@ -10,6 +10,7 @@ import {
   updateBuildingMemory,
 } from "@/lib/db/repository";
 import { analyzeDocumentAsset } from "@/lib/ai/document-analysis-pipeline";
+import { runConflictDetectionWorkflow } from "./conflict-workflow";
 import type { DocumentAsset } from "@/types";
 import type { BuildingMemory, SourceEvidence, AIAnalysisRun } from "@/types/ai";
 
@@ -97,6 +98,10 @@ export async function runDocumentIngestWorkflow(
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
     buildingMemory = await updateBuildingMemory(projectId);
+    await runConflictDetectionWorkflow(projectId, {
+      refreshBuildingMemory: false,
+      persistInsights: true,
+    });
   }
 
   return {

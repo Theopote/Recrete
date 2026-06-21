@@ -1,6 +1,10 @@
 import { knowledgeArticles } from "@/lib/mock-data/knowledge";
 import { buildingCodes } from "./code-database";
 import { renovationCases, type RenovationCase } from "./case-library";
+import {
+  searchIndexedDocuments,
+  type IndexedDocument,
+} from "./vector-index";
 
 export type KnowledgeSourceType = "case" | "knowledge" | "code";
 
@@ -11,6 +15,60 @@ export interface KnowledgeSearchResult {
   excerpt: string;
   relevance: number;
   metadata?: Record<string, string | number>;
+}
+
+function buildCaseCorpus(c: RenovationCase): string {
+  return [
+    c.title,
+    c.location,
+    c.buildingType,
+    c.originalFunction,
+    c.targetFunction,
+    c.strategyType,
+    c.summary,
+    ...c.lessons,
+    ...c.tags,
+  ].join(" ");
+}
+
+let cachedIndex: IndexedDocument[] | null = null;
+
+function getKnowledgeIndex(): IndexedDocument[] {
+  if (cachedIndex) return cachedIndex;
+
+  cachedIndex = [
+    ...renovationCases.map((c) => ({
+      id: c.id,
+      sourceType: "case" as const,
+      title: c.title,
+      excerpt: `${c.summary} Cost: ~¥${c.costPerSqm?.toLocaleString() ?? "N/A"}/sqm · ${c.durationMonths ?? "?"} months.`,
+      text: buildCaseCorpus(c),
+      metadata: { costPerSqm: c.costPerSqm ?? 0, durationMonths: c.durationMonths ?? 0 },
+    })),
+    ...knowledgeArticles.map((article) => ({
+      id: article.id,
+      sourceType: "knowledge" as const,
+      title: article.title,
+      excerpt: article.summary,
+      text: [article.title, article.category, article.summary, article.content, ...article.tags].join(" "),
+    })),
+    ...buildingCodes.map((code) => ({
+      id: code.id,
+      sourceType: "code" as const,
+      title: code.name,
+      excerpt: `${code.code} — ${code.keyRequirements[0]?.title ?? code.category}`,
+      text: [
+        code.id,
+        code.name,
+        code.nameZh,
+        code.code,
+        code.category,
+        ...code.keyRequirements.map((r) => `${r.section} ${r.title} ${r.titleZh} ${r.description}`),
+      ].join(" "),
+    })),
+  ];
+
+  return cachedIndex;
 }
 
 function tokenize(text: string): string[] {
@@ -29,21 +87,7 @@ function scoreMatch(queryTokens: string[], corpus: string): number {
   return score / Math.max(queryTokens.length, 1);
 }
 
-function buildCaseCorpus(c: RenovationCase): string {
-  return [
-    c.title,
-    c.location,
-    c.buildingType,
-    c.originalFunction,
-    c.targetFunction,
-    c.strategyType,
-    c.summary,
-    ...c.lessons,
-    ...c.tags,
-  ].join(" ");
-}
-
-export function searchKnowledge(
+function keywordSearch(
   query: string,
   options: { limit?: number; sourceTypes?: KnowledgeSourceType[] } = {}
 ): KnowledgeSearchResult[] {
@@ -51,67 +95,58 @@ export function searchKnowledge(
   const queryTokens = tokenize(query);
   if (queryTokens.length === 0) return [];
 
-  const results: KnowledgeSearchResult[] = [];
+  return getKnowledgeIndex()
+    .filter((doc) => sourceTypes.includes(doc.sourceType))
+    .map((doc) => ({
+      id: doc.id,
+      sourceType: doc.sourceType,
+      title: doc.title,
+      excerpt: doc.excerpt,
+      relevance: scoreMatch(queryTokens, doc.text) * (doc.sourceType === "code" ? 0.9 : 1),
+      metadata: doc.metadata,
+    }))
+    .filter((r) => r.relevance > 0)
+    .sort((a, b) => b.relevance - a.relevance)
+    .slice(0, limit);
+}
 
-  if (sourceTypes.includes("case")) {
-    for (const c of renovationCases) {
-      const relevance = scoreMatch(queryTokens, buildCaseCorpus(c));
-      if (relevance > 0) {
-        results.push({
-          id: c.id,
-          sourceType: "case",
-          title: c.title,
-          excerpt: `${c.summary} Cost: ~¥${c.costPerSqm?.toLocaleString() ?? "N/A"}/sqm · ${c.durationMonths ?? "?"} months.`,
-          relevance,
-          metadata: {
-            costPerSqm: c.costPerSqm ?? 0,
-            durationMonths: c.durationMonths ?? 0,
-          },
-        });
-      }
-    }
+export function searchKnowledge(
+  query: string,
+  options: { limit?: number; sourceTypes?: KnowledgeSourceType[]; mode?: "vector" | "keyword" | "hybrid" } = {}
+): KnowledgeSearchResult[] {
+  const { limit = 5, sourceTypes = ["case", "knowledge", "code"], mode = "hybrid" } = options;
+  if (!query.trim()) return [];
+
+  const index = getKnowledgeIndex().filter((doc) => sourceTypes.includes(doc.sourceType));
+
+  if (mode === "keyword") {
+    return keywordSearch(query, { limit, sourceTypes });
   }
 
-  if (sourceTypes.includes("knowledge")) {
-    for (const article of knowledgeArticles) {
-      const corpus = [article.title, article.category, article.summary, article.content, ...article.tags].join(" ");
-      const relevance = scoreMatch(queryTokens, corpus);
-      if (relevance > 0) {
-        results.push({
-          id: article.id,
-          sourceType: "knowledge",
-          title: article.title,
-          excerpt: article.summary,
-          relevance,
-        });
-      }
-    }
+  const vectorResults = searchIndexedDocuments(query, index, limit);
+
+  if (mode === "vector") {
+    return vectorResults;
   }
 
-  if (sourceTypes.includes("code")) {
-    for (const code of buildingCodes) {
-      const corpus = [
-        code.id,
-        code.name,
-        code.nameZh,
-        code.code,
-        code.category,
-        ...code.keyRequirements.map((r) => `${r.section} ${r.title} ${r.titleZh} ${r.description}`),
-      ].join(" ");
-      const relevance = scoreMatch(queryTokens, corpus) * 0.9;
-      if (relevance > 0) {
-        results.push({
-          id: code.id,
-          sourceType: "code",
-          title: code.name,
-          excerpt: `${code.code} — ${code.keyRequirements[0]?.title ?? code.category}`,
-          relevance,
-        });
-      }
-    }
+  const keywordResults = keywordSearch(query, { limit, sourceTypes });
+  const merged = new Map<string, KnowledgeSearchResult>();
+
+  for (const r of vectorResults) {
+    merged.set(`${r.sourceType}:${r.id}`, { ...r, relevance: r.relevance * 1.2 });
+  }
+  for (const r of keywordResults) {
+    const key = `${r.sourceType}:${r.id}`;
+    const existing = merged.get(key);
+    merged.set(
+      key,
+      existing
+        ? { ...existing, relevance: Math.max(existing.relevance, r.relevance) }
+        : r
+    );
   }
 
-  return results
+  return [...merged.values()]
     .sort((a, b) => b.relevance - a.relevance)
     .slice(0, limit);
 }
@@ -139,5 +174,5 @@ export function searchKnowledgeForProject(
     userQuery ?? "",
   ].join(" ");
 
-  return searchKnowledge(baseQuery, { limit });
+  return searchKnowledge(baseQuery, { limit, mode: "hybrid" });
 }

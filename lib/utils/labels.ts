@@ -137,6 +137,7 @@ export const insightTypeLabels: Record<AIInsightType, string> = {
   compliance_warning: "Compliance",
   site_issue: "Site Issue",
   report_suggestion: "Report Suggestion",
+  data_conflict: "Data Conflict",
 };
 
 export const analysisTypeLabels: Record<AIAnalysisType, string> = {
@@ -148,6 +149,7 @@ export const analysisTypeLabels: Record<AIAnalysisType, string> = {
   cost_risk_estimation: "Cost & Risk Estimation",
   report_generation: "Report Generation",
   copilot_chat: "Copilot Chat",
+  conflict_detection: "Conflict Detection",
 };
 
 export function getProjectStatusColor(status: ProjectStatus): string {

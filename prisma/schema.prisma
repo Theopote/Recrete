@@ -147,6 +147,7 @@ enum AIInsightType {
   compliance_warning
   site_issue
   report_suggestion
+  data_conflict
 }
 
 enum AIInsightPriority {
@@ -191,6 +192,7 @@ enum AIAnalysisType {
   cost_risk_estimation
   report_generation
   copilot_chat
+  conflict_detection
 }
 
 enum SourceEvidenceType {

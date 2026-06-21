@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/app/RiskBadge";
 import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDialog";
+import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
 import { strategyTypeLabels } from "@/lib/utils/labels";
 import { cn, levelToPercent } from "@/lib/utils";
 import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
@@ -92,6 +93,10 @@ export function StrategyCard({ strategy, isRecommended, projectId, onRefined }: 
             </p>
             <p className="text-xs">{strategy.recommendationReason}</p>
           </div>
+        )}
+
+        {projectId && (
+          <StrategyVersionHistory projectId={projectId} strategyId={strategy.id} />
         )}
       </CardContent>
     </Card>

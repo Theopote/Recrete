@@ -21,3 +21,10 @@ export * as costRiskAgent from "./cost-risk-agent";
 export * as reportAgent from "./report-agent";
 export * as copilotAgent from "./copilot-agent";
 export * as projectCreationAgent from "./project-creation-agent";
+export {
+  detectDataConflicts,
+  conflictsToInsights,
+} from "./conflict-agent";
+export { analyzeFireSafety, generateFireDiagnosis, fireProtectionAgent } from "./fire-agent";
+export { assessMepCapacity, generateMepDiagnosis, mepAgent } from "./mep-agent";
+export { estimateProjectCost, costEstimatorAgent } from "./cost-estimator-agent";

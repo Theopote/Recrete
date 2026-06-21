@@ -4,3 +4,4 @@ export * from "./term-dictionary";
 export * from "./drawing-knowledge-graph";
 export * from "./case-library";
 export * from "./embedding-search";
+export * from "./vector-index";
