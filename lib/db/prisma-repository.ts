@@ -475,6 +475,15 @@ export async function addInsights(
   return mockAdd(projectId, insights);
 }
 
+export async function replaceInsightsBySourceType(
+  projectId: string,
+  sourceType: string,
+  insights: Parameters<typeof import("@/lib/db/mock-repository").replaceInsightsBySourceType>[2]
+) {
+  const { replaceInsightsBySourceType: mockReplace } = await import("@/lib/db/mock-repository");
+  return mockReplace(projectId, sourceType, insights);
+}
+
 export async function addTasks(
   projectId: string,
   tasks: Parameters<typeof import("@/lib/db/mock-repository").addTasks>[1]
@@ -524,6 +533,8 @@ export async function getStrategiesWithMetrics(projectId: string): Promise<Strat
       designValue: 50,
       constructionDifficulty: 50,
       preservationLevel: 50,
+      feasibility: 50,
+      lifecycleCost: 50,
     },
   }));
 }

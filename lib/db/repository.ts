@@ -41,6 +41,16 @@ export async function addInsights(
   return (await resolveDb()) ? db.addInsights(projectId, insights) : mock.addInsights(projectId, insights);
 }
 
+export async function replaceInsightsBySourceType(
+  projectId: string,
+  sourceType: string,
+  insights: Parameters<typeof mock.replaceInsightsBySourceType>[2]
+) {
+  return (await resolveDb())
+    ? db.replaceInsightsBySourceType(projectId, sourceType, insights)
+    : mock.replaceInsightsBySourceType(projectId, sourceType, insights);
+}
+
 export async function addTasks(
   projectId: string,
   tasks: Parameters<typeof mock.addTasks>[1]

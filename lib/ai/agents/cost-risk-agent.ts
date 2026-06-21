@@ -1,9 +1,13 @@
 import type { DiagnosisItem, ProjectWithRelations, RenovationStrategy } from "@/types";
 import type { AIInsight, CostRiskMatrix, EnergyRoiSummary } from "@/types/ai";
+import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { analyzeEnergyPerformance } from "./energy-agent";
 import { withMockDelay } from "../providers/utils";
 
 const riskScore: Record<string, number> = { low: 25, medium: 55, high: 80, critical: 95 };
+
+/** sourceType tag for insights persisted from Cost & Risk analysis */
+export { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 
 function buildEnergyRoiSummary(
   project: ProjectWithRelations,
@@ -62,7 +66,7 @@ function buildEnergyInsights(
       recommendation: "Prioritize envelope-first retrofit or bundle with energy_retrofit strategy.",
       confidence: 0.84,
       status: "open",
-      sourceType: "analysis",
+      sourceType: COST_RISK_INSIGHT_SOURCE,
     });
   }
 
@@ -77,11 +81,31 @@ function buildEnergyInsights(
       : "Generate Green Energy Retrofit strategy in Strategy Lab to formalize scope.",
     confidence: 0.81,
     status: "open",
-    sourceType: energyStrategy ? "strategy" : "analysis",
+    sourceType: COST_RISK_INSIGHT_SOURCE,
     sourceId: energyStrategy?.id,
   });
 
   return insights;
+}
+
+export function buildCostRiskEnergyInsightDrafts(
+  project: ProjectWithRelations,
+  energyRoi: EnergyRoiSummary,
+  strategies: RenovationStrategy[]
+): Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[] {
+  return buildEnergyInsights(project, energyRoi, strategies);
+}
+
+/** ROI-adjusted lifecycle cost score for strategy comparison (lower = better) */
+export function computeLifecycleCostScore(
+  project: ProjectWithRelations,
+  strategy: Pick<RenovationStrategy, "type" | "costLevel">,
+  allStrategies?: RenovationStrategy[]
+): number {
+  const strategies = allStrategies ?? project.strategies ?? [];
+  const energyRoi = buildEnergyRoiSummary(project, strategies);
+  const costRisk = riskScore[strategy.costLevel] ?? 50;
+  return lifecycleCostScore(costRisk, energyRoi, strategy.type);
 }
 
 function buildPhasingWithEnergy(
@@ -182,11 +206,14 @@ export async function generateRiskMatrix(
           lifecycleCostScore: lifecycleCostScore(costRisk, energyRoi, s.type),
         };
       }),
-      costWarnings: costWarnings as AIInsight[],
+      costWarnings: costWarnings as Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[],
       scheduleWarnings: [],
       phasingPlan: buildPhasingWithEnergy(basePhasing, energyRoi, strategies),
       energyRoi,
-      energyOpportunities: energyOpportunities as AIInsight[],
+      energyOpportunities: energyOpportunities as Omit<
+        AIInsight,
+        "id" | "projectId" | "createdAt" | "updatedAt"
+      >[],
     };
   }, 900);
 }

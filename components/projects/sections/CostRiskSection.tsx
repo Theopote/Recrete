@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { RiskMatrix } from "@/components/ai/RiskMatrix";
 import { EnergyRoiPanel } from "@/components/ai/EnergyRoiPanel";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ProjectWithRelations, StrategyWithMetrics } from "@/types";
 import type { AIInsight, CostRiskMatrix } from "@/types/ai";
+import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { Sparkles, Loader2 } from "lucide-react";
 
 interface CostRiskSectionProps {
@@ -16,18 +18,40 @@ interface CostRiskSectionProps {
   strategiesWithMetrics: StrategyWithMetrics[];
 }
 
+function filterCostRiskInsights(insights: AIInsight[] | undefined) {
+  return (insights ?? []).filter((i) => i.sourceType === COST_RISK_INSIGHT_SOURCE);
+}
+
 export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSectionProps) {
+  const router = useRouter();
   const [matrix, setMatrix] = useState<CostRiskMatrix | null>(null);
   const [phasing, setPhasing] = useState<string[]>([]);
-  const [energyOpportunities, setEnergyOpportunities] = useState<AIInsight[]>([]);
+  const [costRiskInsights, setCostRiskInsights] = useState<AIInsight[]>(() =>
+    filterCostRiskInsights(project.insights)
+  );
   const [loading, setLoading] = useState(false);
 
-  const costInsights = (project.insights ?? []).filter(
-    (i) => i.type === "cost_warning" || i.type === "schedule_warning"
+  const energyOpportunities = useMemo(
+    () => costRiskInsights.filter((i) => i.type === "opportunity"),
+    [costRiskInsights]
   );
 
-  const matrixCostWarnings = matrix?.costWarnings ?? [];
-  const allCostWarnings = [...costInsights, ...matrixCostWarnings];
+  const persistedCostWarnings = useMemo(
+    () => costRiskInsights.filter((i) => i.type === "cost_warning"),
+    [costRiskInsights]
+  );
+
+  const otherCostInsights = useMemo(
+    () =>
+      (project.insights ?? []).filter(
+        (i) =>
+          (i.type === "cost_warning" || i.type === "schedule_warning") &&
+          i.sourceType !== COST_RISK_INSIGHT_SOURCE
+      ),
+    [project.insights]
+  );
+
+  const allCostWarnings = [...otherCostInsights, ...persistedCostWarnings];
 
   const loadMatrix = async () => {
     setLoading(true);
@@ -36,11 +60,18 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
       const data = await res.json();
       setMatrix(data.matrix);
       setPhasing(data.phasingPlan ?? data.matrix?.phasingPlan ?? []);
-      setEnergyOpportunities(data.matrix?.energyOpportunities ?? []);
+      if (Array.isArray(data.insights)) {
+        setCostRiskInsights(data.insights);
+      }
+      router.refresh();
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setCostRiskInsights(filterCostRiskInsights(project.insights));
+  }, [project.insights]);
 
   useEffect(() => {
     if (strategiesWithMetrics.length > 0 && !matrix) {
@@ -83,6 +114,9 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
       {energyOpportunities.length > 0 && (
         <div>
           <SectionHeader title="Energy ROI Opportunities" titleZh="能效 ROI 机会" />
+          <p className="text-[10px] text-muted-foreground mb-2 -mt-4">
+            Persisted to project insights · 已写入项目洞察
+          </p>
           <AIInsightList insights={energyOpportunities} compact />
         </div>
       )}

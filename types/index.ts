@@ -330,6 +330,8 @@ export interface StrategyComparisonMetrics {
   constructionDifficulty: number;
   preservationLevel: number;
   feasibility: number;
+  /** ROI-adjusted lifecycle cost risk (lower is better); aligns with Cost & Risk matrix */
+  lifecycleCost: number;
 }
 
 export interface StrategyWithMetrics extends RenovationStrategy {

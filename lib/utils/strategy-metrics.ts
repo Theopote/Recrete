@@ -1,10 +1,15 @@
 import { levelToPercent } from "@/lib/utils";
-import type { RenovationStrategy, StrategyComparisonMetrics } from "@/types";
+import { computeLifecycleCostScore } from "@/lib/ai/agents/cost-risk-agent";
+import type { ProjectWithRelations, RenovationStrategy, StrategyComparisonMetrics } from "@/types";
 
-export function computeStrategyMetrics(strategy: Pick<
-  RenovationStrategy,
-  "costLevel" | "scheduleLevel" | "riskLevel" | "type" | "feasibilityScore"
->): StrategyComparisonMetrics {
+export function computeStrategyMetrics(
+  strategy: Pick<
+    RenovationStrategy,
+    "costLevel" | "scheduleLevel" | "riskLevel" | "type" | "feasibilityScore"
+  >,
+  project?: ProjectWithRelations | null,
+  allStrategies?: RenovationStrategy[]
+): StrategyComparisonMetrics {
   const cost = levelToPercent(strategy.costLevel);
   const schedule = levelToPercent(strategy.scheduleLevel);
   const risk = levelToPercent(strategy.riskLevel);
@@ -29,6 +34,11 @@ export function computeStrategyMetrics(strategy: Pick<
     safety_upgrade: 80,
   };
 
+  const lifecycleCost =
+    project != null
+      ? computeLifecycleCostScore(project, strategy, allStrategies)
+      : cost;
+
   return {
     cost,
     schedule,
@@ -36,6 +46,9 @@ export function computeStrategyMetrics(strategy: Pick<
     designValue: designValueMap[strategy.type] ?? 55,
     constructionDifficulty: Math.round((cost + schedule) / 2),
     preservationLevel: preservationMap[strategy.type] ?? 60,
-    feasibility: strategy.feasibilityScore ?? (strategy.type === "light_renewal" ? 88 : strategy.type === "adaptive_reuse" ? 72 : 55),
+    feasibility:
+      strategy.feasibilityScore ??
+      (strategy.type === "light_renewal" ? 88 : strategy.type === "adaptive_reuse" ? 72 : 55),
+    lifecycleCost,
   };
 }

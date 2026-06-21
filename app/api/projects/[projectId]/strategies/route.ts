@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addStrategies } from "@/lib/db/repository";
+import { addStrategies, getProjectById } from "@/lib/db/repository";
 import { strategySchema } from "@/lib/validators/project";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 
@@ -20,9 +20,12 @@ export async function POST(
       recommendationReason: recommendationReason || null,
     }]);
 
+    const project = await getProjectById(projectId);
+    const strategies = [...(project?.strategies ?? []), created];
+
     return NextResponse.json({
       ...created,
-      metrics: computeStrategyMetrics(created),
+      metrics: computeStrategyMetrics(created, project, strategies),
     });
   } catch (error) {
     return NextResponse.json(

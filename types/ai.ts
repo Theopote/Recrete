@@ -1,5 +1,8 @@
 // AI-native types for Recrete (砼憶)
 
+/** Insights persisted from Cost & Risk / energy ROI analysis */
+export const COST_RISK_INSIGHT_SOURCE = "cost_risk" as const;
+
 export type AIInsightType =
   | "missing_info"
   | "risk"
@@ -174,11 +177,11 @@ export interface CostRiskMatrix {
     /** Lifecycle-adjusted score when energy ROI improves operational cost profile */
     lifecycleCostScore?: number;
   }[];
-  costWarnings: AIInsight[];
-  scheduleWarnings: AIInsight[];
+  costWarnings: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
+  scheduleWarnings: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
   phasingPlan: string[];
   energyRoi?: EnergyRoiSummary | null;
-  energyOpportunities?: AIInsight[];
+  energyOpportunities?: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
 }
 
 /** Energy ROI linked from Cost & Risk analysis */

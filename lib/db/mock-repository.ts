@@ -258,6 +258,21 @@ export async function addInsights(
   return created;
 }
 
+/** Replace all insights for a project matching sourceType (avoids duplicates on re-run) */
+export async function replaceInsightsBySourceType(
+  projectId: string,
+  sourceType: string,
+  insights: Omit<import("@/types/ai").AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[]
+): Promise<import("@/types/ai").AIInsight[]> {
+  store.insights = store.insights.filter(
+    (i) => !(i.projectId === projectId && i.sourceType === sourceType)
+  );
+  return addInsights(
+    projectId,
+    insights.map((insight) => ({ ...insight, sourceType }))
+  );
+}
+
 export async function addTasks(
   projectId: string,
   tasks: Omit<import("@/types/ai").AITask, "id" | "projectId" | "createdAt" | "updatedAt">[]
@@ -686,10 +701,13 @@ export async function updateBuildingMemory(projectId: string) {
 export async function getStrategiesWithMetrics(
   projectId: string
 ): Promise<StrategyWithMetrics[]> {
+  const project = store.projects.find((p) => p.id === projectId) ?? null;
   const strategies = store.strategies.filter((s) => s.projectId === projectId);
   return strategies.map((s) => ({
     ...s,
-    metrics: strategyMetrics[s.id] ?? computeStrategyMetrics(s),
+    metrics:
+      strategyMetrics[s.id] ??
+      computeStrategyMetrics(s, project ? { ...project, strategies } : null, strategies),
   }));
 }
 

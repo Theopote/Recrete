@@ -90,7 +90,7 @@ export async function runStrategyWorkflow(
 
   const withMetrics = created.map((s) => ({
     ...s,
-    metrics: computeStrategyMetrics(s),
+    metrics: computeStrategyMetrics(s, project, created),
   }));
 
   const recommendation = await platform.strategy.recommendStrategy(project, created);
@@ -157,7 +157,7 @@ export async function runStrategyIterationWorkflow(
 
   const strategy: StrategyWithMetrics = {
     ...updated,
-    metrics: computeStrategyMetrics(updated),
+    metrics: computeStrategyMetrics(updated, project, project.strategies ?? []),
   };
 
   const [insight] = await addInsights(projectId, [

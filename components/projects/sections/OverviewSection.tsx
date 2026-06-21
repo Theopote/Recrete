@@ -1,3 +1,6 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BuildingProfileCard } from "@/components/app/BuildingProfileCard";
 import { IssueCard } from "@/components/issues/IssueCard";
 import { SectionHeader } from "@/components/app/SectionHeader";
@@ -10,6 +13,8 @@ import { MissingInformationList } from "@/components/ai/MissingInformationList";
 import { AnalysisRunTimeline } from "@/components/ai/AnalysisRunTimeline";
 import { BuildingMemoryCard } from "@/components/ai/BuildingMemoryCard";
 import type { ProjectWithRelations } from "@/types";
+import type { AIInsight } from "@/types/ai";
+import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { Brain } from "lucide-react";
 import Link from "next/link";
 
@@ -17,17 +22,79 @@ interface OverviewSectionProps {
   project: ProjectWithRelations;
 }
 
+function parseInsight(insight: AIInsight): AIInsight {
+  return {
+    ...insight,
+    createdAt: new Date(insight.createdAt),
+    updatedAt: new Date(insight.updatedAt),
+  };
+}
+
+function buildOverviewInsightPanels(insights: AIInsight[]) {
+  const costRiskInsights = insights.filter((i) => i.sourceType === COST_RISK_INSIGHT_SOURCE);
+  const priorityOther = insights.filter(
+    (i) =>
+      i.sourceType !== COST_RISK_INSIGHT_SOURCE &&
+      (i.priority === "high" || i.priority === "critical")
+  );
+
+  const seen = new Set<string>();
+  const merged: AIInsight[] = [];
+  for (const item of [...costRiskInsights, ...priorityOther]) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+  }
+
+  return {
+    costRiskInsights,
+    displayInsights: merged.slice(0, 6),
+  };
+}
+
 export function OverviewSection({ project }: OverviewSectionProps) {
-  const openIssues = project.issues?.filter((i) => i.status === "open" || i.status === "in_progress") ?? [];
-  const topInsights = (project.insights ?? [])
-    .filter((i) => i.priority === "high" || i.priority === "critical")
-    .slice(0, 3);
+  const [insights, setInsights] = useState<AIInsight[]>(() =>
+    (project.insights ?? []).map(parseInsight)
+  );
+
+  const refreshInsights = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${project.id}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as ProjectWithRelations;
+      if (Array.isArray(data.insights)) {
+        setInsights(data.insights.map(parseInsight));
+      }
+    } catch {
+      // keep existing insights on fetch failure
+    }
+  }, [project.id]);
+
+  useEffect(() => {
+    refreshInsights();
+  }, [refreshInsights]);
+
+  useEffect(() => {
+    const onFocus = () => refreshInsights();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshInsights]);
+
+  const { costRiskInsights, displayInsights } = useMemo(
+    () => buildOverviewInsightPanels(insights),
+    [insights]
+  );
+
+  const openIssues =
+    project.issues?.filter((i) => i.status === "open" || i.status === "in_progress") ?? [];
 
   return (
     <div className="space-y-6">
       <SectionHeader
         title="Project Command Overview"
+        titleZh="项目指挥概览"
         description={`AI-enriched workspace for ${project.name}`}
+        descriptionZh={`${project.name} 的 AI 增强工作区`}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -44,8 +111,13 @@ export function OverviewSection({ project }: OverviewSectionProps) {
         <Card>
           <CardContent className="p-4 text-xs space-y-1">
             <p className="text-muted-foreground">AI Insights</p>
-            <p className="text-2xl font-semibold">{project.insights?.length ?? 0}</p>
-            <p className="text-muted-foreground">Analysis Runs</p>
+            <p className="text-2xl font-semibold">{insights.length}</p>
+            {costRiskInsights.length > 0 && (
+              <p className="text-[10px] text-sage">
+                {costRiskInsights.length} from Cost &amp; Risk / ROI
+              </p>
+            )}
+            <p className="text-muted-foreground pt-1">Analysis Runs</p>
             <p className="text-lg font-semibold">{project.analysisRuns?.length ?? 0}</p>
           </CardContent>
         </Card>
@@ -72,9 +144,47 @@ export function OverviewSection({ project }: OverviewSectionProps) {
       <BuildingProfileCard project={project} building={project.building} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <SectionHeader title="Priority AI Insights" />
-          <AIInsightList insights={topInsights} compact />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <SectionHeader title="AI Insights" titleZh="AI 洞察" />
+            <Link
+              href={`/projects/${project.id}?section=cost-risk`}
+              className="text-[10px] font-medium text-copper hover:underline shrink-0"
+            >
+              Cost &amp; Risk →
+            </Link>
+          </div>
+
+          {costRiskInsights.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Cost &amp; Energy ROI · 成本与能效 ROI
+              </p>
+              <AIInsightList insights={costRiskInsights} compact />
+            </div>
+          )}
+
+          {displayInsights.length > 0 ? (
+            <div>
+              {costRiskInsights.length > 0 && (
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Priority · 优先关注
+                </p>
+              )}
+              <AIInsightList
+                insights={
+                  costRiskInsights.length > 0
+                    ? displayInsights.filter((i) => i.sourceType !== COST_RISK_INSIGHT_SOURCE)
+                    : displayInsights
+                }
+                compact
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Run Cost &amp; Risk or Diagnosis workflows to populate insights.
+            </p>
+          )}
         </div>
         <RecommendedActions tasks={project.tasks ?? []} projectId={project.id} />
       </div>
@@ -83,7 +193,7 @@ export function OverviewSection({ project }: OverviewSectionProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <SectionHeader title="Recent Issues" />
+          <SectionHeader title="Recent Issues" titleZh="近期问题" />
           {openIssues.length > 0 ? (
             <div className="space-y-3">
               {openIssues.slice(0, 3).map((issue) => (
@@ -95,7 +205,7 @@ export function OverviewSection({ project }: OverviewSectionProps) {
           )}
         </div>
         <div>
-          <SectionHeader title="Recent AI Analysis" />
+          <SectionHeader title="Recent AI Analysis" titleZh="近期 AI 分析" />
           <AnalysisRunTimeline runs={project.analysisRuns ?? []} limit={4} />
         </div>
       </div>
