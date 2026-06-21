@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getProjectById, getProjectEvidence } from "@/lib/db/repository";
 import { listDrawingAssetsByProject } from "@/lib/db/drawing-assets";
-import { analyzeProjectDocuments, mergeDrawingGraphs } from "@/lib/ai/document-analysis-pipeline";
+import { mergeDrawingGraphs } from "@/lib/ai/document-analysis-pipeline";
+import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
 import type { DrawingKnowledgeGraph } from "@/lib/ai/knowledge/drawing-knowledge-graph";
 
 function parseLegacyGraphFromExtractedText(extractedText: string): DrawingKnowledgeGraph | null {
@@ -65,11 +66,34 @@ export async function POST(
   }
 
   const body = await request.json().catch(() => ({}));
-  const results = await analyzeProjectDocuments(project, {
-    language: body.language ?? "auto",
-    includeOCR: true,
-    extractTables: true,
-  });
+  const language = body.language === "zh" ? "zh" : body.language === "en" ? "en" : "auto";
+  const createIssues = body.createIssues !== false;
+  const refreshBuildingMemory = body.refreshBuildingMemory !== false;
 
-  return NextResponse.json({ results, count: results.length });
+  const docs = project.documents ?? [];
+  const results = [];
+
+  for (let i = 0; i < docs.length; i++) {
+    const result = await runDocumentIngestWorkflow(projectId, docs[i].id, {
+      language,
+      createIssues,
+      refreshBuildingMemory: refreshBuildingMemory && i === docs.length - 1,
+    });
+    if (result) results.push(result);
+  }
+
+  const drawingAssets = await listDrawingAssetsByProject(projectId);
+  const graphs = drawingAssets
+    .map((asset) => asset.knowledgeGraph)
+    .filter((graph): graph is DrawingKnowledgeGraph => graph != null);
+  const mergedGraph = mergeDrawingGraphs(graphs);
+
+  return NextResponse.json({
+    results,
+    count: results.length,
+    drawingAssetCount: drawingAssets.length,
+    mergedGraph,
+    nodeCount: mergedGraph?.nodes.length ?? 0,
+    edgeCount: mergedGraph?.edges.length ?? 0,
+  });
 }

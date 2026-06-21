@@ -1,7 +1,7 @@
 # 数据层架构迁移：BIM 模型与图纸分析结构化存储
 
-> 版本：1.0 · 日期：2026-06-21  
-> 状态：实施中
+> 版本：1.1 · 日期：2026-06-21  
+> 状态：代码完成，待数据库验收
 
 ## 1. 背景与动机
 
@@ -151,6 +151,11 @@ GET /api/projects/{id}/knowledge-graph
   → listDrawingAssetsByProject(projectId)     // 优先
   → 回退：解析 DocumentAsset.extractedText   // 兼容历史数据
   → mergeDrawingGraphs()
+
+POST /api/projects/{id}/knowledge-graph
+  → 逐文档 runDocumentIngestWorkflow()       // 落库 DocumentAsset + DrawingAsset
+  → 最后一篇文档可选 refreshBuildingMemory
+  → 返回合并后的 mergedGraph
 ```
 
 ## 6. 双模式数据层策略
@@ -176,7 +181,8 @@ npm run db:push    # 或 prisma migrate dev
 ### 7.2 导入已有 BIM JSON
 
 ```bash
-npx tsx scripts/migrate-json-manifests-to-db.ts
+USE_DATABASE=true npm run db:migrate-bim
+# 等价于：USE_DATABASE=true npx tsx scripts/migrate-json-manifests-to-db.ts
 ```
 
 脚本行为：
@@ -200,19 +206,38 @@ npx tsx scripts/migrate-json-manifests-to-db.ts
 
 ## 9. 验收标准
 
-- [ ] `USE_DATABASE=false`：BIM 上传、图纸分析、知识图谱 API 行为与迁移前一致
-- [ ] `USE_DATABASE=true`：BIM 与 DrawingAsset 写入 PostgreSQL，API 返回正确
-- [ ] 新图纸分析后 `extractedText` 不含 `--- Knowledge Graph ---` 块
-- [ ] 知识图谱 API 从 `DrawingAsset` 读取；旧数据解析回退仍可用
-- [ ] `migrate-json-manifests-to-db.ts` 可成功导入现有 BIM 清单
+- [x] 代码：`BimModel` / `DrawingAsset` 双模式数据层与 ingest 落库
+- [x] 代码：知识图谱 GET 读 `DrawingAsset` + 旧 `extractedText` 回退
+- [x] 代码：知识图谱 POST 走 `runDocumentIngestWorkflow` 全量落库
+- [x] 代码：新图纸分析 `extractedText` 不含 `--- Knowledge Graph ---` 块
+- [ ] **待 DB**：`npm run db:push` 同步 schema
+- [ ] **待 DB**：`USE_DATABASE=true` 下 BIM 上传与图纸分析写入 PostgreSQL
+- [ ] **待 DB**：`npm run db:migrate-bim` 成功导入现有 BIM 清单
+- [ ] **待手动**：`USE_DATABASE=false` 下回归 BIM 上传、图纸分析、知识图谱 API
 
-## 10. 相关文件索引
+## 10. 实施记录
+
+| 日期 | 项 | 说明 |
+|------|-----|------|
+| 2026-06-21 | Schema + 双模式层 | `BimModel`、`DrawingAsset`、文件回退 |
+| 2026-06-21 | ingest / GET 图谱 | `document-ingest-workflow`、`knowledge-graph` GET |
+| 2026-06-21 | POST 图谱落库 | POST 改为逐文档 `runDocumentIngestWorkflow` |
+| 2026-06-21 | 工程卫生 | `.gitignore` drawing-assets、`seed` 清理新表、`db:migrate-bim` script |
+| — | 待办 | Docker/Postgres 就绪后 `db:push` + 验收 |
+
+## 11. 相关文件索引
 
 | 文件 | 职责 |
 |------|------|
+| `lib/db/bim-models.ts` | BIM 双模式门面 |
+| `lib/db/drawing-assets.ts` | 图纸分析双模式门面 |
+| `lib/bim/bim-file-store.ts` | BIM JSON 回退 |
+| `lib/ai/knowledge/drawing-asset-file-store.ts` | 图纸 JSON 回退 |
+| `scripts/migrate-json-manifests-to-db.ts` | BIM JSON → PostgreSQL 一次性导入 |
+| `types/drawing.ts` | `DrawingAssetRecord` 类型 |
 | `prisma/schema.prisma` | 模型定义 |
 | `types/bim.ts` | BIM TypeScript 类型（源-of-truth） |
 | `lib/ai/vision/types.ts` | `DrawingAnalysisResult` |
 | `lib/ai/knowledge/drawing-knowledge-graph.ts` | 图谱构建与合并 |
 | `lib/ai/workflow/document-ingest-workflow.ts` | 分析落库触发点 |
-| `app/api/projects/[projectId]/knowledge-graph/route.ts` | 图谱读取 |
+| `app/api/projects/[projectId]/knowledge-graph/route.ts` | 图谱读取与批量分析 |

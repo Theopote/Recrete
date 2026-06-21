@@ -50,5 +50,8 @@ next-env.d.ts
 # bim model manifests (user data)
 /data/bim-models/*.json
 
+# drawing analysis manifests (user data)
+/data/drawing-assets/*.json
+
 # ide
 .idea
