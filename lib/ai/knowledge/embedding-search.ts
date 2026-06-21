@@ -92,18 +92,19 @@ export function searchKnowledge(
     for (const code of buildingCodes) {
       const corpus = [
         code.id,
-        code.title,
+        code.name,
+        code.nameZh,
+        code.code,
         code.category,
-        code.description,
-        ...code.requirements.map((r) => `${r.section} ${r.title} ${r.description}`),
+        ...code.keyRequirements.map((r) => `${r.section} ${r.title} ${r.titleZh} ${r.description}`),
       ].join(" ");
       const relevance = scoreMatch(queryTokens, corpus) * 0.9;
       if (relevance > 0) {
         results.push({
           id: code.id,
           sourceType: "code",
-          title: code.title,
-          excerpt: code.description,
+          title: code.name,
+          excerpt: `${code.code} — ${code.keyRequirements[0]?.title ?? code.category}`,
           relevance,
         });
       }
