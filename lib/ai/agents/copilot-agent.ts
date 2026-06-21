@@ -1,8 +1,8 @@
 import type { AIMessage } from "@/types";
 import type { ProjectAIContext } from "@/types/ai";
-import { getAIService } from "../index";
-import { mockAIService } from "../mock-ai-service";
 import { isOpenAIConfigured } from "../model-router";
+import { openAIProvider } from "../providers/openai-provider";
+import { mockAIService } from "../mock-ai-service";
 import { withMockDelay } from "../providers/utils";
 
 function toProjectContext(projectContext: ProjectAIContext) {
@@ -26,7 +26,7 @@ export async function askProjectCopilot(
   const ctx = toProjectContext(projectContext);
 
   if (isOpenAIConfigured()) {
-    return getAIService().askProjectAssistant(ctx, messages);
+    return openAIProvider.askProjectAssistant(ctx, messages);
   }
 
   return withMockDelay(

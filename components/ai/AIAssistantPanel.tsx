@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ASSISTANT_SUGGESTIONS } from "@/lib/ai";
+import { ASSISTANT_SUGGESTIONS } from "@/lib/ai/prompts";
 import { cn } from "@/lib/utils";
 import type { AIMessage } from "@/types";
 import type { KnowledgeSnippet, SourceEvidence } from "@/types/ai";

@@ -20,7 +20,7 @@ import {
   type AICreateStreamEvent,
   type AICreateStreamPhase,
   type AICreateItemCategory,
-} from "@/lib/ai/agents/project-creation-stream";
+} from "@/lib/ai/agents/project-creation-stream-types";
 
 export interface StreamState {
   phaseStatus: Record<AICreateStreamPhase, "pending" | "active" | "done">;

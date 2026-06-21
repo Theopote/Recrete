@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { AIService } from "./types";
 import { isOpenAIConfigured } from "./model-router";
 import { mockAIProvider } from "./providers/mock-provider";
