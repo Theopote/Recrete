@@ -52,6 +52,7 @@ enum DocumentCategory {
   mep_documents
   historical_documents
   cost_documents
+  meeting_records
   reports
   others
 }
@@ -133,6 +134,72 @@ enum ReportType {
   owner_presentation
   government_submission
   site_issue_report
+  design_meeting_summary
+}
+
+enum AIInsightType {
+  missing_info
+  risk
+  opportunity
+  design_strategy
+  cost_warning
+  schedule_warning
+  compliance_warning
+  site_issue
+  report_suggestion
+}
+
+enum AIInsightPriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum AIInsightStatus {
+  open
+  acknowledged
+  resolved
+  dismissed
+}
+
+enum AITaskCategory {
+  survey
+  structure
+  mep
+  facade
+  fire_safety
+  documentation
+  design
+  compliance
+  other
+}
+
+enum AITaskStatus {
+  pending
+  in_progress
+  completed
+  cancelled
+}
+
+enum AIAnalysisType {
+  building_memory_update
+  document_analysis
+  missing_info_detection
+  diagnosis_generation
+  strategy_generation
+  cost_risk_estimation
+  report_generation
+  copilot_chat
+}
+
+enum SourceEvidenceType {
+  document
+  photo
+  site_issue
+  user_note
+  meeting_record
+  diagnosis
 }
 
 enum ReportStatus {
@@ -162,6 +229,7 @@ model User {
 
   uploadedDocuments DocumentAsset[]
   assignedIssues    SiteIssue[]     @relation("AssignedIssues")
+  assignedAITasks   AITask[]        @relation("AssignedAITasks")
   createdReports    Report[]
   aiConversations   AIConversation[]
 }
@@ -194,20 +262,115 @@ model Project {
   renovationGoal   String
   budgetLevel      BudgetLevel   @default(medium)
   riskLevel        RiskLevel     @default(medium)
-  healthScore      Int           @default(50)
-  potentialScore   Int           @default(50)
-  description      String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  healthScore           Int           @default(50)
+  potentialScore        Int           @default(50)
+  aiReadinessScore      Int           @default(50)
+  dataCompletenessScore Int           @default(50)
+  description           String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  building     Building?
-  documents    DocumentAsset[]
-  diagnosis    DiagnosisItem[]
-  strategies   RenovationStrategy[]
-  issues       SiteIssue[]
-  reports      Report[]
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  building        Building?
+  buildingMemory  BuildingMemory?
+  documents       DocumentAsset[]
+  insights        AIInsight[]
+  tasks           AITask[]
+  analysisRuns    AIAnalysisRun[]
+  evidence        SourceEvidence[]
+  diagnosis       DiagnosisItem[]
+  strategies      RenovationStrategy[]
+  issues          SiteIssue[]
+  reports         Report[]
   aiConversations AIConversation[]
+}
+
+model BuildingMemory {
+  id                   String   @id @default(cuid())
+  projectId            String   @unique
+  summary              String   @db.Text
+  knownFacts           String[]
+  missingInformation   String[]
+  keyRisks             String[]
+  renovationPotential  String   @db.Text
+  designConstraints    String[]
+  ownerRequirements    String[]
+  importantDecisions   String[]
+  unresolvedQuestions  String[]
+  lastUpdatedByAI      DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AIInsight {
+  id             String            @id @default(cuid())
+  projectId      String
+  title          String
+  type           AIInsightType
+  priority       AIInsightPriority
+  summary        String            @db.Text
+  evidence       String?           @db.Text
+  recommendation String?           @db.Text
+  confidence     Float             @default(0.8)
+  status         AIInsightStatus   @default(open)
+  sourceType     String?
+  sourceId       String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   AITask[]
+}
+
+model AITask {
+  id           String           @id @default(cuid())
+  projectId    String
+  insightId    String?
+  title        String
+  description  String           @db.Text
+  category     AITaskCategory
+  priority     AIInsightPriority
+  status       AITaskStatus     @default(pending)
+  assignedToId String?
+  dueDate      DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  insight  AIInsight? @relation(fields: [insightId], references: [id])
+  assignee User?     @relation("AssignedAITasks", fields: [assignedToId], references: [id])
+}
+
+model AIAnalysisRun {
+  id                 String         @id @default(cuid())
+  projectId          String
+  analysisType       AIAnalysisType
+  inputSummary       String         @db.Text
+  outputSummary      String         @db.Text
+  generatedItemCount Int            @default(0)
+  modelName          String
+  confidence         Float          @default(0.8)
+  createdAt          DateTime       @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model SourceEvidence {
+  id            String             @id @default(cuid())
+  projectId     String
+  sourceType    SourceEvidenceType
+  sourceId      String?
+  documentId    String?
+  pageNumber    Int?
+  locationLabel String?
+  quote         String?            @db.Text
+  boundingBox   String?
+  confidence    Float              @default(0.8)
+  createdAt     DateTime           @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model Building {
@@ -237,6 +400,8 @@ model DocumentAsset {
   fileSize     Int
   mimeType     String
   category     DocumentCategory
+  aiSummary    String?          @db.Text
+  extractedText String?         @db.Text
   description  String?
   uploadedById String?
   createdAt    DateTime         @default(now())
@@ -247,18 +412,20 @@ model DocumentAsset {
 }
 
 model DiagnosisItem {
-  id              String            @id @default(cuid())
-  projectId       String
-  title           String
-  category        DiagnosisCategory
-  severity        SeverityLevel
-  status          DiagnosisStatus   @default(identified)
-  description     String
-  evidence        String?
-  recommendation  String?
-  relatedLocation String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                     String            @id @default(cuid())
+  projectId              String
+  insightId              String?
+  title                  String
+  category               DiagnosisCategory
+  severity               SeverityLevel
+  status                 DiagnosisStatus   @default(identified)
+  description            String
+  evidence               String?
+  recommendation         String?
+  relatedLocation        String?
+  requiresEngineerReview Boolean           @default(false)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
@@ -277,6 +444,9 @@ model RenovationStrategy {
   costLevel            CostScheduleLevel
   scheduleLevel        CostScheduleLevel
   riskLevel            RiskLevel
+  designValueScore     Int?
+  feasibilityScore     Int?
+  preservationScore    Int?
   pros                 String[]
   cons                 String[]
   recommendationReason String?
@@ -287,19 +457,21 @@ model RenovationStrategy {
 }
 
 model SiteIssue {
-  id           String        @id @default(cuid())
-  projectId    String
-  title        String
-  category     IssueCategory
-  priority     IssuePriority
-  status       IssueStatus   @default(open)
-  location     String?
-  description  String
-  photoUrl     String?
-  assignedToId String?
-  dueDate      DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  projectId        String
+  title            String
+  category         IssueCategory
+  priority         IssuePriority
+  status           IssueStatus   @default(open)
+  location         String?
+  description      String
+  photoUrl         String?
+  assignedToId     String?
+  aiDetected       Boolean       @default(false)
+  relatedInsightId String?
+  dueDate          DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assignedTo User?   @relation("AssignedIssues", fields: [assignedToId], references: [id])
@@ -311,9 +483,10 @@ model Report {
   title       String
   type        ReportType
   content     String       @db.Text
-  status      ReportStatus @default(draft)
-  createdById String?
-  createdAt   DateTime     @default(now())
+  status        ReportStatus @default(draft)
+  createdById   String?
+  generatedByAI Boolean      @default(false)
+  createdAt     DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

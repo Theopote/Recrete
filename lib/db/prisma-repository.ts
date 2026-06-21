@@ -130,6 +130,21 @@ export async function addDiagnosisItems(
   return created.map(mapDiagnosis);
 }
 
+export async function updateDiagnosisItem(
+  itemId: string,
+  data: Partial<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">>
+): Promise<DiagnosisItem | null> {
+  try {
+    const updated = await prisma.diagnosisItem.update({
+      where: { id: itemId },
+      data,
+    });
+    return mapDiagnosis(updated);
+  } catch {
+    return null;
+  }
+}
+
 export async function addStrategies(
   projectId: string,
   strategies: Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]
@@ -177,6 +192,21 @@ export async function addReport(
     data: { ...report, projectId },
   });
   return mapReport(created);
+}
+
+export async function updateReport(
+  reportId: string,
+  data: Partial<Pick<Report, "title" | "content" | "status">>
+): Promise<Report | null> {
+  try {
+    const updated = await prisma.report.update({
+      where: { id: reportId },
+      data,
+    });
+    return mapReport(updated);
+  } catch {
+    return null;
+  }
 }
 
 export async function addIssue(
@@ -344,45 +374,18 @@ export async function search(query: string): Promise<SearchResult[]> {
 }
 
 export async function getDashboardData() {
-  const [totalProjects, activeProjects, highRiskProjects, pendingIssues, projects, recentDiagnosis] =
-    await Promise.all([
-      prisma.project.count(),
-      prisma.project.count({
-        where: { status: { in: ["survey", "diagnosis", "strategy", "design", "construction"] } },
-      }),
-      prisma.project.count({
-        where: { riskLevel: { in: ["high", "critical"] } },
-      }),
-      prisma.siteIssue.count({
-        where: { status: { in: ["open", "in_progress"] } },
-      }),
-      prisma.project.findMany({ orderBy: { updatedAt: "desc" }, take: 5 }),
-      prisma.diagnosisItem.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: 5,
-      }),
-    ]);
+  const { getDashboardData: mockDashboard } = await import("@/lib/db/mock-repository");
+  return mockDashboard();
+}
 
-  const statusGroups = await prisma.project.groupBy({
-    by: ["status"],
-    _count: { status: true },
-  });
+export async function getCommandCenterData() {
+  const { getCommandCenterData: mockCommandCenter } = await import("@/lib/db/mock-repository");
+  return mockCommandCenter();
+}
 
-  return {
-    stats: {
-      totalProjects,
-      activeProjects,
-      highRiskProjects,
-      pendingIssues,
-      statusDistribution: statusGroups.map((g) => ({
-        status: g.status as ProjectStatus,
-        count: g._count.status,
-      })),
-    },
-    recentProjects: projects.map(mapProject),
-    recentDiagnosis: recentDiagnosis.map(mapDiagnosis),
-    aiInsights: getAIInsightsSummary(),
-  };
+export async function updateBuildingMemory(projectId: string) {
+  const { updateBuildingMemory: mockUpdate } = await import("@/lib/db/mock-repository");
+  return mockUpdate(projectId);
 }
 
 export async function getStrategiesWithMetrics(projectId: string): Promise<StrategyWithMetrics[]> {

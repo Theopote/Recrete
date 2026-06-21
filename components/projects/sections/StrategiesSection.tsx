@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { StrategyCard } from "@/components/strategies/StrategyCard";
 import { StrategyComparisonTable } from "@/components/strategies/StrategyComparisonTable";
+import { CreateStrategyForm } from "@/components/strategies/CreateStrategyForm";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -27,11 +28,15 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
       });
       if (res.ok) {
         const data = await res.json();
-        setStrategies((prev) => [...data, ...prev]);
+        setStrategies((prev) => [...data.map(parseStrategy), ...prev]);
       }
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleCreated = (strategy: StrategyWithMetrics) => {
+    setStrategies((prev) => [strategy, ...prev]);
   };
 
   const recommended = strategies.find((s) => s.recommendationReason);
@@ -39,10 +44,12 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
   return (
     <div className="space-y-6">
       <SectionHeader
-        title="Renovation Strategies"
+        title="Strategy Lab"
+        description="Define parameters and generate AI renovation strategies with comparison metrics"
         description="Compare multiple renovation approaches with cost, schedule, and risk analysis"
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <CreateStrategyForm projectId={project.id} onCreated={handleCreated} />
             <Button
               variant="outline"
               size="sm"
@@ -82,10 +89,18 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         <EmptyState
           icon={Lightbulb}
           title="No strategies yet"
-          description="Generate AI-powered renovation strategies based on project data and diagnosis findings."
+          description="Create a strategy manually or generate AI-powered options based on diagnosis findings."
           action={{ label: "Generate Strategies", onClick: handleGenerate }}
         />
       )}
     </div>
   );
+}
+
+function parseStrategy(s: StrategyWithMetrics): StrategyWithMetrics {
+  return {
+    ...s,
+    createdAt: new Date(s.createdAt),
+    updatedAt: new Date(s.updatedAt),
+  };
 }

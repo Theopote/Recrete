@@ -28,6 +28,7 @@ export type DocumentCategory =
   | "mep_documents"
   | "historical_documents"
   | "cost_documents"
+  | "meeting_records"
   | "reports"
   | "others";
 
@@ -84,7 +85,8 @@ export type ReportType =
   | "renovation_strategy_report"
   | "owner_presentation"
   | "government_submission"
-  | "site_issue_report";
+  | "site_issue_report"
+  | "design_meeting_summary";
 
 export type ReportStatus = "draft" | "generating" | "ready" | "published";
 
@@ -133,6 +135,8 @@ export interface Project {
   riskLevel: RiskLevel;
   healthScore: number;
   potentialScore: number;
+  aiReadinessScore: number;
+  dataCompletenessScore: number;
   description?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -163,6 +167,8 @@ export interface DocumentAsset {
   fileSize: number;
   mimeType: string;
   category: DocumentCategory;
+  aiSummary?: string | null;
+  extractedText?: string | null;
   description?: string | null;
   uploadedById?: string | null;
   createdAt: Date;
@@ -172,6 +178,7 @@ export interface DocumentAsset {
 export interface DiagnosisItem {
   id: string;
   projectId: string;
+  insightId?: string | null;
   title: string;
   category: DiagnosisCategory;
   severity: SeverityLevel;
@@ -180,6 +187,7 @@ export interface DiagnosisItem {
   evidence?: string | null;
   recommendation?: string | null;
   relatedLocation?: string | null;
+  requiresEngineerReview?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -198,6 +206,9 @@ export interface RenovationStrategy {
   costLevel: CostScheduleLevel;
   scheduleLevel: CostScheduleLevel;
   riskLevel: RiskLevel;
+  designValueScore?: number;
+  feasibilityScore?: number;
+  preservationScore?: number;
   pros: string[];
   cons: string[];
   recommendationReason?: string | null;
@@ -216,6 +227,8 @@ export interface SiteIssue {
   description: string;
   photoUrl?: string | null;
   assignedToId?: string | null;
+  aiDetected?: boolean;
+  relatedInsightId?: string | null;
   dueDate?: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -229,6 +242,7 @@ export interface Report {
   content: string;
   status: ReportStatus;
   createdById?: string | null;
+  generatedByAI?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -251,7 +265,11 @@ export interface AIConversation {
 
 export interface ProjectWithRelations extends Project {
   building?: Building | null;
+  buildingMemory?: import("@/types/ai").BuildingMemory | null;
   documents?: DocumentAsset[];
+  insights?: import("@/types/ai").AIInsight[];
+  tasks?: import("@/types/ai").AITask[];
+  analysisRuns?: import("@/types/ai").AIAnalysisRun[];
   diagnosis?: DiagnosisItem[];
   strategies?: RenovationStrategy[];
   issues?: SiteIssue[];
@@ -290,12 +308,16 @@ export interface CreateProjectInput {
 
 export type ProjectSection =
   | "overview"
-  | "building"
-  | "documents"
+  | "building-memory"
+  | "survey-intelligence"
   | "diagnosis"
-  | "strategies"
+  | "strategy-lab"
+  | "cost-risk"
   | "issues"
   | "reports"
+  | "building"
+  | "documents"
+  | "strategies"
   | "timeline";
 
 export interface StrategyComparisonMetrics {

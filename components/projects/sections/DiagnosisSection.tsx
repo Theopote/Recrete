@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { DiagnosisCard } from "@/components/diagnosis/DiagnosisCard";
+import { DiagnosisFormDialog } from "@/components/diagnosis/DiagnosisFormDialog";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import { diagnosisCategoryLabels } from "@/lib/utils/labels";
 import type { DiagnosisItem, ProjectWithRelations } from "@/types";
-import { Sparkles, Stethoscope } from "lucide-react";
+import { Sparkles, Stethoscope, Plus } from "lucide-react";
 
 interface DiagnosisSectionProps {
   project: ProjectWithRelations;
@@ -17,6 +18,8 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
   const [items, setItems] = useState(initialProject.diagnosis ?? []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<DiagnosisItem | null>(null);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -26,11 +29,29 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
       });
       if (res.ok) {
         const newItems = await res.json();
-        setItems((prev) => [...newItems, ...prev]);
+        setItems((prev) => [...newItems.map(parseDiagnosis), ...prev]);
       }
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleSaved = (item: DiagnosisItem) => {
+    setItems((prev) => {
+      const exists = prev.find((i) => i.id === item.id);
+      if (exists) return prev.map((i) => (i.id === item.id ? item : i));
+      return [item, ...prev];
+    });
+  };
+
+  const openCreate = () => {
+    setEditingItem(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = (item: DiagnosisItem) => {
+    setEditingItem(item);
+    setFormOpen(true);
   };
 
   const grouped = items.reduce(
@@ -51,10 +72,16 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         title="Building Diagnosis"
         description="AI-assisted condition assessment grouped by discipline"
         action={
-          <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-            {isGenerating ? "Generating..." : "Generate AI Diagnosis"}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={openCreate}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Add Item
+            </Button>
+            <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              {isGenerating ? "Generating..." : "Generate AI Diagnosis"}
+            </Button>
+          </div>
         }
       />
 
@@ -84,7 +111,7 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 {categoryItems.map((item) => (
-                  <DiagnosisCard key={item.id} item={item} />
+                  <DiagnosisCard key={item.id} item={item} onEdit={openEdit} />
                 ))}
               </div>
             </div>
@@ -92,7 +119,7 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filtered.map((item) => (
-              <DiagnosisCard key={item.id} item={item} />
+              <DiagnosisCard key={item.id} item={item} onEdit={openEdit} />
             ))}
           </div>
         )
@@ -100,10 +127,18 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         <EmptyState
           icon={Stethoscope}
           title="No diagnosis items"
-          description="Run AI diagnosis to identify building issues across architecture, structure, MEP, and more."
+          description="Add items manually or run AI diagnosis to identify building issues."
           action={{ label: "Generate Diagnosis", onClick: handleGenerate }}
         />
       )}
+
+      <DiagnosisFormDialog
+        projectId={initialProject.id}
+        item={editingItem}
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSaved={handleSaved}
+      />
     </div>
   );
 }
@@ -119,4 +154,12 @@ function CategoryPill({ label, count, active, onClick }: { label: string; count:
       {label} ({count})
     </button>
   );
+}
+
+function parseDiagnosis(d: DiagnosisItem): DiagnosisItem {
+  return {
+    ...d,
+    createdAt: new Date(d.createdAt),
+    updatedAt: new Date(d.updatedAt),
+  };
 }

@@ -68,3 +68,53 @@ export const siteIssueSchema = z.object({
 });
 
 export type SiteIssueFormValues = z.infer<typeof siteIssueSchema>;
+
+export const diagnosisItemSchema = z.object({
+  title: z.string().min(2, "Title is required"),
+  category: z.enum([
+    "architecture",
+    "structure",
+    "facade",
+    "mep",
+    "fire_safety",
+    "accessibility",
+    "energy",
+    "heritage",
+    "operation",
+  ]),
+  severity: z.enum(["low", "medium", "high", "critical"]),
+  status: z.enum(["identified", "under_review", "confirmed", "resolved"]),
+  description: z.string().min(5, "Description is required"),
+  evidence: z.string().optional(),
+  recommendation: z.string().optional(),
+  relatedLocation: z.string().optional(),
+});
+
+export type DiagnosisItemFormValues = z.infer<typeof diagnosisItemSchema>;
+
+export const strategySchema = z.object({
+  name: z.string().min(2, "Strategy name is required"),
+  type: z.enum([
+    "light_renewal",
+    "medium_renovation",
+    "deep_recreation",
+    "adaptive_reuse",
+    "facade_upgrade",
+    "energy_retrofit",
+    "safety_upgrade",
+  ]),
+  summary: z.string().min(10, "Summary is required"),
+  designGoal: z.string().min(5, "Design goal is required"),
+  spatialStrategy: z.string().min(5, "Required"),
+  structuralStrategy: z.string().min(5, "Required"),
+  facadeStrategy: z.string().min(5, "Required"),
+  mepStrategy: z.string().min(5, "Required"),
+  costLevel: z.enum(["low", "medium", "high"]),
+  scheduleLevel: z.enum(["low", "medium", "high"]),
+  riskLevel: z.enum(["low", "medium", "high", "critical"]),
+  pros: z.string().min(1, "At least one pro required"),
+  cons: z.string().min(1, "At least one con required"),
+  recommendationReason: z.string().optional(),
+});
+
+export type StrategyFormValues = z.infer<typeof strategySchema>;

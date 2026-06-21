@@ -6,24 +6,28 @@ import { cn } from "@/lib/utils";
 import type { ProjectSection } from "@/types";
 import {
   LayoutDashboard,
-  Building2,
-  FileText,
+  Brain,
+  ClipboardList,
   Stethoscope,
-  Lightbulb,
+  FlaskConical,
+  Scale,
   AlertTriangle,
   FileBarChart,
-  Clock,
 } from "lucide-react";
 
-const sections: { id: ProjectSection; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const sections: {
+  id: ProjectSection;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "building", label: "Building Profile", icon: Building2 },
-  { id: "documents", label: "Documents", icon: FileText },
+  { id: "building-memory", label: "Building Memory", icon: Brain },
+  { id: "survey-intelligence", label: "Survey Intelligence", icon: ClipboardList },
   { id: "diagnosis", label: "Diagnosis", icon: Stethoscope },
-  { id: "strategies", label: "Strategies", icon: Lightbulb },
+  { id: "strategy-lab", label: "Strategy Lab", icon: FlaskConical },
+  { id: "cost-risk", label: "Cost & Risk", icon: Scale },
   { id: "issues", label: "Issues", icon: AlertTriangle },
   { id: "reports", label: "Reports", icon: FileBarChart },
-  { id: "timeline", label: "Timeline", icon: Clock },
 ];
 
 interface ProjectSidebarProps {
@@ -32,7 +36,17 @@ interface ProjectSidebarProps {
 
 export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
   const searchParams = useSearchParams();
-  const currentSection = (searchParams.get("section") as ProjectSection) || "overview";
+  const rawSection = searchParams.get("section") as ProjectSection | null;
+  const legacyMap: Record<string, ProjectSection> = {
+    building: "building-memory",
+    documents: "survey-intelligence",
+    strategies: "strategy-lab",
+    timeline: "overview",
+  };
+  const currentSection =
+    (rawSection && legacyMap[rawSection]) ||
+    rawSection ||
+    "overview";
 
   return (
     <aside className="w-48 shrink-0 border-r bg-muted/30 p-3">

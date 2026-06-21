@@ -3,47 +3,93 @@
 import ReactMarkdown from "react-markdown";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Save, Eye, Edit3 } from "lucide-react";
-import { useState } from "react";
+import { Save, Eye, Edit3, FileDown, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { exportReportToPdf, downloadMarkdown } from "@/lib/reports/export-pdf";
 
 interface ReportEditorProps {
   content: string;
   title: string;
+  projectName?: string;
+  reportId?: string;
+  projectId?: string;
   onSave?: (content: string) => void;
   readOnly?: boolean;
 }
 
-export function ReportEditor({ content, title, onSave, readOnly }: ReportEditorProps) {
+export function ReportEditor({
+  content,
+  title,
+  projectName,
+  reportId,
+  projectId,
+  onSave,
+  readOnly,
+}: ReportEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    onSave?.(editedContent);
+  useEffect(() => {
+    setEditedContent(content);
+    setIsEditing(false);
+  }, [content, title]);
+
+  const handleSave = async () => {
+    if (reportId && projectId) {
+      setSaving(true);
+      try {
+        const res = await fetch(`/api/projects/${projectId}/reports/${reportId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: editedContent }),
+        });
+        if (res.ok) onSave?.(editedContent);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      onSave?.(editedContent);
+    }
     setIsEditing(false);
   };
 
   return (
     <div className="rounded-lg border bg-card">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <h3 className="text-sm font-medium">{title}</h3>
-        {!readOnly && (
-          <div className="flex gap-2">
-            {isEditing ? (
+      <div className="flex items-center justify-between border-b px-4 py-3 gap-2 flex-wrap">
+        <h3 className="text-sm font-medium truncate">{title}</h3>
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportReportToPdf(title, editedContent, projectName)}
+          >
+            <FileDown className="h-3.5 w-3.5 mr-1" /> Export PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadMarkdown(title, editedContent)}
+          >
+            <Download className="h-3.5 w-3.5 mr-1" /> .md
+          </Button>
+          {!readOnly && (
+            isEditing ? (
               <>
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
+                <Button variant="ghost" size="sm" onClick={() => { setIsEditing(false); setEditedContent(content); }}>
                   <Eye className="h-3.5 w-3.5 mr-1" /> Preview
                 </Button>
-                <Button variant="copper" size="sm" onClick={handleSave}>
-                  <Save className="h-3.5 w-3.5 mr-1" /> Save
+                <Button variant="copper" size="sm" onClick={handleSave} disabled={saving}>
+                  <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Saving..." : "Save"}
                 </Button>
               </>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                 <Edit3 className="h-3.5 w-3.5 mr-1" /> Edit
               </Button>
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
       </div>
 
       <div className="p-6">

@@ -68,7 +68,11 @@ export async function getProjectById(id: string): Promise<ProjectWithRelations |
   return {
     ...project,
     building: store.buildings.find((b) => b.projectId === id) ?? null,
+    buildingMemory: store.buildingMemories.find((m) => m.projectId === id) ?? null,
     documents: store.documents.filter((d) => d.projectId === id),
+    insights: store.insights.filter((i) => i.projectId === id),
+    tasks: store.tasks.filter((t) => t.projectId === id),
+    analysisRuns: store.analysisRuns.filter((r) => r.projectId === id),
     diagnosis: store.diagnosis.filter((d) => d.projectId === id),
     strategies: store.strategies.filter((s) => s.projectId === id),
     issues: store.issues.filter((i) => i.projectId === id),
@@ -98,6 +102,8 @@ export async function createProject(input: CreateProjectInput): Promise<ProjectW
     riskLevel: "medium",
     healthScore: 50,
     potentialScore: 60,
+    aiReadinessScore: 40,
+    dataCompletenessScore: 20,
     description: input.description ?? null,
     createdAt: now,
     updatedAt: now,
@@ -140,6 +146,16 @@ export async function addDiagnosisItems(
   }));
   store.diagnosis.push(...created);
   return created;
+}
+
+export async function updateDiagnosisItem(
+  itemId: string,
+  data: Partial<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">>
+): Promise<DiagnosisItem | null> {
+  const item = store.diagnosis.find((d) => d.id === itemId);
+  if (!item) return null;
+  Object.assign(item, data, { updatedAt: new Date() });
+  return item;
 }
 
 export async function addStrategies(
@@ -199,6 +215,16 @@ export async function addReport(
   };
   store.reports.push(created);
   return created;
+}
+
+export async function updateReport(
+  reportId: string,
+  data: Partial<Pick<Report, "title" | "content" | "status">>
+): Promise<Report | null> {
+  const report = store.reports.find((r) => r.id === reportId);
+  if (!report) return null;
+  Object.assign(report, data, { updatedAt: new Date() });
+  return report;
 }
 
 export async function addIssue(
@@ -361,6 +387,74 @@ export async function getDashboardData() {
     recentDiagnosis: getRecentDiagnosis(5),
     aiInsights: getAIInsightsSummary(),
   };
+}
+
+export async function getCommandCenterData() {
+  const projects = [...store.projects].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  const insights = [...store.insights].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  const tasks = [...store.tasks];
+  const analysisRuns = [...store.analysisRuns].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
+
+  const avgAiReadiness =
+    projects.length > 0
+      ? Math.round(projects.reduce((s, p) => s + p.aiReadinessScore, 0) / projects.length)
+      : 0;
+  const avgDataCompleteness =
+    projects.length > 0
+      ? Math.round(projects.reduce((s, p) => s + p.dataCompletenessScore, 0) / projects.length)
+      : 0;
+
+  return {
+    projects,
+    insights,
+    tasks,
+    analysisRuns,
+    avgAiReadiness,
+    avgDataCompleteness,
+    highRiskInsightCount: insights.filter(
+      (i) => i.priority === "high" || i.priority === "critical"
+    ).length,
+    missingInfoCount: insights.filter((i) => i.type === "missing_info").length,
+  };
+}
+
+export async function updateBuildingMemory(projectId: string) {
+  const { getAIPlatform } = await import("@/lib/ai");
+  const project = await getProjectById(projectId);
+  if (!project) return null;
+
+  const updated = await getAIPlatform().buildingMemory.updateBuildingMemory(project);
+  const now = new Date();
+  const existing = store.buildingMemories.find((m) => m.projectId === projectId);
+
+  const memory = {
+    ...updated,
+    id: existing?.id ?? generateId("bm"),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  if (existing) {
+    Object.assign(existing, memory);
+  } else {
+    store.buildingMemories.push(memory);
+  }
+
+  store.analysisRuns.push({
+    id: generateId("run"),
+    projectId,
+    analysisType: "building_memory_update",
+    inputSummary: `Project ${project.name} — ${project.documents?.length ?? 0} docs, ${project.diagnosis?.length ?? 0} diagnosis items`,
+    outputSummary: "Building Memory updated with latest AI analysis",
+    generatedItemCount: 1,
+    modelName: "recrete-mock-v1",
+    confidence: 0.89,
+    createdAt: now,
+  });
+
+  return memory;
 }
 
 export async function getStrategiesWithMetrics(

@@ -31,12 +31,20 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
       });
       if (res.ok) {
         const report = await res.json();
-        setReports((prev) => [report, ...prev]);
-        setSelectedReport(report);
+        const parsed = parseReport(report);
+        setReports((prev) => [parsed, ...prev]);
+        setSelectedReport(parsed);
       }
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleContentSave = (content: string) => {
+    if (!selectedReport) return;
+    const updated = { ...selectedReport, content };
+    setSelectedReport(updated);
+    setReports((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   };
 
   return (
@@ -95,6 +103,10 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
             <ReportEditor
               title={selectedReport.title}
               content={selectedReport.content}
+              projectName={initialProject.name}
+              reportId={selectedReport.id}
+              projectId={initialProject.id}
+              onSave={handleContentSave}
             />
           ) : (
             <EmptyState
@@ -108,4 +120,12 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
       </div>
     </div>
   );
+}
+
+function parseReport(r: Report): Report {
+  return {
+    ...r,
+    createdAt: new Date(r.createdAt),
+    updatedAt: new Date(r.updatedAt),
+  };
 }

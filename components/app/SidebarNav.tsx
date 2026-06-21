@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
+  Sparkles,
   FolderKanban,
+  Brain,
   ClipboardList,
   Stethoscope,
-  Lightbulb,
+  FlaskConical,
+  Scale,
   AlertTriangle,
   FileText,
   BookOpen,
@@ -17,11 +19,11 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "AI Command Center", icon: Sparkles },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/survey", label: "Survey", icon: ClipboardList },
+  { href: "/survey", label: "Survey Intelligence", icon: ClipboardList },
   { href: "/diagnosis", label: "Diagnosis", icon: Stethoscope },
-  { href: "/strategies", label: "Design Strategies", icon: Lightbulb },
+  { href: "/strategies", label: "Strategy Lab", icon: FlaskConical },
   { href: "/issues", label: "Issues", icon: AlertTriangle },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
@@ -70,6 +72,10 @@ export function SidebarNav() {
       </nav>
 
       <div className="border-t p-4">
+        <div className="mb-2 flex items-center gap-1.5">
+          <Brain className="h-3 w-3 text-copper" />
+          <p className="text-[10px] font-medium text-copper">AI Renovation Command Center</p>
+        </div>
         <p className="text-[10px] text-muted-foreground leading-relaxed">
           Reimagine. Renew. Recreate.
           <br />

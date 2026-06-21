@@ -13,6 +13,14 @@ import type {
   SiteIssue,
   User,
 } from "@/types";
+import {
+  mockAIInsights,
+  mockAITasks,
+  mockAnalysisRuns,
+  mockBuildingMemories,
+  mockSourceEvidence,
+  documentAISummaries,
+} from "@/lib/mock-data/ai-native";
 
 const now = new Date("2026-06-15T10:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
@@ -77,6 +85,8 @@ export const mockProjects: Project[] = [
     riskLevel: "medium",
     healthScore: 58,
     potentialScore: 82,
+    aiReadinessScore: 72,
+    dataCompletenessScore: 58,
     description:
       "A 1986 reinforced concrete frame office building in central Xi'an, vacant since 2019. Strong structural bones but outdated MEP, poor accessibility, and deteriorating facade.",
     createdAt: daysAgo(45),
@@ -103,6 +113,8 @@ export const mockProjects: Project[] = [
     riskLevel: "high",
     healthScore: 45,
     potentialScore: 88,
+    aiReadinessScore: 65,
+    dataCompletenessScore: 45,
     description: "Heritage-adjacent industrial asset with waterfront potential.",
     createdAt: daysAgo(60),
     updatedAt: daysAgo(5),
@@ -127,6 +139,8 @@ export const mockProjects: Project[] = [
     riskLevel: "low",
     healthScore: 62,
     potentialScore: 71,
+    aiReadinessScore: 54,
+    dataCompletenessScore: 38,
     description: "Mid-rise residential block requiring envelope and MEP upgrades.",
     createdAt: daysAgo(20),
     updatedAt: daysAgo(2),
@@ -151,6 +165,8 @@ export const mockProjects: Project[] = [
     riskLevel: "critical",
     healthScore: 38,
     potentialScore: 91,
+    aiReadinessScore: 78,
+    dataCompletenessScore: 62,
     description: "Landmark commercial building with heritage constraints and complex stakeholder requirements.",
     createdAt: daysAgo(120),
     updatedAt: daysAgo(1),
@@ -231,6 +247,8 @@ export const mockDocuments: DocumentAsset[] = [
     fileSize: 4200000,
     mimeType: "application/pdf",
     category: "old_drawings",
+    aiSummary: documentAISummaries["doc-1"]?.aiSummary ?? null,
+    extractedText: documentAISummaries["doc-1"]?.extractedText ?? null,
     description: "Original reinforced concrete frame drawings from 1986 construction.",
     uploadedById: "user-1",
     createdAt: daysAgo(40),
@@ -245,6 +263,8 @@ export const mockDocuments: DocumentAsset[] = [
     fileSize: 28000000,
     mimeType: "application/zip",
     category: "survey_photos",
+    aiSummary: documentAISummaries["doc-2"]?.aiSummary ?? null,
+    extractedText: null,
     description: "Site survey photos documenting tile spalling and window conditions.",
     uploadedById: "user-3",
     createdAt: daysAgo(30),
@@ -259,6 +279,8 @@ export const mockDocuments: DocumentAsset[] = [
     fileSize: 1800000,
     mimeType: "application/pdf",
     category: "structure_documents",
+    aiSummary: documentAISummaries["doc-3"]?.aiSummary ?? null,
+    extractedText: documentAISummaries["doc-3"]?.extractedText ?? null,
     description: "Third-party structural assessment from 2024.",
     uploadedById: "user-2",
     createdAt: daysAgo(25),
@@ -273,6 +295,8 @@ export const mockDocuments: DocumentAsset[] = [
     fileSize: 3100000,
     mimeType: "application/pdf",
     category: "mep_documents",
+    aiSummary: documentAISummaries["doc-4"]?.aiSummary ?? null,
+    extractedText: null,
     description: "Partial MEP as-built documentation from 2003 renovation.",
     uploadedById: "user-1",
     createdAt: daysAgo(35),
@@ -287,6 +311,8 @@ export const mockDocuments: DocumentAsset[] = [
     fileSize: 890000,
     mimeType: "application/pdf",
     category: "historical_documents",
+    aiSummary: documentAISummaries["doc-5"]?.aiSummary ?? null,
+    extractedText: null,
     description: "Historical records of government office usage and prior renovations.",
     uploadedById: "user-1",
     createdAt: daysAgo(38),
@@ -298,6 +324,7 @@ export const mockDiagnosis: DiagnosisItem[] = [
   {
     id: "diag-1",
     projectId: "proj-demo",
+    insightId: "insight-7",
     title: "South facade tile spalling",
     category: "facade",
     severity: "high",
@@ -307,6 +334,7 @@ export const mockDiagnosis: DiagnosisItem[] = [
     evidence: "Site survey photos (2026-05), visual inspection report",
     recommendation: "Full facade tile removal and replacement with new cladding system. Install safety netting during assessment.",
     relatedLocation: "South elevation, floors 2–7",
+    requiresEngineerReview: false,
     createdAt: daysAgo(20),
     updatedAt: daysAgo(5),
   },
@@ -327,6 +355,7 @@ export const mockDiagnosis: DiagnosisItem[] = [
   {
     id: "diag-3",
     projectId: "proj-demo",
+    insightId: "insight-8",
     title: "Obsolescent MEP systems",
     category: "mep",
     severity: "critical",
@@ -336,12 +365,14 @@ export const mockDiagnosis: DiagnosisItem[] = [
     evidence: "MEP as-built drawings (2003), site inspection notes",
     recommendation: "Full MEP replacement required. Conduct load calculation for new cultural program.",
     relatedLocation: "Building-wide",
+    requiresEngineerReview: true,
     createdAt: daysAgo(15),
     updatedAt: daysAgo(3),
   },
   {
     id: "diag-4",
     projectId: "proj-demo",
+    insightId: "insight-2",
     title: "Non-compliant fire egress",
     category: "fire_safety",
     severity: "critical",
@@ -350,6 +381,7 @@ export const mockDiagnosis: DiagnosisItem[] = [
     evidence: "Code review against GB 50016, measured corridor widths",
     recommendation: "Redesign egress paths. Consider additional stair core on east side.",
     relatedLocation: "All floors, core areas",
+    requiresEngineerReview: true,
     createdAt: daysAgo(12),
     updatedAt: daysAgo(2),
   },
@@ -370,6 +402,7 @@ export const mockDiagnosis: DiagnosisItem[] = [
   {
     id: "diag-6",
     projectId: "proj-demo",
+    insightId: null,
     title: "Concrete carbonation at column bases",
     category: "structure",
     severity: "medium",
@@ -378,6 +411,7 @@ export const mockDiagnosis: DiagnosisItem[] = [
     evidence: "Structural inspection report 2024, cover meter readings",
     recommendation: "Engineer to assess depth of carbonation. Plan protective coating or localized repair.",
     relatedLocation: "Basement B1, grid lines C-D/3-5",
+    requiresEngineerReview: true,
     createdAt: daysAgo(8),
     updatedAt: daysAgo(1),
   },
@@ -412,6 +446,9 @@ export const mockStrategies: RenovationStrategy[] = [
     costLevel: "low",
     scheduleLevel: "low",
     riskLevel: "low",
+    designValueScore: 40,
+    feasibilityScore: 88,
+    preservationScore: 90,
     pros: ["Lowest cost", "Fastest timeline", "Minimal disruption"],
     cons: ["Does not address accessibility", "Limited program flexibility", "Energy performance remains poor"],
     recommendationReason: null,
@@ -432,6 +469,9 @@ export const mockStrategies: RenovationStrategy[] = [
     costLevel: "medium",
     scheduleLevel: "medium",
     riskLevel: "medium",
+    designValueScore: 85,
+    feasibilityScore: 72,
+    preservationScore: 75,
     pros: ["Strong design value", "Meets program goals", "Improves energy performance"],
     cons: ["Moderate cost", "Requires structural verification", "Temporary relocation needed"],
     recommendationReason:
@@ -453,6 +493,9 @@ export const mockStrategies: RenovationStrategy[] = [
     costLevel: "high",
     scheduleLevel: "high",
     riskLevel: "high",
+    designValueScore: 95,
+    feasibilityScore: 55,
+    preservationScore: 40,
     pros: ["Maximum design potential", "Best long-term performance", "Landmark quality"],
     cons: ["Highest cost", "Longest schedule", "Highest construction risk"],
     recommendationReason: null,
@@ -473,6 +516,8 @@ export const mockIssues: SiteIssue[] = [
     description: "Several ceramic tiles have fallen onto the sidewalk. Safety barrier installed.",
     photoUrl: null,
     assignedToId: "user-3",
+    aiDetected: true,
+    relatedInsightId: "insight-7",
     dueDate: daysAgo(-3),
     createdAt: daysAgo(5),
     updatedAt: daysAgo(1),
@@ -548,6 +593,7 @@ export const mockReports: Report[] = [
     content: "# Existing Condition Summary\n\n## Building Overview\n\n1986 reinforced concrete frame office building...",
     status: "ready",
     createdById: "user-1",
+    generatedByAI: true,
     createdAt: daysAgo(10),
     updatedAt: daysAgo(5),
   },
@@ -562,13 +608,25 @@ export function getProjectWithRelations(projectId: string): ProjectWithRelations
   return {
     ...project,
     building: mockBuildings.find((b) => b.projectId === projectId) ?? null,
+    buildingMemory: mockBuildingMemories.find((m) => m.projectId === projectId) ?? null,
     documents: mockDocuments.filter((d) => d.projectId === projectId),
+    insights: mockAIInsights.filter((i) => i.projectId === projectId),
+    tasks: mockAITasks.filter((t) => t.projectId === projectId),
+    analysisRuns: mockAnalysisRuns.filter((r) => r.projectId === projectId),
     diagnosis: mockDiagnosis.filter((d) => d.projectId === projectId),
     strategies: mockStrategies.filter((s) => s.projectId === projectId),
     issues: mockIssues.filter((i) => i.projectId === projectId),
     reports: mockReports.filter((r) => r.projectId === projectId),
   };
 }
+
+export {
+  mockAIInsights,
+  mockAITasks,
+  mockAnalysisRuns,
+  mockBuildingMemories,
+  mockSourceEvidence,
+};
 
 export function getDashboardStats(): DashboardStats {
   const activeStatuses = ["survey", "diagnosis", "strategy", "design", "construction"];
@@ -629,7 +687,12 @@ export const strategyMetrics: Record<string, import("@/types").StrategyCompariso
 export type MockStore = {
   projects: Project[];
   buildings: Building[];
+  buildingMemories: import("@/types/ai").BuildingMemory[];
   documents: DocumentAsset[];
+  insights: import("@/types/ai").AIInsight[];
+  tasks: import("@/types/ai").AITask[];
+  analysisRuns: import("@/types/ai").AIAnalysisRun[];
+  evidence: import("@/types/ai").SourceEvidence[];
   diagnosis: DiagnosisItem[];
   strategies: RenovationStrategy[];
   issues: SiteIssue[];
@@ -641,7 +704,12 @@ export function createMockStore(): MockStore {
   return {
     projects: [...mockProjects],
     buildings: [...mockBuildings],
+    buildingMemories: [...mockBuildingMemories],
     documents: [...mockDocuments],
+    insights: [...mockAIInsights],
+    tasks: [...mockAITasks],
+    analysisRuns: [...mockAnalysisRuns],
+    evidence: [...mockSourceEvidence],
     diagnosis: [...mockDiagnosis],
     strategies: [...mockStrategies],
     issues: [...mockIssues],

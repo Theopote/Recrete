@@ -1,15 +1,21 @@
 import type { AIService } from "./types";
-import { mockAIService } from "./mock-ai-service";
-import { openAIService } from "./openai-service";
+import { mockAIProvider } from "./providers/mock-provider";
+import { openAIProvider } from "./providers/openai-provider";
 
 export function getAIService(): AIService {
   const service = process.env.AI_SERVICE ?? "mock";
   if (service === "openai" && process.env.OPENAI_API_KEY) {
-    return openAIService;
+    return openAIProvider;
   }
-  return mockAIService;
+  return mockAIProvider;
 }
 
-export { mockAIService, openAIService };
+export function getAIPlatform() {
+  return mockAIProvider;
+}
+
+export { mockAIProvider, openAIProvider };
+export { buildProjectAIContext, buildProjectAIContextSync } from "./context-builder";
+export * as agents from "./agents";
 export type { AIService, ProjectContext, AIMessage } from "./types";
 export { ASSISTANT_SUGGESTIONS } from "./prompts";

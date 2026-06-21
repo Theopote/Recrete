@@ -51,9 +51,11 @@ Provide professional, concise advice for architects, engineers, and project mana
 export const ASSISTANT_SUGGESTIONS = [
   "What are the main risks of this building?",
   "What information is missing?",
-  "Which renovation strategy is recommended?",
-  "What should we do next?",
-  "Generate a meeting summary",
-  "List structural issues needing engineer review",
-  "List documents required before schematic design",
+  "Generate three renovation strategies.",
+  "Which strategy is most feasible?",
+  "What should we do before schematic design?",
+  "List structural issues requiring engineer review.",
+  "Generate a client presentation outline.",
+  "Generate a meeting agenda.",
+  "Summarize this project for the owner.",
 ] as const;

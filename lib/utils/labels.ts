@@ -12,6 +12,7 @@ import type {
   SeverityLevel,
   StrategyType,
 } from "@/types";
+import type { AIInsightType, AIAnalysisType } from "@/types/ai";
 
 type LabelMap<T extends string> = Record<T, string>;
 
@@ -73,6 +74,7 @@ export const documentCategoryLabels: LabelMap<DocumentCategory> = {
   mep_documents: "MEP Documents",
   historical_documents: "Historical Documents",
   cost_documents: "Cost Documents",
+  meeting_records: "Meeting Records",
   reports: "Reports",
   others: "Others",
 };
@@ -122,6 +124,30 @@ export const reportTypeLabels: LabelMap<ReportType> = {
   owner_presentation: "Owner Presentation",
   government_submission: "Government Submission",
   site_issue_report: "Site Issue Report",
+  design_meeting_summary: "Design Meeting Summary",
+};
+
+export const insightTypeLabels: Record<AIInsightType, string> = {
+  missing_info: "Missing Info",
+  risk: "Risk",
+  opportunity: "Opportunity",
+  design_strategy: "Design Strategy",
+  cost_warning: "Cost Warning",
+  schedule_warning: "Schedule Warning",
+  compliance_warning: "Compliance",
+  site_issue: "Site Issue",
+  report_suggestion: "Report Suggestion",
+};
+
+export const analysisTypeLabels: Record<AIAnalysisType, string> = {
+  building_memory_update: "Building Memory Update",
+  document_analysis: "Document Analysis",
+  missing_info_detection: "Missing Info Detection",
+  diagnosis_generation: "Diagnosis Generation",
+  strategy_generation: "Strategy Generation",
+  cost_risk_estimation: "Cost & Risk Estimation",
+  report_generation: "Report Generation",
+  copilot_chat: "Copilot Chat",
 };
 
 export function getProjectStatusColor(status: ProjectStatus): string {
