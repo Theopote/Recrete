@@ -88,6 +88,51 @@ function computeSpaceGeometryArea(ifcApi: WebIFC.IfcAPI, modelId: number, expres
   return geometries.reduce((sum, geometry) => sum + computeProjectedMeshArea(geometry), 0);
 }
 
+function computeSpaceCentroid(ifcApi: WebIFC.IfcAPI, modelId: number, expressId: number) {
+  const geometries: ReturnType<typeof bufferGeometryFromPlacedMesh>[] = [];
+
+  ifcApi.StreamMeshes(modelId, [expressId], (flatMesh) => {
+    const placedGeometries = flatMesh.geometries;
+    for (let i = 0; i < placedGeometries.size(); i++) {
+      geometries.push(
+        bufferGeometryFromPlacedMesh(ifcApi, modelId, placedGeometries.get(i))
+      );
+    }
+  });
+
+  if (geometries.length === 0) {
+    const flatMesh = ifcApi.GetFlatMesh(modelId, expressId);
+    const placedGeometries = flatMesh.geometries;
+    for (let i = 0; i < placedGeometries.size(); i++) {
+      geometries.push(
+        bufferGeometryFromPlacedMesh(ifcApi, modelId, placedGeometries.get(i))
+      );
+    }
+    flatMesh.delete();
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const geometry of geometries) {
+    const position = geometry.getAttribute("position");
+    if (!position) continue;
+    for (let i = 0; i < position.count; i++) {
+      const x = position.getX(i);
+      const y = position.getY(i);
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (!Number.isFinite(minX)) return undefined;
+  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+}
+
 export async function extractIfcSpaces(
   ifcApi: WebIFC.IfcAPI,
   modelId: number
@@ -123,6 +168,8 @@ export async function extractIfcSpaces(
 
     if (area <= 0) continue;
 
+    const centroid = computeSpaceCentroid(ifcApi, modelId, expressId);
+
     rooms.push({
       id: `ifc-${expressId}`,
       label,
@@ -130,6 +177,7 @@ export async function extractIfcSpaces(
       areaUnit: "m2",
       source,
       expressId,
+      centroid,
     });
   }
 

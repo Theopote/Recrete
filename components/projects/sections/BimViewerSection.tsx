@@ -12,6 +12,7 @@ import { SAMPLE_IFC_URL } from "@/lib/bim/formats";
 import type { BimModel } from "@/types/bim";
 import type { ProjectWithRelations } from "@/types";
 import { Box, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { BimSpatialAnalyticsPanel } from "@/components/bim/BimSpatialAnalyticsPanel";
 import { IfcLightweightProcessor } from "@/components/bim/IfcLightweightProcessor";
 
 const IfcModelViewer = dynamic(
@@ -162,7 +163,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
       <IfcLightweightProcessor models={models} onUpdated={handleModelUpdated} />
       <SectionHeader
         title="BIM / CAD Viewer"
-        description="Import IFC, DWG, or DXF — 3D GLB preview (IFC), 2D SVG preview (CAD), automatic room/area extraction"
+        description="Import IFC, DWG, or DXF — circulation analysis, spatial cost heatmap, strategy 3D compare"
         action={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={loadModels} disabled={loading}>
@@ -311,6 +312,14 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {selected?.status === "ready" && (selected.metadata?.rooms?.length ?? 0) > 0 && (
+            <BimSpatialAnalyticsPanel
+              projectId={project.id}
+              model={selected}
+              strategies={project.strategies ?? []}
+            />
           )}
         </div>
       </div>

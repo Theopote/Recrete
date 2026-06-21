@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import type { ProjectWithRelations, StrategyWithMetrics } from "@/types";
 import type { StrategyLabParams } from "@/types/ai";
+import { StrategySpatialCompareSection } from "@/components/strategies/StrategySpatialCompareSection";
 import { Lightbulb, Sparkles, GitCompare } from "lucide-react";
 
 interface StrategiesSectionProps {
@@ -89,6 +90,10 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
           </h3>
           <StrategyComparisonTable strategies={strategies} />
         </div>
+      )}
+
+      {strategies.length > 0 && (
+        <StrategySpatialCompareSection projectId={project.id} strategies={strategies} />
       )}
 
       {strategies.length > 0 ? (

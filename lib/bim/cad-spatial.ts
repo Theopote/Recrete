@@ -1,5 +1,6 @@
 import type { DwgDatabase } from "@mlightcad/libredwg-web";
-import type { BimRoomInfo } from "@/types/bim";
+import type { BimPoint2D, BimRoomInfo } from "@/types/bim";
+import { polygonCentroid } from "@/lib/bim/room-geometry";
 
 interface Point2D {
   x: number;
@@ -85,6 +86,8 @@ export function extractCadRooms(
       areaUnit: "m2",
       source: "cad_polyline",
       layer,
+      polygon: (entity.vertices ?? []).map((vertex) => ({ x: vertex.x, y: vertex.y })),
+      centroid: polygonCentroid(entity.vertices ?? []),
     });
   }
 
