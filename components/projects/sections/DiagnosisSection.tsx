@@ -28,7 +28,8 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         method: "POST",
       });
       if (res.ok) {
-        const newItems = await res.json();
+        const data = await res.json();
+        const newItems = data.diagnosisItems ?? data;
         setItems((prev) => [...newItems.map(parseDiagnosis), ...prev]);
       }
     } finally {

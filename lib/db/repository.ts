@@ -34,6 +34,20 @@ export async function addDiagnosisItems(
   return (await resolveDb()) ? db.addDiagnosisItems(projectId, items) : mock.addDiagnosisItems(projectId, items);
 }
 
+export async function addInsights(
+  projectId: string,
+  insights: Parameters<typeof mock.addInsights>[1]
+) {
+  return (await resolveDb()) ? db.addInsights(projectId, insights) : mock.addInsights(projectId, insights);
+}
+
+export async function addTasks(
+  projectId: string,
+  tasks: Parameters<typeof mock.addTasks>[1]
+) {
+  return (await resolveDb()) ? db.addTasks(projectId, tasks) : mock.addTasks(projectId, tasks);
+}
+
 export async function updateDiagnosisItem(
   itemId: string,
   data: Parameters<typeof mock.updateDiagnosisItem>[1]

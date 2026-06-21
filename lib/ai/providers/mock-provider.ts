@@ -16,6 +16,16 @@ export class MockAIProvider implements AIService {
   costRisk = agents.costRiskAgent;
   report = agents.reportAgent;
   copilot = agents.copilotAgent;
+  structural = {
+    assessStructuralSafety: agents.assessStructuralSafety,
+    generateStructuralDiagnosis: agents.generateStructuralDiagnosis,
+    suggestStrengtheningMethods: agents.suggestStrengtheningMethods,
+  };
+  compliance = {
+    performComplianceCheck: agents.performComplianceCheck,
+    generateComplianceDiagnosis: agents.generateComplianceDiagnosis,
+    searchCodeRequirements: agents.searchCodeRequirements,
+  };
 }
 
 export const mockAIProvider = new MockAIProvider();

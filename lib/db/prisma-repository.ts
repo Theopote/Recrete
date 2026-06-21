@@ -467,6 +467,22 @@ export async function updateBuildingMemory(projectId: string) {
   return mockUpdate(projectId);
 }
 
+export async function addInsights(
+  projectId: string,
+  insights: Parameters<typeof import("@/lib/db/mock-repository").addInsights>[1]
+) {
+  const { addInsights: mockAdd } = await import("@/lib/db/mock-repository");
+  return mockAdd(projectId, insights);
+}
+
+export async function addTasks(
+  projectId: string,
+  tasks: Parameters<typeof import("@/lib/db/mock-repository").addTasks>[1]
+) {
+  const { addTasks: mockAdd } = await import("@/lib/db/mock-repository");
+  return mockAdd(projectId, tasks);
+}
+
 export async function getStrategiesWithMetrics(projectId: string): Promise<StrategyWithMetrics[]> {
   const strategies = await prisma.renovationStrategy.findMany({
     where: { projectId },

@@ -1,4 +1,4 @@
-import type { ProjectWithRelations } from '@/types';
+import type { ProjectWithRelations, DiagnosisItem, DiagnosisCategory } from '@/types';
 import { buildingCodes, getCodesForScenario, searchCodes, type BuildingCode, type CodeRequirement } from '../knowledge/code-database';
 
 /**
@@ -181,6 +181,37 @@ export class ComplianceAgent {
   }
 
   /**
+   * Generate compliance-related diagnosis items from code checks
+   */
+  async generateComplianceDiagnosis(
+    project: ProjectWithRelations
+  ): Promise<Omit<DiagnosisItem, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>[]> {
+    const result = await this.performComplianceCheck(project);
+
+    return result.checks
+      .filter((check) => check.status !== 'compliant' && check.status !== 'not_applicable')
+      .map((check) => ({
+        title: check.requirement,
+        category: mapComplianceCategory(check.category),
+        severity: check.priority === 'critical'
+          ? 'critical'
+          : check.priority === 'high'
+            ? 'high'
+            : check.priority === 'medium'
+              ? 'medium'
+              : 'low',
+        status: 'identified' as const,
+        description: check.note,
+        evidence: `${check.code} — required: ${check.requiredValue}${check.actualValue ? `, actual: ${check.actualValue}` : ''}`,
+        recommendation: result.recommendations.find((r) =>
+          r.toLowerCase().includes(check.category)
+        ) ?? 'Verify on site and engage licensed professional for confirmation.',
+        relatedLocation: check.category === 'fire' ? 'Egress and fire compartments' : undefined,
+        requiresEngineerReview: check.category === 'fire' || check.category === 'structure',
+      }));
+  }
+
+  /**
    * Search codes by keyword
    */
   searchCodeRequirements(keyword: string): Array<{
@@ -265,4 +296,34 @@ interface ComplianceCheck {
   priority: 'critical' | 'high' | 'medium' | 'normal';
 }
 
+function mapComplianceCategory(category: ComplianceCheck['category']): DiagnosisCategory {
+  switch (category) {
+    case 'fire':
+      return 'fire_safety';
+    case 'structure':
+      return 'structure';
+    case 'accessibility':
+      return 'accessibility';
+    case 'energy':
+      return 'energy';
+    default:
+      return 'architecture';
+  }
+}
+
 export const complianceAgent = new ComplianceAgent();
+
+export async function performComplianceCheck(
+  project: ProjectWithRelations,
+  context?: Parameters<ComplianceAgent['performComplianceCheck']>[1]
+) {
+  return complianceAgent.performComplianceCheck(project, context);
+}
+
+export async function generateComplianceDiagnosis(project: ProjectWithRelations) {
+  return complianceAgent.generateComplianceDiagnosis(project);
+}
+
+export function searchCodeRequirements(keyword: string) {
+  return complianceAgent.searchCodeRequirements(keyword);
+}

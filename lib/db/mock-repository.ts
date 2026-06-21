@@ -242,6 +242,38 @@ export async function addDiagnosisItems(
   return created;
 }
 
+export async function addInsights(
+  projectId: string,
+  insights: Omit<import("@/types/ai").AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[]
+): Promise<import("@/types/ai").AIInsight[]> {
+  const now = new Date();
+  const created = insights.map((insight) => ({
+    ...insight,
+    id: generateId("insight"),
+    projectId,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  store.insights.push(...created);
+  return created;
+}
+
+export async function addTasks(
+  projectId: string,
+  tasks: Omit<import("@/types/ai").AITask, "id" | "projectId" | "createdAt" | "updatedAt">[]
+): Promise<import("@/types/ai").AITask[]> {
+  const now = new Date();
+  const created = tasks.map((task) => ({
+    ...task,
+    id: generateId("task"),
+    projectId,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  store.tasks.push(...created);
+  return created;
+}
+
 export async function updateDiagnosisItem(
   itemId: string,
   data: Partial<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">>

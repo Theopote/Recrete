@@ -1,6 +1,18 @@
 // AI Agents module exports
-export { StructuralAgent, structuralAgent } from "./structural-agent";
-export { ComplianceAgent, complianceAgent } from "./compliance-agent";
+export {
+  StructuralAgent,
+  structuralAgent,
+  assessStructuralSafety,
+  generateStructuralDiagnosis,
+  suggestStrengtheningMethods,
+} from "./structural-agent";
+export {
+  ComplianceAgent,
+  complianceAgent,
+  performComplianceCheck,
+  generateComplianceDiagnosis,
+  searchCodeRequirements,
+} from "./compliance-agent";
 export * as buildingMemoryAgent from "./building-memory-agent";
 export * as surveyAgent from "./survey-agent";
 export * as diagnosisAgent from "./diagnosis-agent";

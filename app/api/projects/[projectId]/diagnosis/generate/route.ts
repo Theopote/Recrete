@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getProjectById, addDiagnosisItems } from "@/lib/db/repository";
-import { getAIService } from "@/lib/ai";
+import { getProjectById } from "@/lib/db/repository";
+import { runDiagnosisWorkflow } from "@/lib/ai/workflow/diagnosis-workflow";
 
 export async function POST(
   _request: Request,
@@ -12,8 +12,10 @@ export async function POST(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const ai = getAIService();
-  const items = await ai.generateDiagnosis(project, project.documents);
-  const created = await addDiagnosisItems(projectId, items);
-  return NextResponse.json(created);
+  const result = await runDiagnosisWorkflow(projectId);
+  if (!result) {
+    return NextResponse.json({ error: "Diagnosis workflow failed" }, { status: 500 });
+  }
+
+  return NextResponse.json(result);
 }

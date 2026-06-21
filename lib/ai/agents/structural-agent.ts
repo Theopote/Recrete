@@ -302,3 +302,20 @@ export class StructuralAgent {
 }
 
 export const structuralAgent = new StructuralAgent();
+
+export async function assessStructuralSafety(
+  project: ProjectWithRelations,
+  context?: Parameters<StructuralAgent['assessStructuralSafety']>[1]
+) {
+  return structuralAgent.assessStructuralSafety(project, context);
+}
+
+export async function generateStructuralDiagnosis(project: ProjectWithRelations) {
+  return structuralAgent.generateStructuralDiagnosis(project);
+}
+
+export function suggestStrengtheningMethods(
+  issue: Parameters<StructuralAgent['suggestStrengtheningMethods']>[0]
+) {
+  return structuralAgent.suggestStrengtheningMethods(issue);
+}
