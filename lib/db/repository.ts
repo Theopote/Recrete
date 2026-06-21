@@ -217,6 +217,15 @@ export async function updateBuildingMemory(projectId: string) {
   return (await resolveDb()) ? db.updateBuildingMemory(projectId) : mock.updateBuildingMemory(projectId);
 }
 
+export { updateProjectStatus } from "@/lib/db/project-costs";
+export {
+  listProjectCostRecords,
+  listAllProjectCostRecordsWithProject,
+  createProjectCostRecord,
+  updateProjectCostRecord,
+  deleteProjectCostRecord,
+} from "@/lib/db/project-costs";
+
 export { resetStore } from "@/lib/db/mock-repository";
 export { mockProjects } from "@/lib/mock-data";
 export type { DashboardStats } from "@/types";

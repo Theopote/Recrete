@@ -285,6 +285,7 @@ model Project {
   issues          SiteIssue[]
   reports         Report[]
   aiConversations AIConversation[]
+  costRecords     ProjectCostRecord[]
 }
 
 model BuildingMemory {
@@ -537,11 +538,18 @@ model ProjectCostRecord {
   durationMonths   Int?
   outcome          String   @default("success")
   notes            String?  @db.Text
+  region           String
+  city             String?
+  buildingType     String
+  grossFloorArea   Float
   recordedAt       DateTime @default(now())
   createdAt        DateTime @default(now())
 
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([projectId])
   @@index([strategyType, outcome])
+  @@index([region, buildingType, strategyType])
 }
 
 /// Material price indices for cost estimation calibration

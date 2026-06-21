@@ -82,6 +82,17 @@ export async function getProjectById(id: string): Promise<ProjectWithRelations |
   };
 }
 
+export async function updateProjectStatus(
+  projectId: string,
+  status: Project["status"]
+): Promise<boolean> {
+  const project = store.projects.find((p) => p.id === projectId);
+  if (!project) return false;
+  project.status = status;
+  project.updatedAt = new Date();
+  return true;
+}
+
 export async function createProject(input: CreateProjectInput): Promise<ProjectWithRelations> {
   const now = new Date();
   const project: Project = {

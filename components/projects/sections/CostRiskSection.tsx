@@ -12,6 +12,7 @@ import type { ProjectWithRelations, StrategyWithMetrics } from "@/types";
 import type { AIInsight, CostRiskMatrix } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { Sparkles, Loader2 } from "lucide-react";
+import { ProjectCostRecordPanel } from "@/components/cost/ProjectCostRecordPanel";
 
 interface CostRiskSectionProps {
   project: ProjectWithRelations;
@@ -98,6 +99,8 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
           </Button>
         }
       />
+
+      <ProjectCostRecordPanel project={project} />
 
       {matrix?.energyRoi && <EnergyRoiPanel energyRoi={matrix.energyRoi} />}
 
