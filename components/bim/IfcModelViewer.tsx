@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import * as OBC from "@thatopen/components";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { loadIfcFromUrl } from "@/lib/bim/ifc-three-loader";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,78 +22,91 @@ export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
     if (!container) return;
 
     let disposed = false;
-    let components: OBC.Components | null = null;
+    let animationId = 0;
+    let closeModel: (() => void) | null = null;
 
-    const run = async () => {
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#f1f5f9");
+
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      container.clientWidth / container.clientHeight,
+      0.1,
+      10000
+    );
+    camera.position.set(12, 8, 12);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+    dir.position.set(10, 20, 10);
+    scene.add(dir);
+
+    const grid = new THREE.GridHelper(40, 40, 0xcbd5e1, 0xe2e8f0);
+    scene.add(grid);
+
+    const animate = () => {
+      animationId = requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    const onResize = () => {
+      if (!container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+    window.addEventListener("resize", onResize);
+
+    (async () => {
       try {
         setLoading(true);
         setError(null);
-
-        components = new OBC.Components();
-        const worlds = components.get(OBC.Worlds);
-        const world = worlds.create<
-          OBC.SimpleScene,
-          OBC.SimpleCamera,
-          OBC.SimpleRenderer
-        >();
-
-        world.scene = new OBC.SimpleScene(components);
-        world.renderer = new OBC.SimpleRenderer(components, container);
-        world.camera = new OBC.SimpleCamera(components);
-        components.init();
-
-        world.scene.setup();
-        world.scene.three.background = new THREE.Color("#f1f5f9");
-
-        const ifcLoader = components.get(OBC.IfcLoader);
-        await ifcLoader.setup({
-          autoSetWasm: false,
-          wasm: {
-            path: "/wasm/web-ifc/",
-            absolute: true,
-          },
-        });
-
-        const response = await fetch(modelUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch IFC (${response.status})`);
+        const result = await loadIfcFromUrl(modelUrl);
+        if (disposed) {
+          result.close();
+          return;
         }
+        closeModel = result.close;
+        scene.add(result.group);
 
-        const buffer = new Uint8Array(await response.arrayBuffer());
-        const model = await ifcLoader.load(buffer, true, "recrete-model");
-        world.scene.three.add(model);
-
-        const box = new THREE.Box3().setFromObject(model);
+        const box = new THREE.Box3().setFromObject(result.group);
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z, 1);
-        const distance = maxDim * 2.2;
-
-        await world.camera.controls.setLookAt(
-          center.x + distance,
-          center.y + distance * 0.6,
-          center.z + distance,
-          center.x,
-          center.y,
-          center.z,
-          true
+        controls.target.copy(center);
+        camera.position.set(
+          center.x + maxDim * 1.6,
+          center.y + maxDim * 0.8,
+          center.z + maxDim * 1.6
         );
-
-        if (!disposed) setLoading(false);
+        controls.update();
+        setLoading(false);
       } catch (err) {
         if (!disposed) {
           setError(err instanceof Error ? err.message : "Failed to load IFC model");
           setLoading(false);
         }
       }
-    };
-
-    run();
+    })();
 
     return () => {
       disposed = true;
-      components?.dispose();
-      if (container) container.innerHTML = "";
+      cancelAnimationFrame(animationId);
+      window.removeEventListener("resize", onResize);
+      closeModel?.();
+      controls.dispose();
+      renderer.dispose();
+      container.innerHTML = "";
     };
   }, [modelUrl]);
 

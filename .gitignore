@@ -47,5 +47,8 @@ next-env.d.ts
 /public/uploads/*
 !/public/uploads/.gitkeep
 
+# bim model manifests (user data)
+/data/bim-models/*.json
+
 # ide
 .idea
