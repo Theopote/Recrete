@@ -507,3 +507,54 @@ model AIConversation {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
 }
+
+/// Regional cost benchmarks aggregated from completed projects
+model CostBenchmark {
+  id            String   @id @default(cuid())
+  region        String
+  city          String?
+  buildingType  String
+  strategyType  String
+  costPerSqmMin Float
+  costPerSqmMax Float
+  costPerSqmAvg Float
+  sampleSize    Int      @default(0)
+  source        String   @default("internal")
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  @@unique([region, city, buildingType, strategyType])
+  @@index([region, strategyType])
+}
+
+/// Actual cost records from completed renovation projects
+model ProjectCostRecord {
+  id               String   @id @default(cuid())
+  projectId        String
+  strategyType     String?
+  actualCostPerSqm Float
+  actualTotalCost  Float
+  durationMonths   Int?
+  outcome          String   @default("success")
+  notes            String?  @db.Text
+  recordedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@index([projectId])
+  @@index([strategyType, outcome])
+}
+
+/// Material price indices for cost estimation calibration
+model MaterialPrice {
+  id           String   @id @default(cuid())
+  material     String
+  materialZh   String
+  unit         String
+  pricePerUnit Float
+  region       String
+  trendPercent Float    @default(0)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  @@index([region])
+}

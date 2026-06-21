@@ -12,6 +12,7 @@ import { RecommendedActions } from "@/components/ai/RecommendedActions";
 import { MissingInformationList } from "@/components/ai/MissingInformationList";
 import { AnalysisRunTimeline } from "@/components/ai/AnalysisRunTimeline";
 import { BuildingMemoryCard } from "@/components/ai/BuildingMemoryCard";
+import { SimilarCasesPanel } from "@/components/ai/SimilarCasesPanel";
 import type { ProjectWithRelations } from "@/types";
 import type { AIInsight } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
@@ -142,6 +143,8 @@ export function OverviewSection({ project }: OverviewSectionProps) {
       )}
 
       <BuildingProfileCard project={project} building={project.building} />
+
+      <SimilarCasesPanel projectId={project.id} compact />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">

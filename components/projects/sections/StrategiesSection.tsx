@@ -13,6 +13,7 @@ import type { ProjectWithRelations, StrategyWithMetrics } from "@/types";
 import type { StrategyLabParams } from "@/types/ai";
 import { StrategyRankingPanel } from "@/components/strategies/StrategyRankingPanel";
 import { StrategySpatialCompareSection } from "@/components/strategies/StrategySpatialCompareSection";
+import { SimilarCasesPanel } from "@/components/ai/SimilarCasesPanel";
 import { Lightbulb, Sparkles, GitCompare } from "lucide-react";
 
 interface StrategiesSectionProps {
@@ -88,6 +89,8 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         projectBudget={project.budgetLevel}
         targetFunction={project.targetFunction}
       />
+
+      <SimilarCasesPanel projectId={project.id} />
 
       {strategies.some((s) => s.rank != null) && (
         <StrategyRankingPanel strategies={strategies} />

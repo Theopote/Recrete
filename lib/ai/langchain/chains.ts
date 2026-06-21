@@ -9,6 +9,7 @@ import { RunnableSequence } from "@langchain/core/runnables";
 import type { ProjectWithRelations } from "@/types";
 import type { StrategyLabParams } from "@/types/ai";
 import type { KnowledgeSearchResult } from "../knowledge/embedding-search";
+import { buildProfessionalPromptContext } from "../knowledge/prompt-context";
 
 export function isLangChainEnabled(): boolean {
   return (
@@ -25,6 +26,8 @@ function getChatModel() {
   });
 }
 
+export { getChatModel };
+
 export async function runStrategyContextChain(input: {
   project: ProjectWithRelations;
   params: StrategyLabParams;
@@ -38,7 +41,9 @@ export async function runStrategyContextChain(input: {
   const prompt = ChatPromptTemplate.fromMessages([
     [
       "system",
-      `You are Recrete's renovation strategy analyst. Synthesize project constraints and knowledge snippets into a concise strategy brief (max 400 words, bilingual terms OK).`,
+      `You are Recrete's renovation strategy analyst. Synthesize project constraints and knowledge snippets into a concise strategy brief (max 400 words, bilingual terms OK).
+
+{professionalContext}`,
     ],
     [
       "human",
@@ -65,6 +70,7 @@ Reference knowledge:
   ]);
 
   return chain.invoke({
+    professionalContext: buildProfessionalPromptContext(input.project),
     projectName: input.project.name,
     location: input.project.location,
     targetFunction: input.params.targetFunction,

@@ -25,12 +25,16 @@ function buildCaseCorpus(c: RenovationCase): string {
   return [
     c.title,
     c.location,
+    c.region,
     c.buildingType,
+    c.structureType,
     c.originalFunction,
     c.targetFunction,
     c.strategyType,
+    c.outcome,
     c.summary,
     ...c.lessons,
+    ...(c.failureReasons ?? []),
     ...c.tags,
   ].join(" ");
 }
@@ -49,9 +53,14 @@ function getKnowledgeIndex(): IndexedDocument[] {
       id: c.id,
       sourceType: "case" as const,
       title: c.title,
-      excerpt: `${c.summary} Cost: ~¥${c.costPerSqm?.toLocaleString() ?? "N/A"}/sqm · ${c.durationMonths ?? "?"} months.`,
+      excerpt: `${c.summary} Cost: ~¥${c.costPerSqm?.toLocaleString() ?? "N/A"}/sqm · ${c.durationMonths ?? "?"} months · ${c.outcome}.`,
       text: buildCaseCorpus(c),
-      metadata: { costPerSqm: c.costPerSqm ?? 0, durationMonths: c.durationMonths ?? 0 },
+      metadata: {
+        costPerSqm: c.costPerSqm ?? 0,
+        durationMonths: c.durationMonths ?? 0,
+        outcome: c.outcome,
+        region: c.region,
+      },
     })),
     ...knowledgeArticles.map((article) => ({
       id: article.id,

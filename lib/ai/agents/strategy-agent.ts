@@ -3,6 +3,7 @@ import type { AIInsight, StrategyLabParams } from "@/types/ai";
 import { withMockDelay } from "../providers/utils";
 import { mockAIService } from "../mock-ai-service";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
+import { searchSimilarCasesAsync } from "../knowledge/similar-cases";
 import { runStrategyContextChain } from "../langchain/chains";
 
 function defaultParams(project: ProjectWithRelations): StrategyLabParams {
@@ -60,6 +61,7 @@ export async function generateRenovationStrategies(
   const enriched = applyParamsToStrategies(strategies, resolvedParams);
 
   const cases = await searchKnowledgeForProjectAsync(project, resolvedParams.targetFunction, 3);
+  const similarCases = await searchSimilarCasesAsync(project, { limit: 3, includeWarnings: true });
 
   const diagnosisSummary = diagnosisItems
     .filter((d) => d.severity === "critical" || d.severity === "high")
@@ -77,6 +79,30 @@ export async function generateRenovationStrategies(
     enriched[1] = {
       ...enriched[1],
       summary: `${enriched[1].summary}\n\nReference case: ${cases[0].title} — ${cases[0].excerpt}`,
+    };
+  }
+
+  if (similarCases.failureWarnings.length > 0 && enriched[2]) {
+    const warningText = similarCases.failureWarnings
+      .slice(0, 2)
+      .map((w) => w.summary)
+      .join("; ");
+    enriched[2] = {
+      ...enriched[2],
+      cons: [
+        ...enriched[2].cons,
+        `Historical caution from similar projects: ${warningText}`,
+      ],
+    };
+  }
+
+  if (similarCases.successCases.length > 0 && enriched[0]) {
+    const ref = similarCases.successCases[0];
+    enriched[0] = {
+      ...enriched[0],
+      recommendationReason: enriched[0].recommendationReason
+        ? `${enriched[0].recommendationReason} Precedent: ${ref.title}.`
+        : `Supported by similar success case: ${ref.title} (${ref.location}).`,
     };
   }
 

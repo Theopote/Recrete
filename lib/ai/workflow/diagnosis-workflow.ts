@@ -13,6 +13,12 @@ import {
   generateDiagnosisInsights,
   generateTasksFromDiagnosis,
 } from "@/lib/ai/agents/diagnosis-agent";
+import { searchKnowledgeForProjectAsync } from "@/lib/ai/knowledge/embedding-search";
+import {
+  runDiagnosisExecutiveSummaryChain,
+} from "@/lib/ai/langchain/diagnosis-chain";
+import { isLangChainEnabled } from "@/lib/ai/langchain/chains";
+import { langChainModelLabel } from "@/lib/ai/langchain/report-chain";
 import type { DiagnosisItem } from "@/types";
 import type { AIInsight, AITask, BuildingMemory, AIAnalysisRun } from "@/types/ai";
 
@@ -27,6 +33,7 @@ export interface DiagnosisWorkflowResult {
   tasks: AITask[];
   analysisRun: AIAnalysisRun;
   buildingMemory?: BuildingMemory | null;
+  executiveSummary?: string;
   expertSummary?: {
     structuralItemCount: number;
     complianceItemCount: number;
@@ -45,6 +52,22 @@ function dedupeDiagnosisItems(
     seen.add(key);
     return true;
   });
+}
+
+function buildExpertSummaryText(counts: {
+  structuralItemCount: number;
+  complianceItemCount: number;
+  mepItemCount: number;
+  energyItemCount: number;
+}) {
+  return [
+    counts.structuralItemCount > 0 ? `Structural: ${counts.structuralItemCount} items` : null,
+    counts.complianceItemCount > 0 ? `Compliance: ${counts.complianceItemCount} items` : null,
+    counts.mepItemCount > 0 ? `MEP: ${counts.mepItemCount} items` : null,
+    counts.energyItemCount > 0 ? `Energy: ${counts.energyItemCount} items` : null,
+  ]
+    .filter(Boolean)
+    .join("; ");
 }
 
 export async function runDiagnosisWorkflow(
@@ -90,19 +113,62 @@ export async function runDiagnosisWorkflow(
     dedupeDiagnosisItems(mergedItems)
   );
 
-  const insightDrafts = await generateDiagnosisInsights(project, diagnosisItems);
-  const taskDrafts = await generateTasksFromDiagnosis(project, diagnosisItems);
+  const expertSummaryText = includeExpertAgents
+    ? buildExpertSummaryText({
+        structuralItemCount,
+        complianceItemCount,
+        mepItemCount,
+        energyItemCount,
+      })
+    : undefined;
 
-  const insights = await addInsights(projectId, insightDrafts);
+  const knowledge = isLangChainEnabled()
+    ? await searchKnowledgeForProjectAsync(project, project.targetFunction, 3)
+    : [];
+
+  const executiveSummary = await runDiagnosisExecutiveSummaryChain({
+    project,
+    diagnosisItems,
+    expertSummary: expertSummaryText,
+    knowledge,
+  });
+
+  const insightDrafts = await generateDiagnosisInsights(project, diagnosisItems);
+
+  const executiveInsight: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt"> = {
+    title: "Diagnosis Executive Summary",
+    type: "risk",
+    priority:
+      diagnosisItems.some((d) => d.severity === "critical")
+        ? "critical"
+        : diagnosisItems.some((d) => d.severity === "high")
+          ? "high"
+          : "medium",
+    summary: executiveSummary.slice(0, 500),
+    evidence: expertSummaryText ?? null,
+    recommendation: "Review full diagnosis matrix and prioritize engineer reviews.",
+    confidence: isLangChainEnabled() ? 0.9 : 0.85,
+    status: "open",
+    sourceType: "diagnosis",
+    sourceId: null,
+  };
+
+  const taskDrafts = await generateTasksFromDiagnosis(project, diagnosisItems, {
+    insightsSummary: executiveSummary.slice(0, 400),
+  });
+
+  const insights = await addInsights(projectId, [executiveInsight, ...insightDrafts]);
   const tasks = await addTasks(projectId, taskDrafts);
 
   const analysisRun = await addAnalysisRun({
     projectId,
     analysisType: "diagnosis_generation",
-    inputSummary: `Diagnosis workflow for ${project.name} — base + ${includeExpertAgents ? "expert agents" : "no experts"}`,
-    outputSummary: `Created ${diagnosisItems.length} diagnosis items, ${insights.length} insights, ${tasks.length} tasks`,
+    inputSummary: `Diagnosis pipeline — base + ${includeExpertAgents ? "expert agents" : "no experts"}${isLangChainEnabled() ? " + LangChain" : ""}`,
+    outputSummary: executiveSummary.slice(0, 500),
     generatedItemCount: diagnosisItems.length + insights.length + tasks.length,
-    modelName: "recrete-expert-matrix-v1",
+    modelName: isLangChainEnabled()
+      ? langChainModelLabel("diagnosis")
+      : "recrete-expert-matrix-v1",
     confidence: 0.87,
   });
 
@@ -117,6 +183,7 @@ export async function runDiagnosisWorkflow(
     tasks,
     analysisRun,
     buildingMemory,
+    executiveSummary,
     expertSummary: includeExpertAgents
       ? { structuralItemCount, complianceItemCount, mepItemCount, energyItemCount }
       : undefined,

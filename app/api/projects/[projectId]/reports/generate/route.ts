@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getProjectById, addReport } from "@/lib/db/repository";
-import { getAIPlatform } from "@/lib/ai";
+import { getProjectById } from "@/lib/db/repository";
+import { runReportWorkflow } from "@/lib/ai/workflow/report-workflow";
 import type { ReportType } from "@/types";
 
 export async function POST(
@@ -13,24 +13,24 @@ export async function POST(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const { reportType } = (await request.json()) as { reportType: ReportType };
-  const platform = getAIPlatform();
-  const { title, content } = await platform.report.generateReport(
-    project,
-    project.buildingMemory ?? null,
-    project.diagnosis ?? [],
-    project.strategies ?? [],
-    project.issues ?? [],
-    reportType
-  );
+  const body = (await request.json()) as {
+    reportType: ReportType;
+    strategyId?: string;
+    meetingNotes?: string;
+  };
 
-  const report = await addReport(projectId, {
-    title,
-    type: reportType,
-    content,
-    status: "ready",
-    createdById: "user-1",
+  const result = await runReportWorkflow(projectId, {
+    reportType: body.reportType,
+    strategyId: body.strategyId,
+    meetingNotes: body.meetingNotes,
   });
 
-  return NextResponse.json(report);
+  if (!result) {
+    return NextResponse.json({ error: "Report generation failed" }, { status: 400 });
+  }
+
+  return NextResponse.json({
+    ...result.report,
+    analysisRun: result.analysisRun,
+  });
 }

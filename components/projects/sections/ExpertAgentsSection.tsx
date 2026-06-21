@@ -258,10 +258,13 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
 
   const costEstimate = costResult?.estimate as {
     estimatedCostPerSqm?: number;
+    estimatedCostPerSqmMin?: number;
+    estimatedCostPerSqmMax?: number;
     estimatedTotalCost?: number;
     costLevel?: string;
     confidence?: number;
-    referenceCases?: Array<{ title: string; costPerSqm?: number }>;
+    benchmark?: { region: string; sampleSize: number; updatedAt: string };
+    referenceCases?: Array<{ title: string; costPerSqm?: number; outcome?: string }>;
     breakdown?: Array<{ item: string; sharePercent: number }>;
   } | undefined;
 
@@ -867,9 +870,22 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           {costEstimate && (
             <Card><CardContent className="p-4 space-y-2 text-xs">
               <p className="text-lg font-semibold tabular-nums">¥{costEstimate.estimatedTotalCost?.toLocaleString()}</p>
-              <p className="text-muted-foreground">~¥{costEstimate.estimatedCostPerSqm?.toLocaleString()}/sqm · {costEstimate.costLevel} · confidence {(costEstimate.confidence ?? 0) * 100}%</p>
+              <p className="text-muted-foreground">
+                ~¥{costEstimate.estimatedCostPerSqm?.toLocaleString()}/sqm
+                {costEstimate.estimatedCostPerSqmMin != null && costEstimate.estimatedCostPerSqmMax != null && (
+                  <> (range ¥{costEstimate.estimatedCostPerSqmMin.toLocaleString()}–{costEstimate.estimatedCostPerSqmMax.toLocaleString()})</>
+                )}
+                {" "}· {costEstimate.costLevel} · confidence {(costEstimate.confidence ?? 0) * 100}%
+              </p>
+              {costEstimate.benchmark && (
+                <p className="text-muted-foreground">
+                  Benchmark: {costEstimate.benchmark.region} (n={costEstimate.benchmark.sampleSize}, {costEstimate.benchmark.updatedAt})
+                </p>
+              )}
               {costEstimate.referenceCases && costEstimate.referenceCases.length > 0 && (
-                <p className="text-muted-foreground">Reference: {costEstimate.referenceCases.map((c) => c.title).join("; ")}</p>
+                <p className="text-muted-foreground">
+                  Reference: {costEstimate.referenceCases.map((c) => `${c.title}${c.outcome === "failure" ? " ⚠" : ""}`).join("; ")}
+                </p>
               )}
             </CardContent></Card>
           )}
