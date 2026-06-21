@@ -1,34 +1,49 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { TopBar } from "@/components/app/TopBar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Brain, AlertTriangle, FileQuestion, ListChecks, Loader2 } from "lucide-react";
-import type { ProjectWithRelations } from "@/types";
+import { Sparkles, Loader2 } from "lucide-react";
+import {
+  AICreateStreamPanel,
+  applyStreamEvent,
+  consumeProjectCreateStream,
+  INITIAL_STREAM_STATE,
+  type StreamState,
+} from "@/components/projects/AICreateStreamPanel";
 
 const EXAMPLE_BRIEF =
   "我有一栋 1986 年建成的混凝土框架办公楼，位于西安，原本是政府办公，现在想改成社区文化中心，预算有限，希望保留主体结构。";
-
-const LOADING_STEPS = [
-  "Reading your building brief…",
-  "Extracting building profile & renovation goals…",
-  "Assessing risks & missing documents…",
-  "Initializing Building Memory…",
-  "Preparing next-step tasks…",
-];
 
 function CreateProjectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [brief, setBrief] = useState(searchParams.get("brief") ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const [preview, setPreview] = useState<ProjectWithRelations | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [streamState, setStreamState] = useState<StreamState>(INITIAL_STREAM_STATE);
+  const [autoStarted, setAutoStarted] = useState(false);
+
+  const startCreate = useCallback(async (text: string) => {
+    setIsGenerating(true);
+    setStreamState(INITIAL_STREAM_STATE);
+
+    try {
+      await consumeProjectCreateStream(text, (event) => {
+        setStreamState((prev) => applyStreamEvent(prev, event));
+      });
+    } catch {
+      setStreamState((prev) => ({
+        ...prev,
+        error: "Something went wrong. Please try again.",
+      }));
+    } finally {
+      setIsGenerating(false);
+    }
+  }, []);
 
   useEffect(() => {
     const param = searchParams.get("brief");
@@ -36,39 +51,28 @@ function CreateProjectContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!isGenerating) return;
-    const interval = setInterval(() => {
-      setLoadingStep((s) => (s + 1) % LOADING_STEPS.length);
-    }, 600);
-    return () => clearInterval(interval);
-  }, [isGenerating]);
+    if (autoStarted || isGenerating) return;
+    const param = searchParams.get("brief");
+    if (param && param.trim().length >= 20) {
+      setAutoStarted(true);
+      void startCreate(param.trim());
+    }
+  }, [searchParams, autoStarted, isGenerating, startCreate]);
+
+  useEffect(() => {
+    if (!streamState.isComplete || !streamState.project) return;
+    const timer = setTimeout(() => {
+      router.push(`/projects/${streamState.project!.id}?section=building-memory`);
+    }, 2400);
+    return () => clearTimeout(timer);
+  }, [streamState.isComplete, streamState.project, router]);
 
   const handleCreate = async () => {
     if (!brief.trim()) return;
-    setIsGenerating(true);
-    setError(null);
-    setPreview(null);
-    try {
-      const res = await fetch("/api/projects/ai-create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brief: brief.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Failed to create project");
-        return;
-      }
-      setPreview(data.project);
-      setTimeout(() => {
-        router.push(`/projects/${data.project.id}?section=building-memory`);
-      }, 2200);
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
+    await startCreate(brief.trim());
   };
+
+  const showStream = isGenerating || streamState.items.length > 0 || streamState.error;
 
   return (
     <AppShell>
@@ -92,129 +96,63 @@ function CreateProjectContent() {
             </p>
           </div>
 
-          <Card className="border-2 border-copper/25 shadow-sm">
-            <CardContent className="p-5 space-y-4">
-              <Textarea
-                value={brief}
-                onChange={(e) => setBrief(e.target.value)}
-                placeholder={EXAMPLE_BRIEF}
-                className="min-h-[120px] resize-none text-sm leading-relaxed border-0 bg-muted/40 focus-visible:ring-copper/30"
-                disabled={isGenerating}
-              />
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setBrief(EXAMPLE_BRIEF)}
-                  className="text-[10px] text-muted-foreground hover:text-copper underline-offset-2 hover:underline"
-                >
-                  Use example brief
-                </button>
-                <Button
-                  variant="copper"
-                  onClick={handleCreate}
-                  disabled={isGenerating || brief.trim().length < 20}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      AI Creating…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                      Create with AI
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {isGenerating && (
-            <Card className="border-copper/20 bg-copper/5">
-              <CardContent className="p-5 flex items-center gap-3">
-                <Loader2 className="h-5 w-5 text-copper animate-spin shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">{LOADING_STEPS[loadingStep]}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    砼憶正在理解您的建筑…
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {error && (
-            <p className="text-xs text-destructive text-center">{error}</p>
-          )}
-
-          {preview && (
-            <Card className="border-sage/30 bg-sage/5 animate-in fade-in duration-500">
+          {!showStream && (
+            <Card className="border-2 border-copper/25 shadow-sm">
               <CardContent className="p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-4 w-4 text-sage" />
-                  <p className="text-sm font-semibold">{preview.name}</p>
+                <Textarea
+                  value={brief}
+                  onChange={(e) => setBrief(e.target.value)}
+                  placeholder={EXAMPLE_BRIEF}
+                  className="min-h-[120px] resize-none text-sm leading-relaxed border-0 bg-muted/40 focus-visible:ring-copper/30"
+                  disabled={isGenerating}
+                />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setBrief(EXAMPLE_BRIEF)}
+                    className="text-[10px] text-muted-foreground hover:text-copper underline-offset-2 hover:underline"
+                  >
+                    Use example brief
+                  </button>
+                  <Button
+                    variant="copper"
+                    onClick={handleCreate}
+                    disabled={isGenerating || brief.trim().length < 20}
+                  >
+                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                    Create with AI
+                  </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <PreviewItem icon={Brain} label="Building Memory" value="Initialized" />
-                  <PreviewItem
-                    icon={AlertTriangle}
-                    label="Key Risks"
-                    value={`${preview.buildingMemory?.keyRisks.length ?? 0} identified`}
-                  />
-                  <PreviewItem
-                    icon={FileQuestion}
-                    label="Missing Docs"
-                    value={`${preview.buildingMemory?.missingInformation.length ?? 0} gaps`}
-                  />
-                  <PreviewItem
-                    icon={ListChecks}
-                    label="Next Tasks"
-                    value={`${preview.tasks?.length ?? 0} recommended`}
-                  />
-                </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Redirecting to Building Memory…
-                </p>
               </CardContent>
             </Card>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            {[
-              { title: "AI 创建项目", desc: "One sentence → full project workspace" },
-              { title: "AI 建筑记忆", desc: "Persistent building intelligence" },
-              { title: "AI 策略实验室", desc: "Three strategies, one click" },
-            ].map((item) => (
-              <div key={item.title} className="rounded-lg border bg-card/60 p-3 text-center">
-                <p className="text-xs font-medium">{item.title}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+          {showStream && <AICreateStreamPanel state={streamState} />}
+
+          {!showStream && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              {[
+                { title: "AI 创建项目", desc: "One sentence → full project workspace" },
+                { title: "AI 建筑记忆", desc: "Persistent building intelligence" },
+                { title: "AI 策略实验室", desc: "Three strategies, one click" },
+              ].map((item) => (
+                <div key={item.title} className="rounded-lg border bg-card/60 p-3 text-center">
+                  <p className="text-xs font-medium">{item.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showStream && isGenerating && (
+            <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Streaming AI output — please wait
+            </p>
+          )}
         </div>
       </main>
     </AppShell>
-  );
-}
-
-function PreviewItem({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-start gap-2 rounded-md bg-background/60 p-2">
-      <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
-      <div>
-        <p className="text-[10px] text-muted-foreground">{label}</p>
-        <p className="font-medium">{value}</p>
-      </div>
-    </div>
   );
 }
 

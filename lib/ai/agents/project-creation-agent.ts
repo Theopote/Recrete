@@ -117,7 +117,7 @@ function buildProjectName(location: string, target: string, year: number): strin
   return `${city} ${year} ${shortTarget} Renewal`;
 }
 
-function parseBriefSync(brief: string): AIProjectDraft {
+export function parseBriefSync(brief: string): AIProjectDraft {
   const text = brief.trim();
   const year = extractYear(text);
   const location = extractLocation(text);
