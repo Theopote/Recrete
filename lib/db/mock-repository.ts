@@ -292,6 +292,51 @@ export async function addDocument(
   return created;
 }
 
+export async function getDocumentById(documentId: string): Promise<DocumentAsset | null> {
+  return store.documents.find((d) => d.id === documentId) ?? null;
+}
+
+export async function updateDocument(
+  documentId: string,
+  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description">>
+): Promise<DocumentAsset | null> {
+  const doc = store.documents.find((d) => d.id === documentId);
+  if (!doc) return null;
+  if (data.aiSummary !== undefined) doc.aiSummary = data.aiSummary;
+  if (data.extractedText !== undefined) doc.extractedText = data.extractedText;
+  if (data.description !== undefined) doc.description = data.description;
+  doc.updatedAt = new Date();
+  return doc;
+}
+
+export async function addSourceEvidence(
+  evidence: Omit<import("@/types/ai").SourceEvidence, "id" | "createdAt">
+): Promise<import("@/types/ai").SourceEvidence> {
+  const created: import("@/types/ai").SourceEvidence = {
+    ...evidence,
+    id: generateId("evidence"),
+    createdAt: new Date(),
+  };
+  store.evidence.push(created);
+  return created;
+}
+
+export async function addAnalysisRun(
+  run: Omit<import("@/types/ai").AIAnalysisRun, "id" | "createdAt">
+): Promise<import("@/types/ai").AIAnalysisRun> {
+  const created: import("@/types/ai").AIAnalysisRun = {
+    ...run,
+    id: generateId("run"),
+    createdAt: new Date(),
+  };
+  store.analysisRuns.push(created);
+  return created;
+}
+
+export async function getProjectEvidence(projectId: string) {
+  return store.evidence.filter((e) => e.projectId === projectId);
+}
+
 export async function updateIssueStatus(
   issueId: string,
   status: SiteIssue["status"]
@@ -441,7 +486,11 @@ export async function search(query: string): Promise<SearchResult[]> {
   }
 
   for (const d of store.documents) {
-    if (d.name.toLowerCase().includes(q)) {
+    if (
+      d.name.toLowerCase().includes(q) ||
+      d.aiSummary?.toLowerCase().includes(q) ||
+      d.extractedText?.toLowerCase().includes(q)
+    ) {
       const meta = projectMeta(d.projectId);
       results.push({
         type: "document",

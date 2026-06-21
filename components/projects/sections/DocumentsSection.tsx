@@ -81,7 +81,13 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
             <DocumentCard
               key={doc.id}
               document={doc}
+              projectId={initialProject.id}
               onPreview={setPreviewDoc}
+              onAnalyzed={(updated) =>
+                setDocuments((prev) =>
+                  prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d))
+                )
+              }
             />
           ))}
         </div>

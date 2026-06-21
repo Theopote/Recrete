@@ -50,9 +50,22 @@ export interface BoundingBox {
   height: number;
 }
 
+export type PhotoCategory = 'structure' | 'facade' | 'mep' | 'interior' | 'site' | 'unknown';
+
+export interface DamageMetrics {
+  overallScore: number;
+  crackCount: number;
+  maxCrackWidthMm?: number;
+  affectedAreaSqm?: number;
+  corrosionLevel?: 'none' | 'surface' | 'moderate' | 'severe';
+}
+
 export interface PhotoDefectAnalysisResult {
+  photoCategory: PhotoCategory;
   defects: DetectedDefect[];
   overallCondition: 'good' | 'fair' | 'poor' | 'critical';
+  severityScore: number;
+  damageMetrics: DamageMetrics;
   recommendations: string[];
   confidence: number;
   summary: string;
@@ -65,6 +78,12 @@ export interface DetectedDefect {
   description: string;
   suggestedAction: string;
   confidence: number;
+  quantified?: {
+    widthMm?: number;
+    lengthMm?: number;
+    areaSqm?: number;
+    depthMm?: number;
+  };
 }
 
 export interface DocumentExtractionResult {
@@ -91,4 +110,19 @@ export interface VisionAnalysisOptions {
   includeOCR?: boolean;
   extractTables?: boolean;
   detectDefects?: boolean;
+  provider?: 'openai' | 'anthropic';
+}
+
+export type DocumentAnalysisKind = 'drawing' | 'report' | 'photo' | 'unknown';
+
+export interface DocumentAnalysisOutput {
+  kind: DocumentAnalysisKind;
+  aiSummary: string;
+  extractedText: string;
+  confidence: number;
+  modelName: string;
+  drawing?: DrawingAnalysisResult;
+  document?: DocumentExtractionResult;
+  photo?: PhotoDefectAnalysisResult;
+  knowledgeGraphJson?: string;
 }

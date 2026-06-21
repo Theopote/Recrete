@@ -65,6 +65,31 @@ export async function addDocument(
   return (await resolveDb()) ? db.addDocument(projectId, doc) : mock.addDocument(projectId, doc);
 }
 
+export async function getDocumentById(documentId: string) {
+  return (await resolveDb()) ? db.getDocumentById(documentId) : mock.getDocumentById(documentId);
+}
+
+export async function updateDocument(
+  documentId: string,
+  data: Parameters<typeof mock.updateDocument>[1]
+) {
+  return (await resolveDb()) ? db.updateDocument(documentId, data) : mock.updateDocument(documentId, data);
+}
+
+export async function addSourceEvidence(
+  evidence: Parameters<typeof mock.addSourceEvidence>[0]
+) {
+  return (await resolveDb()) ? db.addSourceEvidence(evidence) : mock.addSourceEvidence(evidence);
+}
+
+export async function addAnalysisRun(run: Parameters<typeof mock.addAnalysisRun>[0]) {
+  return (await resolveDb()) ? db.addAnalysisRun(run) : mock.addAnalysisRun(run);
+}
+
+export async function getProjectEvidence(projectId: string) {
+  return (await resolveDb()) ? db.getProjectEvidence(projectId) : mock.getProjectEvidence(projectId);
+}
+
 export async function updateIssueStatus(
   issueId: string,
   status: Parameters<typeof mock.updateIssueStatus>[1]

@@ -169,6 +169,79 @@ export async function addDocument(
   return mapDocument(created);
 }
 
+export async function getDocumentById(documentId: string): Promise<DocumentAsset | null> {
+  const doc = await prisma.documentAsset.findUnique({ where: { id: documentId } });
+  return doc ? mapDocument(doc) : null;
+}
+
+export async function updateDocument(
+  documentId: string,
+  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description">>
+): Promise<DocumentAsset | null> {
+  try {
+    const updated = await prisma.documentAsset.update({
+      where: { id: documentId },
+      data,
+    });
+    return mapDocument(updated);
+  } catch {
+    return null;
+  }
+}
+
+export async function addSourceEvidence(
+  evidence: Omit<import("@/types/ai").SourceEvidence, "id" | "createdAt">
+): Promise<import("@/types/ai").SourceEvidence> {
+  const created = await prisma.sourceEvidence.create({ data: evidence });
+  return {
+    id: created.id,
+    projectId: created.projectId,
+    sourceType: created.sourceType,
+    sourceId: created.sourceId,
+    documentId: created.documentId,
+    pageNumber: created.pageNumber,
+    locationLabel: created.locationLabel,
+    quote: created.quote,
+    boundingBox: created.boundingBox,
+    confidence: created.confidence,
+    createdAt: created.createdAt,
+  };
+}
+
+export async function addAnalysisRun(
+  run: Omit<import("@/types/ai").AIAnalysisRun, "id" | "createdAt">
+): Promise<import("@/types/ai").AIAnalysisRun> {
+  const created = await prisma.aIAnalysisRun.create({ data: run });
+  return {
+    id: created.id,
+    projectId: created.projectId,
+    analysisType: created.analysisType,
+    inputSummary: created.inputSummary,
+    outputSummary: created.outputSummary,
+    generatedItemCount: created.generatedItemCount,
+    modelName: created.modelName,
+    confidence: created.confidence,
+    createdAt: created.createdAt,
+  };
+}
+
+export async function getProjectEvidence(projectId: string) {
+  const rows = await prisma.sourceEvidence.findMany({ where: { projectId } });
+  return rows.map((e) => ({
+    id: e.id,
+    projectId: e.projectId,
+    sourceType: e.sourceType,
+    sourceId: e.sourceId,
+    documentId: e.documentId,
+    pageNumber: e.pageNumber,
+    locationLabel: e.locationLabel,
+    quote: e.quote,
+    boundingBox: e.boundingBox,
+    confidence: e.confidence,
+    createdAt: e.createdAt,
+  }));
+}
+
 export async function updateIssueStatus(
   issueId: string,
   status: SiteIssue["status"]
@@ -323,7 +396,13 @@ export async function search(query: string): Promise<SearchResult[]> {
       take: 5,
     }),
     prisma.documentAsset.findMany({
-      where: { name: { contains: q, mode: "insensitive" } },
+      where: {
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { aiSummary: { contains: q, mode: "insensitive" } },
+          { extractedText: { contains: q, mode: "insensitive" } },
+        ],
+      },
       include: { project: { select: { name: true } } },
       take: 4,
     }),
