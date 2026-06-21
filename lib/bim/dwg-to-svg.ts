@@ -1,9 +1,49 @@
-import type { DwgArcEntity } from "@mlightcad/libredwg-web/lib/database/entities/arc";
-import type { DwgCircleEntity } from "@mlightcad/libredwg-web/lib/database/entities/circle";
-import type { DwgLineEntity } from "@mlightcad/libredwg-web/lib/database/entities/line";
-import type { DwgLWPolylineEntity } from "@mlightcad/libredwg-web/lib/database/entities/lwpolyline";
-import type { DwgEntity } from "@mlightcad/libredwg-web/lib/database/entities/entity";
-import type { DwgDatabase } from "@mlightcad/libredwg-web/lib/database/database";
+import type { DwgDatabase } from "@mlightcad/libredwg-web";
+
+interface Point3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface DwgEntityBase {
+  type: string;
+  isVisible?: boolean;
+  color?: number;
+}
+
+interface DwgLineEntity extends DwgEntityBase {
+  type: "LINE";
+  startPoint: Point3D;
+  endPoint: Point3D;
+}
+
+interface DwgLWPolylineEntity extends DwgEntityBase {
+  type: "LWPOLYLINE";
+  flag: number;
+  vertices: { x: number; y: number }[];
+}
+
+interface DwgCircleEntity extends DwgEntityBase {
+  type: "CIRCLE";
+  center: Point3D;
+  radius: number;
+}
+
+interface DwgArcEntity extends DwgEntityBase {
+  type: "ARC";
+  center: Point3D;
+  radius: number;
+  startAngle: number;
+  endAngle: number;
+}
+
+type DwgEntity =
+  | DwgLineEntity
+  | DwgLWPolylineEntity
+  | DwgCircleEntity
+  | DwgArcEntity
+  | DwgEntityBase;
 
 interface Bounds {
   minX: number;
@@ -109,7 +149,7 @@ function entityToSvg(entity: DwgEntity): string | null {
 }
 
 export function dwgDatabaseToSvg(db: DwgDatabase, padding = 40): { svg: string; bounds: Bounds } {
-  const entities = db.entities ?? [];
+  const entities = (db.entities ?? []) as DwgEntity[];
   const bounds = computeBounds(entities);
   const width = bounds.maxX - bounds.minX || 1;
   const height = bounds.maxY - bounds.minY || 1;

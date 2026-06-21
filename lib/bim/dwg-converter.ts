@@ -26,7 +26,14 @@ export async function convertDwgBufferToSvg(
   buffer: Buffer
 ): Promise<DwgConversionResult> {
   const libredwg = await getLibreDwg();
-  const dwg = libredwg.dwg_read_data(new Uint8Array(buffer), Dwg_File_Type.DWG);
+  const arrayBuffer = buffer.buffer.slice(
+    buffer.byteOffset,
+    buffer.byteOffset + buffer.byteLength
+  );
+  const dwg = libredwg.dwg_read_data(arrayBuffer as ArrayBuffer, Dwg_File_Type.DWG);
+  if (dwg === undefined) {
+    throw new Error("Failed to parse DWG file");
+  }
   const db = libredwg.convert(dwg);
   libredwg.dwg_free(dwg);
 
