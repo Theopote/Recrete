@@ -120,7 +120,7 @@ export function FloorPlanOverlayViewer({
   }
 
   return (
-    <div className={cn("relative overflow-hidden rounded-md border bg-white", className)}>
+    <div className={cn("relative overflow-hidden rounded-md border bg-[#11151b]", className)}>
       {label && (
         <div className="absolute left-3 top-3 z-10 rounded bg-background/90 px-2 py-1 text-[10px] font-medium shadow-sm">
           {label}

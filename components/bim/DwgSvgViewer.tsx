@@ -11,7 +11,7 @@ export function DwgSvgViewer({ previewUrl, className }: DwgSvgViewerProps) {
   return (
     <div
       className={cn(
-        "relative h-full min-h-[420px] w-full overflow-hidden rounded-md border bg-white",
+        "relative h-full min-h-[420px] w-full overflow-hidden rounded-md border bg-[#11151b]",
         className
       )}
     >

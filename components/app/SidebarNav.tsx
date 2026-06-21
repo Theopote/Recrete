@@ -34,11 +34,11 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-56 flex-col border-r bg-card shrink-0">
+    <aside className="flex h-full w-56 flex-col border-r border-border/80 bg-card/95 shadow-[12px_0_36px_-30px_black] shrink-0">
       <div className="flex h-14 items-center gap-2.5 border-b px-4">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-            <Building2 className="h-4 w-4 text-primary-foreground" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-md border border-copper/35 bg-copper/10 shadow-[inset_0_0_18px_hsl(var(--copper)/0.08)]">
+            <Building2 className="h-4 w-4 text-copper" />
           </div>
           <div>
             <p className="text-sm font-semibold leading-none tracking-tight">Recrete</p>
@@ -60,7 +60,7 @@ export function SidebarNav() {
               className={cn(
                 "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium transition-colors",
                 isActive
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-copper/12 text-copper ring-1 ring-inset ring-copper/20"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >

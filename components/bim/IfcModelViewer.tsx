@@ -31,7 +31,7 @@ export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#f1f5f9");
+    scene.background = new THREE.Color("#11151b");
 
     const camera = new THREE.PerspectiveCamera(
       60,
@@ -49,7 +49,7 @@ export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
     dir.position.set(10, 20, 10);
     scene.add(dir);
 
-    const grid = new THREE.GridHelper(40, 40, 0xcbd5e1, 0xe2e8f0);
+    const grid = new THREE.GridHelper(40, 40, 0x4b5563, 0x242a33);
     scene.add(grid);
 
     const animate = () => {

@@ -6,36 +6,37 @@
 
 @layer base {
   :root {
-    --background: 40 20% 97%;
-    --foreground: 220 20% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 12%;
-    --primary: 220 18% 18%;
-    --primary-foreground: 40 20% 97%;
-    --secondary: 40 10% 93%;
-    --secondary-foreground: 220 18% 18%;
-    --muted: 40 8% 92%;
-    --muted-foreground: 220 10% 45%;
-    --accent: 40 10% 93%;
-    --accent-foreground: 220 18% 18%;
-    --destructive: 0 72% 51%;
+    color-scheme: dark;
+    --background: 220 16% 7%;
+    --foreground: 40 12% 91%;
+    --card: 220 14% 10%;
+    --card-foreground: 40 12% 91%;
+    --popover: 220 15% 9%;
+    --popover-foreground: 40 12% 91%;
+    --primary: 38 12% 88%;
+    --primary-foreground: 220 18% 9%;
+    --secondary: 220 12% 14%;
+    --secondary-foreground: 40 10% 88%;
+    --muted: 220 11% 15%;
+    --muted-foreground: 220 7% 62%;
+    --accent: 220 11% 17%;
+    --accent-foreground: 40 12% 94%;
+    --destructive: 0 62% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 10% 88%;
-    --input: 220 10% 88%;
-    --ring: 25 60% 45%;
+    --border: 220 10% 20%;
+    --input: 220 10% 24%;
+    --ring: 28 72% 55%;
     --radius: 0.375rem;
 
-    --copper: 25 60% 45%;
-    --copper-foreground: 0 0% 100%;
-    --sage: 150 25% 38%;
-    --sage-foreground: 0 0% 100%;
-    --concrete: 220 8% 72%;
-    --concrete-light: 220 8% 88%;
-    --concrete-dark: 220 10% 55%;
-    --ink: 220 20% 12%;
-    --ink-muted: 220 10% 45%;
+    --copper: 28 72% 56%;
+    --copper-foreground: 220 18% 8%;
+    --sage: 151 32% 53%;
+    --sage-foreground: 220 18% 7%;
+    --concrete: 220 7% 52%;
+    --concrete-light: 220 8% 68%;
+    --concrete-dark: 220 10% 27%;
+    --ink: 40 12% 91%;
+    --ink-muted: 220 7% 62%;
 
     --font-geist-sans: 'Inter', system-ui, sans-serif;
     --font-geist-mono: 'JetBrains Mono', monospace;
@@ -48,6 +49,17 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at 50% -20%, hsl(220 16% 14% / 0.55), transparent 42rem);
+  }
+
+  ::selection {
+    background: hsl(var(--copper) / 0.28);
+    color: hsl(var(--foreground));
+  }
+
+  * {
+    scrollbar-color: hsl(var(--concrete-dark)) transparent;
+    scrollbar-width: thin;
   }
 }
 
