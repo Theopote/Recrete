@@ -1,0 +1,125 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface GltfModelViewerProps {
+  modelUrl: string;
+  className?: string;
+}
+
+export function GltfModelViewer({ modelUrl, className }: GltfModelViewerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let disposed = false;
+    let animationId = 0;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#f1f5f9");
+
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      container.clientWidth / container.clientHeight,
+      0.1,
+      10000
+    );
+    camera.position.set(12, 8, 12);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+    dir.position.set(10, 20, 10);
+    scene.add(dir);
+
+    const grid = new THREE.GridHelper(40, 40, 0xcbd5e1, 0xe2e8f0);
+    scene.add(grid);
+
+    const animate = () => {
+      animationId = requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    const onResize = () => {
+      if (!container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+    window.addEventListener("resize", onResize);
+
+    const loader = new GLTFLoader();
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        if (disposed) return;
+        scene.add(gltf.scene);
+
+        const box = new THREE.Box3().setFromObject(gltf.scene);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z, 1);
+        controls.target.copy(center);
+        camera.position.set(
+          center.x + maxDim * 1.6,
+          center.y + maxDim * 0.8,
+          center.z + maxDim * 1.6
+        );
+        controls.update();
+        setLoading(false);
+      },
+      undefined,
+      (loadError) => {
+        if (!disposed) {
+          setError(
+            loadError instanceof Error ? loadError.message : "Failed to load GLB model"
+          );
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(animationId);
+      window.removeEventListener("resize", onResize);
+      controls.dispose();
+      renderer.dispose();
+      container.innerHTML = "";
+    };
+  }, [modelUrl]);
+
+  return (
+    <div className={cn("relative h-full min-h-[420px] w-full rounded-md border bg-muted/20", className)}>
+      <div ref={containerRef} className="absolute inset-0" />
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+          <p className="text-xs text-destructive">{error}</p>
+        </div>
+      )}
+    </div>
+  );
+}

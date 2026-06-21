@@ -6,10 +6,24 @@ export type BimModelStatus =
   | "failed"
   | "unsupported";
 
+export interface BimRoomInfo {
+  id: string;
+  label: string;
+  area: number;
+  areaUnit: "m2";
+  source: "ifc_space" | "ifc_geometry" | "cad_polyline";
+  expressId?: number;
+  layer?: string;
+}
+
 export interface BimModelMetadata {
   entityCount?: number;
   layerCount?: number;
   bounds?: { minX: number; minY: number; maxX: number; maxY: number };
+  meshCount?: number;
+  rooms?: BimRoomInfo[];
+  totalArea?: number;
+  totalAreaUnit?: "m2";
 }
 
 export interface BimModel {
@@ -20,6 +34,7 @@ export interface BimModel {
   status: BimModelStatus;
   fileUrl: string;
   previewUrl?: string | null;
+  gltfUrl?: string | null;
   fileSize: number;
   mimeType: string;
   errorMessage?: string | null;

@@ -66,7 +66,7 @@ export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <p className="text-[10px] text-muted-foreground">
-        Supported: IFC, DWG, DXF. Revit (.rvt) — export to IFC first.
+        Supported: IFC (GLB lightweight + room areas), DWG, DXF (SVG preview + room areas). Revit (.rvt) — export to IFC first.
       </p>
     </div>
   );

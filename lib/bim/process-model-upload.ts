@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { saveUploadedFile } from "@/lib/storage/upload";
 import { detectBimFormat } from "@/lib/bim/formats";
-import { convertDwgBufferToSvg } from "@/lib/bim/dwg-converter";
+import { convertCadBufferToSvg } from "@/lib/bim/dwg-converter";
 import {
   addBimModel,
   buildMetadata,
@@ -21,27 +21,34 @@ const MIME_BY_FORMAT: Record<BimModelFormat, string> = {
   dxf: "application/dxf",
 };
 
-async function processDwgConversion(projectId: string, modelId: string, fileUrl: string) {
+async function readUploadedFile(fileUrl: string) {
+  const relative = fileUrl.replace(/^\//, "");
+  const filePath = path.join(process.cwd(), "public", relative);
+  return readFile(filePath);
+}
+
+async function processCadConversion(
+  projectId: string,
+  modelId: string,
+  fileUrl: string,
+  format: Extract<BimModelFormat, "dwg" | "dxf">
+) {
   try {
-    const relative = fileUrl.replace(/^\//, "");
-    const filePath = path.join(process.cwd(), "public", relative);
-    const buffer = await readFile(filePath);
-    const result = await convertDwgBufferToSvg(projectId, modelId, buffer);
+    const buffer = await readUploadedFile(fileUrl);
+    const result = await convertCadBufferToSvg(projectId, modelId, buffer, format);
     await updateBimModel(projectId, modelId, {
       status: "ready",
       previewUrl: result.previewUrl,
-      metadata: buildMetadata({
-        entityCount: result.entityCount,
-        layerCount: result.layerCount,
-        bounds: result.bounds,
-      }),
+      metadata: buildMetadata(result.metadata),
       errorMessage: null,
     });
   } catch (error) {
     await updateBimModel(projectId, modelId, {
       status: "failed",
       errorMessage:
-        error instanceof Error ? error.message : "DWG conversion failed",
+        error instanceof Error
+          ? error.message
+          : `${format.toUpperCase()} conversion failed`,
     });
   }
 }
@@ -59,22 +66,20 @@ export async function createBimModelFromUpload(input: {
   const saved = await saveUploadedFile(input.projectId, input.file);
   const now = new Date();
   const modelId = generateModelId();
-  const needsConversion = format === "dwg";
-  const isDxf = format === "dxf";
+  const needsConversion = format === "dwg" || format === "dxf" || format === "ifc";
 
   const model: BimModel = {
     id: modelId,
     projectId: input.projectId,
     name: saved.name,
     format,
-    status: isDxf ? "unsupported" : needsConversion ? "processing" : "ready",
+    status: needsConversion ? "processing" : "ready",
     fileUrl: saved.fileUrl,
     previewUrl: null,
+    gltfUrl: null,
     fileSize: saved.fileSize,
     mimeType: saved.mimeType || MIME_BY_FORMAT[format],
-    errorMessage: isDxf
-      ? "DXF direct import is disabled in the bundled LibreDWG build. Upload DWG or export to IFC."
-      : null,
+    errorMessage: null,
     uploadedById: input.uploadedById,
     createdAt: now,
     updatedAt: now,
@@ -82,13 +87,13 @@ export async function createBimModelFromUpload(input: {
 
   await addBimModel(model);
 
-  if (needsConversion) {
+  if (format === "dwg" || format === "dxf") {
     after(async () => {
-      await processDwgConversion(input.projectId, modelId, saved.fileUrl);
+      await processCadConversion(input.projectId, modelId, saved.fileUrl, format);
     });
   }
 
   return { ...model, conversionQueued: needsConversion };
 }
 
-export { processDwgConversion };
+export { processCadConversion as processDwgConversion };

@@ -50,7 +50,7 @@ export async function updateBimModel(
   patch: Partial<
     Pick<
       BimModel,
-      "status" | "previewUrl" | "errorMessage" | "metadata"
+      "status" | "previewUrl" | "gltfUrl" | "errorMessage" | "metadata"
     >
   >
 ): Promise<BimModel | null> {

@@ -12,9 +12,22 @@ import { SAMPLE_IFC_URL } from "@/lib/bim/formats";
 import type { BimModel } from "@/types/bim";
 import type { ProjectWithRelations } from "@/types";
 import { Box, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { IfcLightweightProcessor } from "@/components/bim/IfcLightweightProcessor";
 
 const IfcModelViewer = dynamic(
   () => import("@/components/bim/IfcModelViewer").then((m) => m.IfcModelViewer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[420px] items-center justify-center rounded-md border bg-muted/20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  }
+);
+
+const GltfModelViewer = dynamic(
+  () => import("@/components/bim/GltfModelViewer").then((m) => m.GltfModelViewer),
   {
     ssr: false,
     loading: () => (
@@ -37,9 +50,56 @@ function statusLabel(status: BimModel["status"]) {
       return "Converting…";
     case "failed":
       return "Failed";
+    case "unsupported":
+      return "Unsupported";
     default:
       return status;
   }
+}
+
+function isCadFormat(format: BimModel["format"]) {
+  return format === "dwg" || format === "dxf";
+}
+
+function RoomTable({ model }: { model: BimModel }) {
+  const rooms = model.metadata?.rooms ?? [];
+  if (rooms.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="font-medium text-foreground">
+        Rooms / areas
+        {model.metadata?.totalArea != null && (
+          <span className="ml-2 font-normal text-muted-foreground">
+            Total {model.metadata.totalArea.toFixed(2)} m²
+          </span>
+        )}
+      </p>
+      <div className="overflow-x-auto rounded-md border">
+        <table className="w-full text-left">
+          <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Room</th>
+              <th className="px-3 py-2">Area (m²)</th>
+              <th className="px-3 py-2">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rooms.slice(0, 12).map((room) => (
+              <tr key={room.id} className="border-t">
+                <td className="px-3 py-2">{room.label}</td>
+                <td className="px-3 py-2">{room.area.toFixed(2)}</td>
+                <td className="px-3 py-2 text-muted-foreground">{room.source}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rooms.length > 12 && (
+        <p className="text-[10px] text-muted-foreground">Showing 12 of {rooms.length} rooms.</p>
+      )}
+    </div>
+  );
 }
 
 export function BimViewerSection({ project }: BimViewerSectionProps) {
@@ -86,11 +146,23 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
     setSelectedId(model.id);
   };
 
+  const handleModelUpdated = (model: BimModel) => {
+    setModels((prev) => prev.map((item) => (item.id === model.id ? model : item)));
+  };
+
+  const conversionMessage =
+    selected?.format === "ifc"
+      ? "Generating lightweight GLB preview and extracting IFC spaces…"
+      : selected && isCadFormat(selected.format)
+        ? `Converting ${selected.format.toUpperCase()} to SVG preview and detecting room areas…`
+        : "Converting model…";
+
   return (
     <div className="space-y-6">
+      <IfcLightweightProcessor models={models} onUpdated={handleModelUpdated} />
       <SectionHeader
         title="BIM / CAD Viewer"
-        description="Import IFC and DWG models, view in 3D (IFC) or 2D preview (DWG conversion)"
+        description="Import IFC, DWG, or DXF — 3D GLB preview (IFC), 2D SVG preview (CAD), automatic room/area extraction"
         action={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={loadModels} disabled={loading}>
@@ -153,22 +225,40 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
             <IfcModelViewer modelUrl={SAMPLE_IFC_URL} />
           )}
 
-          {selected?.format === "ifc" && selected.status === "ready" && (
-            <IfcModelViewer modelUrl={selected.fileUrl} />
+          {selected?.format === "ifc" && selected.status === "ready" && selected.gltfUrl && (
+            <GltfModelViewer modelUrl={selected.gltfUrl} />
           )}
 
-          {selected?.format === "dwg" && selected.status === "ready" && selected.previewUrl && (
-            <DwgSvgViewer previewUrl={selected.previewUrl} />
+          {selected?.format === "ifc" &&
+            selected.status === "ready" &&
+            !selected.gltfUrl &&
+            selected.fileUrl && <IfcModelViewer modelUrl={selected.fileUrl} />}
+
+          {selected?.format === "ifc" && selected.status === "processing" && selected.fileUrl && (
+            <>
+              <IfcModelViewer modelUrl={selected.fileUrl} />
+              <div className="flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {conversionMessage}
+              </div>
+            </>
           )}
 
-          {selected?.format === "dwg" && selected.status === "processing" && (
-            <div className="flex min-h-[420px] flex-col items-center justify-center rounded-md border bg-muted/20 gap-2">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Converting DWG to preview…</p>
-            </div>
-          )}
+          {selected &&
+            isCadFormat(selected.format) &&
+            selected.status === "ready" &&
+            selected.previewUrl && <DwgSvgViewer previewUrl={selected.previewUrl} />}
 
-          {selected?.status === "failed" && (
+          {selected &&
+            isCadFormat(selected.format) &&
+            selected.status === "processing" && (
+              <div className="flex min-h-[420px] flex-col items-center justify-center rounded-md border bg-muted/20 gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">{conversionMessage}</p>
+              </div>
+            )}
+
+          {(selected?.status === "failed" || selected?.status === "unsupported") && (
             <div className="flex min-h-[420px] items-center justify-center rounded-md border bg-destructive/5 p-6 text-center">
               <p className="text-xs text-destructive">
                 {selected.errorMessage ?? "Model processing failed"}
@@ -178,7 +268,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
 
           {(selectedId === "sample" || selected) && (
             <Card>
-              <CardContent className="p-4 text-xs text-muted-foreground space-y-2">
+              <CardContent className="p-4 text-xs text-muted-foreground space-y-3">
                 {selectedId === "sample" && (
                   <>
                     <p>Demo model loaded from That Open sample library.</p>
@@ -204,11 +294,19 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
                         Entities: {selected.metadata.entityCount}
                         {selected.metadata.layerCount !== undefined &&
                           ` · Layers: ${selected.metadata.layerCount}`}
+                        {selected.metadata.meshCount !== undefined &&
+                          ` · Meshes: ${selected.metadata.meshCount}`}
                       </p>
                     )}
-                    {selected.format === "dwg" && selected.previewUrl && (
-                      <p>2D SVG preview generated via LibreDWG (P0 lightweight conversion).</p>
+                    {selected.format === "ifc" && selected.gltfUrl && (
+                      <p>Lightweight GLB preview generated from IFC geometry.</p>
                     )}
+                    {selected && isCadFormat(selected.format) && selected.previewUrl && (
+                      <p>
+                        2D SVG preview generated via LibreDWG ({selected.format.toUpperCase()}).
+                      </p>
+                    )}
+                    <RoomTable model={selected} />
                   </>
                 )}
               </CardContent>
