@@ -16,6 +16,37 @@ interface DocumentsSectionProps {
   project: ProjectWithRelations;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function pollAnalysisTask(
+  projectId: string,
+  taskId: string,
+  onUpdate: (message: string) => void
+): Promise<"completed" | "failed" | "timeout"> {
+  for (let attempt = 0; attempt < 45; attempt++) {
+    await sleep(2000);
+    const res = await fetch(`/api/projects/${projectId}/analysis-tasks/${taskId}`);
+    if (!res.ok) return "failed";
+
+    const data = (await res.json()) as {
+      task?: { status: string; progress: number; message?: string; error?: string };
+    };
+    const task = data.task;
+    if (!task) return "failed";
+
+    onUpdate(task.message ?? `Analyzing… ${task.progress}%`);
+
+    if (task.status === "completed") return "completed";
+    if (task.status === "failed") {
+      onUpdate(task.error ?? "Analysis failed");
+      return "failed";
+    }
+  }
+  return "timeout";
+}
+
 export function DocumentsSection({ project: initialProject }: DocumentsSectionProps) {
   const router = useRouter();
   const [documents, setDocuments] = useState(initialProject.documents ?? []);
@@ -26,6 +57,7 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
 
   const handleUpload = async (files: File[]) => {
     setUploading(true);
+    setAnalysisNotice(null);
     try {
       for (const file of files) {
         const formData = new FormData();
@@ -36,18 +68,30 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
           method: "POST",
           body: formData,
         });
-        if (res.ok) {
-          const doc = await res.json();
-          setDocuments((prev) => [
-            { ...doc, createdAt: new Date(doc.createdAt), updatedAt: new Date(doc.updatedAt) },
-            ...prev,
-          ]);
-          if (doc.autoAnalysisQueued) {
-            setAnalysisNotice("AI analysis and Building Memory update queued for uploaded files.");
-          }
+        if (!res.ok) continue;
+
+        const doc = await res.json();
+        setDocuments((prev) => [
+          { ...doc, createdAt: new Date(doc.createdAt), updatedAt: new Date(doc.updatedAt) },
+          ...prev,
+        ]);
+
+        if (doc.autoAnalysisQueued && doc.analysisTaskId) {
+          setAnalysisNotice(`Analyzing ${doc.name}…`);
+          void pollAnalysisTask(initialProject.id, doc.analysisTaskId, setAnalysisNotice).then(
+            (result) => {
+              if (result === "completed") {
+                setAnalysisNotice("AI analysis complete. Building Memory updated.");
+                router.refresh();
+              } else if (result === "timeout") {
+                setAnalysisNotice("Analysis is taking longer than expected. Refresh later to see results.");
+              }
+            }
+          );
+        } else if (doc.autoAnalysisQueued) {
+          setAnalysisNotice("AI analysis queued for uploaded files.");
         }
       }
-      router.refresh();
     } finally {
       setUploading(false);
     }

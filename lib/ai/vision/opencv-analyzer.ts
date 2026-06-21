@@ -99,7 +99,6 @@ export async function tryNativeOpenCvAnalysis(
   imageBuffer: Buffer
 ): Promise<OpenCvAnalysisResult | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const cv = require("opencv4nodejs") as {
       imdecode: (buf: Buffer) => { cvtColor: (code: number) => unknown; delete: () => void };
       IMREAD_GRAYSCALE: number;

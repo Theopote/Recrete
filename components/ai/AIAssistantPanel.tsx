@@ -60,6 +60,12 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(typeof data.error === "string" ? data.error : "Request failed");
+      }
+      if (!data.response) {
+        throw new Error("Empty response from assistant");
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -69,12 +75,15 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
           sources: data.sources as CopilotSources | undefined,
         },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
+          content:
+            error instanceof Error
+              ? `Sorry, something went wrong: ${error.message}`
+              : "Sorry, I encountered an error. Please try again.",
           timestamp: new Date(),
         },
       ]);

@@ -20,6 +20,7 @@ interface DocumentCardProps {
 
 export function DocumentCard({ document, projectId, onPreview, onAnalyzed }: DocumentCardProps) {
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const Icon =
     document.mimeType.startsWith("image/") ? Image :
     document.type === "folder" ? Archive : FileText;
@@ -33,15 +34,22 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed }: Doc
     if (!projectId || analyzing) return;
 
     setAnalyzing(true);
+    setAnalyzeError(null);
     try {
       const res = await fetch(
         `/api/projects/${projectId}/documents/${document.id}/analyze`,
         { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }
       );
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.document) {
         onAnalyzed?.(data.document);
+      } else {
+        setAnalyzeError(
+          typeof data.error === "string" ? data.error : "Analysis failed. Please try again."
+        );
       }
+    } catch {
+      setAnalyzeError("Network error. Please try again.");
     } finally {
       setAnalyzing(false);
     }
@@ -90,9 +98,14 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed }: Doc
               </p>
             ) : null}
             <div className="mt-2 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                <span>{formatFileSize(document.fileSize)}</span>
-                <span>{formatDate(document.createdAt)}</span>
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span>{formatFileSize(document.fileSize)}</span>
+                  <span>{formatDate(document.createdAt)}</span>
+                </div>
+                {analyzeError && (
+                  <p className="text-[10px] text-destructive">{analyzeError}</p>
+                )}
               </div>
               {projectId && (
                 <Button
