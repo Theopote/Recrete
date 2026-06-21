@@ -10,6 +10,7 @@ import type { ProjectWithRelations } from "@/types";
 import type { StrategyLabParams } from "@/types/ai";
 import type { KnowledgeSearchResult } from "../knowledge/embedding-search";
 import { buildProfessionalPromptContext } from "../knowledge/prompt-context";
+import { resolveModel, type AIModelScenario } from "../model-router";
 
 export function isLangChainEnabled(): boolean {
   return (
@@ -18,15 +19,13 @@ export function isLangChainEnabled(): boolean {
   );
 }
 
-function getChatModel() {
+export function getChatModel(scenario: AIModelScenario = "fast") {
   return new ChatOpenAI({
-    model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-    temperature: 0.4,
+    model: resolveModel(scenario),
+    temperature: scenario === "reasoning" ? 0.4 : 0.3,
     apiKey: process.env.OPENAI_API_KEY,
   });
 }
-
-export { getChatModel };
 
 export async function runStrategyContextChain(input: {
   project: ProjectWithRelations;
@@ -65,7 +64,7 @@ Reference knowledge:
 
   const chain = RunnableSequence.from([
     prompt,
-    getChatModel(),
+    getChatModel("reasoning"),
     new StringOutputParser(),
   ]);
 
@@ -108,7 +107,7 @@ export async function runDocumentSummaryChain(input: {
 
   const chain = RunnableSequence.from([
     prompt,
-    getChatModel(),
+    getChatModel("fast"),
     new StringOutputParser(),
   ]);
 
@@ -146,7 +145,7 @@ Provide 3 actionable spatial planning recommendations.`,
 
   const chain = RunnableSequence.from([
     prompt,
-    getChatModel(),
+    getChatModel("reasoning"),
     new StringOutputParser(),
   ]);
 
@@ -164,5 +163,5 @@ export function createWorkflowChain(systemPrompt: string, humanTemplate: string)
     ["human", humanTemplate],
   ]);
 
-  return RunnableSequence.from([prompt, getChatModel(), new StringOutputParser()]);
+  return RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
 }

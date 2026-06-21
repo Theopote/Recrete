@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { getProjectById } from "@/lib/db/repository";
 import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
+import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
 
 export async function POST(
   request: Request,
@@ -16,6 +17,31 @@ export async function POST(
   const language = body.language === "zh" ? "zh" : body.language === "en" ? "en" : "auto";
   const createIssues = body.createIssues !== false;
   const refreshBuildingMemory = body.refreshBuildingMemory !== false;
+  const asyncMode = body.async === true;
+
+  if (asyncMode) {
+    const doc = project.documents?.find((d) => d.id === docId);
+    const task = createDocumentAnalysisTask({
+      projectId,
+      documentId: docId,
+      documentName: doc?.name ?? docId,
+    });
+
+    after(async () => {
+      await runDocumentIngestWorkflow(projectId, docId, {
+        language,
+        createIssues,
+        refreshBuildingMemory,
+        taskId: task.id,
+      });
+    });
+
+    return NextResponse.json({
+      analysisTaskId: task.id,
+      statusUrl: `/api/projects/${projectId}/analysis-tasks/${task.id}`,
+      message: "Analysis queued",
+    });
+  }
 
   const result = await runDocumentIngestWorkflow(projectId, docId, {
     language,

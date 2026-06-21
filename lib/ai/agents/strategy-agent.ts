@@ -2,6 +2,8 @@ import type { DiagnosisItem, ProjectWithRelations, RenovationStrategy } from "@/
 import type { AIInsight, StrategyLabParams } from "@/types/ai";
 import { withMockDelay } from "../providers/utils";
 import { mockAIService } from "../mock-ai-service";
+import { openAIService } from "../openai-service";
+import { isOpenAIConfigured } from "../model-router";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
 import { searchSimilarCasesAsync } from "../knowledge/similar-cases";
 import { runStrategyContextChain } from "../langchain/chains";
@@ -57,7 +59,9 @@ export async function generateRenovationStrategies(
   params?: StrategyLabParams
 ): Promise<Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]> {
   const resolvedParams = params ?? defaultParams(project);
-  const strategies = await mockAIService.generateRenovationStrategies(project, diagnosisItems);
+  const strategies = isOpenAIConfigured()
+    ? await openAIService.generateRenovationStrategies(project, diagnosisItems)
+    : await mockAIService.generateRenovationStrategies(project, diagnosisItems);
   const enriched = applyParamsToStrategies(strategies, resolvedParams);
 
   const cases = await searchKnowledgeForProjectAsync(project, resolvedParams.targetFunction, 3);

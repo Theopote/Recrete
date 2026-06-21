@@ -32,14 +32,21 @@ function resolveProvider(config?: VisionProviderConfig): {
     return {
       provider,
       apiKey: config?.apiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
-      model: config?.model ?? process.env.ANTHROPIC_VISION_MODEL ?? "claude-sonnet-4-20250514",
+      model:
+        config?.model ??
+        process.env.ANTHROPIC_VISION_MODEL ??
+        "claude-sonnet-4-20250514",
     };
   }
 
   return {
     provider: "openai",
     apiKey: config?.apiKey ?? process.env.OPENAI_API_KEY ?? "",
-    model: config?.model ?? process.env.OPENAI_VISION_MODEL ?? "gpt-4o",
+    model:
+      config?.model ??
+      process.env.OPENAI_VISION_MODEL ??
+      process.env.OPENAI_MODEL ??
+      "gpt-4o",
   };
 }
 

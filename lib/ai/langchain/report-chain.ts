@@ -74,7 +74,7 @@ Skeleton to expand:
     ],
   ]);
 
-  const chain = RunnableSequence.from([prompt, getChatModel(), new StringOutputParser()]);
+  const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
 
   const content = await chain.invoke({
     guidance,
@@ -125,7 +125,7 @@ Skeleton:
     ],
   ]);
 
-  const chain = RunnableSequence.from([prompt, getChatModel(), new StringOutputParser()]);
+  const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
 
   const content = await chain.invoke({
     projectContext: buildProjectContextBlock(input.project),
@@ -171,7 +171,7 @@ Skeleton:
     ],
   ]);
 
-  const chain = RunnableSequence.from([prompt, getChatModel(), new StringOutputParser()]);
+  const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
 
   const content = await chain.invoke({
     projectContext: buildProjectContextBlock(input.project),

@@ -188,14 +188,33 @@ The repository layer (`lib/db/repository.ts`) automatically selects:
 
 By default, Recrete uses a **mock AI service** with realistic delays and structured outputs — no API key required.
 
-To use OpenAI:
+To use OpenAI with **scenario-based model routing**:
 
 ```env
 AI_SERVICE=openai
 OPENAI_API_KEY=sk-...
+LANGCHAIN_ENABLED=true
+
+# Optional per-scenario models
+OPENAI_MODEL_REASONING=gpt-4o      # diagnosis, strategy, reports
+OPENAI_MODEL_VISION=gpt-4o         # drawings & photos
+OPENAI_MODEL_FAST=gpt-4o-mini      # summaries
+OPENAI_MODEL_COPILOT=gpt-4o-mini   # sidebar assistant
 ```
 
-The AI layer is abstracted in `lib/ai/` so additional providers can be added without changing UI code.
+| Scenario | Default model | Capability |
+|----------|---------------|------------|
+| Vision | `gpt-4o` | Drawing / photo / scan analysis |
+| Reasoning | `gpt-4o` | Diagnosis, strategy, reports |
+| Fast | `gpt-4o-mini` | Document summaries |
+| Compliance | rule engine + RAG + LLM hybrid | GB code checks |
+| Copilot | `gpt-4o-mini` | Project assistant chat |
+
+Anthropic Vision: set `VISION_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
+
+**Async document analysis:** uploads return `analysisTaskId`; poll `GET /api/projects/{id}/analysis-tasks/{taskId}` for progress.
+
+The AI layer lives in `lib/ai/` (`model-router.ts`, providers, agents, LangChain chains).
 
 ### Streaming project creation
 

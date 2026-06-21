@@ -7,6 +7,7 @@ import type {
   SiteIssue,
 } from "@/types";
 import type { AIMessage } from "@/types";
+import { chatCompletion, chatJsonArray } from "./openai-client";
 import {
   buildAssistantSystemPrompt,
   buildAssistantSystemPromptFromContext,
@@ -16,62 +17,23 @@ import {
 } from "./prompts";
 
 export class OpenAIService implements AIService {
-  private apiKey: string;
-  private baseUrl: string;
-  private model: string;
-
-  constructor(options?: { apiKey?: string; baseUrl?: string; model?: string }) {
-    this.apiKey = options?.apiKey ?? process.env.OPENAI_API_KEY ?? "";
-    this.baseUrl = options?.baseUrl ?? "https://api.openai.com/v1";
-    this.model = options?.model ?? "gpt-4o-mini";
-  }
-
-  private async chat(messages: { role: string; content: string }[]): Promise<string> {
-    if (!this.apiKey) {
-      throw new Error("OPENAI_API_KEY is not configured");
-    }
-
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} ${error}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content ?? "";
-  }
-
   async generateDiagnosis(
     project: ProjectWithRelations
   ): Promise<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]> {
     const prompt = buildDiagnosisPrompt(project);
-    const content = await this.chat([
-      {
-        role: "system",
-        content:
-          "You are a building renovation expert. Return JSON array of diagnosis items with fields: title, category, severity, status, description, evidence, recommendation, relatedLocation.",
-      },
-      { role: "user", content: prompt },
-    ]);
-
-    try {
-      const parsed = JSON.parse(content);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      throw new Error("Failed to parse AI diagnosis response");
-    }
+    return chatJsonArray<
+      Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">
+    >(
+      [
+        {
+          role: "system",
+          content:
+            "You are a building renovation expert for existing buildings in China. Return JSON: { \"items\": [ { title, category, severity, status, description, evidence, recommendation, relatedLocation } ] }. Categories: architecture, structure, facade, mep, fire_safety, accessibility, energy, heritage, operation.",
+        },
+        { role: "user", content: prompt },
+      ],
+      { scenario: "reasoning", temperature: 0.3 }
+    );
   }
 
   async generateRenovationStrategies(
@@ -81,21 +43,27 @@ export class OpenAIService implements AIService {
     Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]
   > {
     const prompt = buildStrategyPrompt(project, diagnosisItems.length);
-    const content = await this.chat([
-      {
-        role: "system",
-        content:
-          "You are a renovation strategy expert. Return JSON array of strategies with all required fields including pros and cons arrays.",
-      },
-      { role: "user", content: prompt },
-    ]);
+    const diagnosisContext = diagnosisItems
+      .slice(0, 12)
+      .map((d) => `- [${d.severity}] ${d.title}: ${d.description}`)
+      .join("\n");
 
-    try {
-      const parsed = JSON.parse(content);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      throw new Error("Failed to parse AI strategy response");
-    }
+    return chatJsonArray<
+      Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">
+    >(
+      [
+        {
+          role: "system",
+          content:
+            'Return JSON: { "strategies": [ { name, type, summary, designGoal, spatialStrategy, structuralStrategy, facadeStrategy, mepStrategy, costLevel, scheduleLevel, riskLevel, pros[], cons[], recommendationReason } ] }. Generate exactly 3 strategies: light, medium, deep renovation.',
+        },
+        {
+          role: "user",
+          content: `${prompt}\n\nDiagnosis context:\n${diagnosisContext || "No diagnosis yet."}`,
+        },
+      ],
+      { scenario: "reasoning", temperature: 0.5 }
+    );
   }
 
   async generateReport(
@@ -113,13 +81,17 @@ export class OpenAIService implements AIService {
       issueCount: issues.length,
     });
 
-    const content = await this.chat([
-      {
-        role: "system",
-        content: "Generate a professional Markdown report for a building renovation project.",
-      },
-      { role: "user", content: `${prompt}\n\nContext: ${context}` },
-    ]);
+    const content = await chatCompletion(
+      [
+        {
+          role: "system",
+          content:
+            "Generate a professional Markdown report for a building renovation project. Use headings, tables where helpful, bilingual terms OK.",
+        },
+        { role: "user", content: `${prompt}\n\nContext: ${context}` },
+      ],
+      { scenario: "reasoning", temperature: 0.4, maxTokens: 4096 }
+    );
 
     return {
       title: `${reportType.replace(/_/g, " ")} — ${project.name}`,
@@ -142,12 +114,17 @@ export class OpenAIService implements AIService {
           knowledgeSnippets: projectContext.knowledgeSnippets ?? [],
         })
       : buildAssistantSystemPrompt(projectContext.project);
-    const chatMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages.map((m) => ({ role: m.role, content: m.content })),
-    ];
 
-    return this.chat(chatMessages);
+    return chatCompletion(
+      [
+        { role: "system", content: systemPrompt },
+        ...messages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+      ],
+      { scenario: "copilot", temperature: 0.6 }
+    );
   }
 }
 

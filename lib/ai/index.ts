@@ -1,20 +1,24 @@
 import type { AIService } from "./types";
+import { isOpenAIConfigured } from "./model-router";
 import { mockAIProvider } from "./providers/mock-provider";
-import { openAIProvider } from "./providers/openai-provider";
+import { openAIProvider, openAIPlatform } from "./providers/openai-provider";
 
 export function getAIService(): AIService {
-  const service = process.env.AI_SERVICE ?? "mock";
-  if (service === "openai" && process.env.OPENAI_API_KEY) {
+  if (isOpenAIConfigured()) {
     return openAIProvider;
   }
   return mockAIProvider;
 }
 
 export function getAIPlatform() {
+  if (isOpenAIConfigured()) {
+    return openAIPlatform;
+  }
   return mockAIProvider;
 }
 
-export { mockAIProvider, openAIProvider };
+export { isOpenAIConfigured } from "./model-router";
+export { mockAIProvider, openAIProvider, openAIPlatform };
 export { buildProjectAIContext, buildProjectAIContextSync } from "./context-builder";
 export * as agents from "./agents";
 export type { AIService, ProjectContext, AIMessage } from "./types";

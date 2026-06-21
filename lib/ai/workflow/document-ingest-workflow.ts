@@ -15,11 +15,17 @@ import { buildDrawingKnowledgeGraph } from "@/lib/ai/knowledge/drawing-knowledge
 import { runConflictDetectionWorkflow } from "./conflict-workflow";
 import type { DocumentAsset } from "@/types";
 import type { BuildingMemory, SourceEvidence, AIAnalysisRun } from "@/types/ai";
+import {
+  completeDocumentAnalysisTask,
+  failDocumentAnalysisTask,
+  updateDocumentAnalysisTask,
+} from "@/lib/ai/tasks/document-analysis-tasks";
 
 export interface DocumentIngestOptions {
   language?: "auto" | "zh" | "en";
   createIssues?: boolean;
   refreshBuildingMemory?: boolean;
+  taskId?: string;
 }
 
 export interface DocumentIngestResult {
@@ -40,7 +46,22 @@ export async function runDocumentIngestWorkflow(
     language = "auto",
     createIssues = true,
     refreshBuildingMemory = true,
+    taskId,
   } = options;
+
+  const touch = (phase: import("@/lib/ai/tasks/document-analysis-tasks").AnalysisTaskPhase, progress: number, message: string) => {
+    if (taskId) {
+      updateDocumentAnalysisTask(taskId, {
+        status: "processing",
+        phase,
+        progress,
+        message,
+      });
+    }
+  };
+
+  try {
+  touch("reading_file", 10, "Reading document metadata");
 
   const project = await getProjectById(projectId);
   if (!project) return null;
@@ -52,12 +73,16 @@ export async function runDocumentIngestWorkflow(
     ? new Date().getFullYear() - project.constructionYear
     : undefined;
 
+  touch("vision_analysis", 35, "Running vision / document analysis");
+
   const analysis = await analyzeDocumentAsset(
     projectId,
     doc,
     { language, includeOCR: true, extractTables: true, detectDefects: true },
     buildingAge
   );
+
+  touch("persisting", 70, "Saving analysis results and evidence");
 
   const document = (await updateDocument(docId, {
     aiSummary: analysis.aiSummary,
@@ -120,11 +145,16 @@ export async function runDocumentIngestWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
+    touch("building_memory", 90, "Updating Building Memory");
     buildingMemory = await updateBuildingMemory(projectId);
     await runConflictDetectionWorkflow(projectId, {
       refreshBuildingMemory: false,
       persistInsights: true,
     });
+  }
+
+  if (taskId) {
+    completeDocumentAnalysisTask(taskId, `Analyzed ${doc.name} (${analysis.kind})`);
   }
 
   return {
@@ -135,4 +165,13 @@ export async function runDocumentIngestWorkflow(
     analysisRun,
     buildingMemory,
   };
+  } catch (error) {
+    if (taskId) {
+      failDocumentAnalysisTask(
+        taskId,
+        error instanceof Error ? error.message : "Document analysis failed"
+      );
+    }
+    throw error;
+  }
 }

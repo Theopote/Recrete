@@ -3,6 +3,7 @@ import { getProjectById, addDocument } from "@/lib/db/repository";
 import { getCurrentUserId } from "@/lib/auth/session";
 import { saveUploadedFile } from "@/lib/storage/upload";
 import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
+import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
 
 export async function POST(
   request: Request,
@@ -39,13 +40,20 @@ export async function POST(
     });
 
     const autoAnalyze = formData.get("autoAnalyze") !== "false";
+    let analysisTaskId: string | undefined;
     if (autoAnalyze) {
+      const task = createDocumentAnalysisTask({
+        projectId,
+        documentId: doc.id,
+        documentName: doc.name,
+      });
+      analysisTaskId = task.id;
       after(async () => {
-        await runDocumentIngestWorkflow(projectId, doc.id);
+        await runDocumentIngestWorkflow(projectId, doc.id, { taskId: task.id });
       });
     }
 
-    return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze });
+    return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze, analysisTaskId });
   }
 
   const body = await request.json();
@@ -61,11 +69,18 @@ export async function POST(
   });
 
   const autoAnalyze = body.autoAnalyze !== false;
+  let analysisTaskId: string | undefined;
   if (autoAnalyze) {
+    const task = createDocumentAnalysisTask({
+      projectId,
+      documentId: doc.id,
+      documentName: doc.name,
+    });
+    analysisTaskId = task.id;
     after(async () => {
-      await runDocumentIngestWorkflow(projectId, doc.id);
+      await runDocumentIngestWorkflow(projectId, doc.id, { taskId: task.id });
     });
   }
 
-  return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze });
+  return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze, analysisTaskId });
 }

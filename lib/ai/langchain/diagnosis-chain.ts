@@ -64,7 +64,7 @@ Reference cases:
     ],
   ]);
 
-  const chain = RunnableSequence.from([prompt, getChatModel(), new StringOutputParser()]);
+  const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
 
   return chain.invoke({
     professionalContext: buildProfessionalPromptContext(input.project),
@@ -112,7 +112,7 @@ Diagnosis:
     ],
   ]);
 
-  const chain = RunnableSequence.from([prompt, getChatModel(), new StringOutputParser()]);
+  const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
   const raw = await chain.invoke({
     projectName: input.project.name,
     targetFunction: input.project.targetFunction,
@@ -168,7 +168,7 @@ Diagnosis requiring action:
     ],
   ]);
 
-  const chain = RunnableSequence.from([prompt, getChatModel(), new StringOutputParser()]);
+  const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
   const raw = await chain.invoke({
     projectName: input.project.name,
     insights: input.insightsSummary ?? "See diagnosis list.",

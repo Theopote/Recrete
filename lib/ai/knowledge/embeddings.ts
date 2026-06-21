@@ -2,6 +2,7 @@ import "server-only";
 
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { tokenizeForVector } from "./vector-index";
+import { resolveModel } from "../model-router";
 
 const EMBEDDING_DIM = 384;
 
@@ -30,7 +31,7 @@ export function isEmbeddingsConfigured(): boolean {
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   if (isEmbeddingsConfigured()) {
     const embeddings = new OpenAIEmbeddings({
-      model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
+      model: resolveModel("embedding"),
       apiKey: process.env.OPENAI_API_KEY,
     });
     return embeddings.embedDocuments(texts);
@@ -41,7 +42,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
 export async function embedQuery(query: string): Promise<number[]> {
   if (isEmbeddingsConfigured()) {
     const embeddings = new OpenAIEmbeddings({
-      model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
+      model: resolveModel("embedding"),
       apiKey: process.env.OPENAI_API_KEY,
     });
     return embeddings.embedQuery(query);
