@@ -49,6 +49,16 @@ export class MockAIService implements AIService {
         recommendation: "Commission hazardous materials survey before any interior demolition work.",
         relatedLocation: "All floors",
       },
+      {
+        title: "High baseline energy consumption",
+        category: "energy",
+        severity: "medium",
+        status: "identified",
+        description: `Pre-renovation EUI likely above climate benchmark for ${project.location}. Envelope and HVAC upgrades recommended.`,
+        evidence: `Construction year ${project.constructionYear}, typical uninsulated envelope`,
+        recommendation: "Run Energy Agent for simulation, green retrofit bundle, and ROI analysis.",
+        relatedLocation: "Whole building envelope and MEP plant",
+      },
     ];
   }
 
@@ -123,6 +133,35 @@ export class MockAIService implements AIService {
         pros: ["Maximum design potential", "Best long-term performance", "Landmark-quality outcome"],
         cons: ["Highest cost", "Longest schedule", "Highest construction and permitting risk"],
         recommendationReason: null,
+      },
+      {
+        name: "Green Energy Retrofit — 绿色节能改造",
+        type: "energy_retrofit",
+        summary: `Envelope-first energy upgrade for ${project.name}: high-performance glazing, insulation, HVAC replacement, and optional rooftop PV with measurable ROI.`,
+        designGoal: `Reduce operating energy by 30–40% while preserving existing spatial layout and structure.`,
+        spatialStrategy: "Minimal spatial change. Focus on envelope and MEP plant upgrades with phased tenant coordination.",
+        structuralStrategy: "No structural modifications unless rooftop PV ballast requires load check.",
+        facadeStrategy: "External insulation with new high-performance windows. Target U-value compliance per GB 50189.",
+        mepStrategy: "Replace aging HVAC with VRF/high-efficiency systems. LED lighting with smart controls.",
+        costLevel: project.budgetLevel === "low" ? "medium" : "medium",
+        scheduleLevel: "medium",
+        riskLevel: "low",
+        pros: [
+          "Strong ROI and payback (typically 6–10 years)",
+          "Low disruption to building use",
+          "Eligible for green financing and subsidies",
+        ],
+        cons: [
+          "Limited design transformation",
+          "Requires accurate energy baseline data",
+          "Savings depend on occupancy and tariffs",
+        ],
+        recommendationReason:
+          project.renovationGoal.toLowerCase().includes("energy") ||
+          project.renovationGoal.includes("节能") ||
+          project.budgetLevel === "low"
+            ? "Best fit when primary goal is operational cost reduction with limited capital for deep recreation."
+            : null,
       },
     ];
   }

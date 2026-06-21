@@ -27,4 +27,10 @@ export {
 } from "./conflict-agent";
 export { analyzeFireSafety, generateFireDiagnosis, fireProtectionAgent } from "./fire-agent";
 export { assessMepCapacity, generateMepDiagnosis, mepAgent } from "./mep-agent";
+export {
+  analyzeEnergyPerformance,
+  simulateBuildingEnergy,
+  generateEnergyDiagnosis,
+  energyAgent,
+} from "./energy-agent";
 export { estimateProjectCost, costEstimatorAgent } from "./cost-estimator-agent";

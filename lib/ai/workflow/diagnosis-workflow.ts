@@ -30,6 +30,8 @@ export interface DiagnosisWorkflowResult {
   expertSummary?: {
     structuralItemCount: number;
     complianceItemCount: number;
+    mepItemCount: number;
+    energyItemCount: number;
   };
 }
 
@@ -60,6 +62,8 @@ export async function runDiagnosisWorkflow(
   const baseItems = await ai.generateDiagnosis(project, project.documents);
   let structuralItemCount = 0;
   let complianceItemCount = 0;
+  let mepItemCount = 0;
+  let energyItemCount = 0;
 
   const mergedItems = [...baseItems];
 
@@ -71,6 +75,14 @@ export async function runDiagnosisWorkflow(
     const complianceItems = await platform.compliance.generateComplianceDiagnosis(project);
     complianceItemCount = complianceItems.length;
     mergedItems.push(...complianceItems);
+
+    const mepItems = platform.mep.generateMepDiagnosis(project);
+    mepItemCount = mepItems.length;
+    mergedItems.push(...mepItems);
+
+    const energyItems = platform.energy.generateEnergyDiagnosis(project);
+    energyItemCount = energyItems.length;
+    mergedItems.push(...energyItems);
   }
 
   const diagnosisItems = await addDiagnosisItems(
@@ -106,7 +118,7 @@ export async function runDiagnosisWorkflow(
     analysisRun,
     buildingMemory,
     expertSummary: includeExpertAgents
-      ? { structuralItemCount, complianceItemCount }
+      ? { structuralItemCount, complianceItemCount, mepItemCount, energyItemCount }
       : undefined,
   };
 }

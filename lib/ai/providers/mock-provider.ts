@@ -34,6 +34,11 @@ export class MockAIProvider implements AIService {
     assessMepCapacity: agents.assessMepCapacity,
     generateMepDiagnosis: agents.generateMepDiagnosis,
   };
+  energy = {
+    analyzeEnergyPerformance: agents.analyzeEnergyPerformance,
+    simulateBuildingEnergy: agents.simulateBuildingEnergy,
+    generateEnergyDiagnosis: agents.generateEnergyDiagnosis,
+  };
   costEstimator = {
     estimateProjectCost: agents.estimateProjectCost,
   };
