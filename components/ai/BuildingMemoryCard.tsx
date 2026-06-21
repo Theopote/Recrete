@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDate } from "@/lib/utils";
 import type { BuildingMemory } from "@/types/ai";
 import { Brain, AlertTriangle, HelpCircle, Lightbulb } from "lucide-react";
 
@@ -45,7 +46,7 @@ export function BuildingMemoryCard({ memory }: BuildingMemoryCardProps) {
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{memory.summary}</p>
         <p className="text-[10px] font-mono text-muted-foreground/70">
-          Last AI update: {memory.lastUpdatedByAI.toLocaleDateString()}
+          Last AI update: {formatDate(memory.lastUpdatedByAI)}
         </p>
       </CardHeader>
       <CardContent className="grid gap-6 md:grid-cols-2">

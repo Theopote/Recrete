@@ -1,13 +1,16 @@
+import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 
 function Button({
   className,
   variant = "default",
   size = "default",
+  asChild = false,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "copper";
   size?: "default" | "sm" | "lg" | "icon";
+  asChild?: boolean;
 }) {
   const variants = {
     default: "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -26,8 +29,10 @@ function Button({
     icon: "h-9 w-9",
   };
 
+  const Comp = asChild ? Slot : "button";
+
   return (
-    <button
+    <Comp
       className={cn(
         "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
         variants[variant],

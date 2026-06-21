@@ -1,4 +1,5 @@
 import type { AIAnalysisRun } from "@/types/ai";
+import { formatDate } from "@/lib/utils";
 import { analysisTypeLabels } from "@/lib/utils/labels";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { Bot } from "lucide-react";
@@ -36,7 +37,7 @@ export function AnalysisRunTimeline({ runs, limit = 8 }: AnalysisRunTimelineProp
               {run.outputSummary}
             </p>
             <p className="mt-1 text-[10px] font-mono text-muted-foreground/70">
-              {run.createdAt.toLocaleString()} · {run.modelName}
+              {formatDate(run.createdAt)} · {run.modelName}
               {run.generatedItemCount > 0 && ` · ${run.generatedItemCount} items`}
             </p>
           </div>

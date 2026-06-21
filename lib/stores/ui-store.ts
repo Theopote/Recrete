@@ -18,6 +18,6 @@ export const useUIStore = create<UIState>()(
       toggleAiPanel: () => set((s) => ({ aiPanelOpen: !s.aiPanelOpen })),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     }),
-    { name: "recrete-ui" }
+    { name: "recrete-ui", skipHydration: true }
   )
 );

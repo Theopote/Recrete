@@ -49,12 +49,12 @@ export function TopBar({ title, subtitle, showNewProject = false, showAiToggle =
         </Button>
 
         {showNewProject && (
-          <Link href="/projects/new">
-            <Button variant="copper" size="sm" className="gap-1.5">
+          <Button variant="copper" size="sm" className="gap-1.5" asChild>
+            <Link href="/projects/new">
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New Project</span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         )}
 
         <div className="flex items-center gap-2">
