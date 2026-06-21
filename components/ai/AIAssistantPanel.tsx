@@ -71,8 +71,8 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
             <Sparkles className="h-4 w-4 text-copper" />
           </div>
           <div>
-            <p className="text-xs font-semibold">AI Assistant</p>
-            <p className="text-[10px] text-muted-foreground">Project context aware</p>
+            <p className="text-xs font-semibold">AI Copilot</p>
+            <p className="text-[10px] text-muted-foreground">Building Memory aware</p>
           </div>
         </div>
         {onClose && (
@@ -126,13 +126,13 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
 
       <div className="border-t p-3 space-y-2">
         <div className="flex flex-wrap gap-1">
-          {ASSISTANT_SUGGESTIONS.slice(0, 4).map((s) => (
+          {ASSISTANT_SUGGESTIONS.map((s) => (
             <button
               key={s}
               onClick={() => sendMessage(s)}
               className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground hover:border-copper/40 hover:text-foreground transition-colors"
             >
-              {s.length > 30 ? s.slice(0, 30) + "…" : s}
+              {s.length > 28 ? s.slice(0, 28) + "…" : s}
             </button>
           ))}
         </div>
