@@ -9,7 +9,9 @@ import {
   addIssue,
   updateBuildingMemory,
 } from "@/lib/db/repository";
+import { upsertDrawingAsset } from "@/lib/db/drawing-assets";
 import { analyzeDocumentAsset } from "@/lib/ai/document-analysis-pipeline";
+import { buildDrawingKnowledgeGraph } from "@/lib/ai/knowledge/drawing-knowledge-graph";
 import { runConflictDetectionWorkflow } from "./conflict-workflow";
 import type { DocumentAsset } from "@/types";
 import type { BuildingMemory, SourceEvidence, AIAnalysisRun } from "@/types/ai";
@@ -61,6 +63,27 @@ export async function runDocumentIngestWorkflow(
     aiSummary: analysis.aiSummary,
     extractedText: analysis.extractedText,
   }))!;
+
+  if (analysis.kind === "drawing" && analysis.drawing) {
+    const knowledgeGraph =
+      analysis.knowledgeGraphJson
+        ? (JSON.parse(analysis.knowledgeGraphJson) as ReturnType<
+            typeof buildDrawingKnowledgeGraph
+          >)
+        : buildDrawingKnowledgeGraph(projectId, doc.id, doc.name, analysis.drawing);
+
+    await upsertDrawingAsset({
+      documentId: doc.id,
+      projectId,
+      drawingType: analysis.drawing.drawingType,
+      scale: analysis.drawing.scale ?? null,
+      analysisResult: analysis.drawing,
+      knowledgeGraph,
+      openCvResult: analysis.openCvResult ?? null,
+      modelName: analysis.modelName,
+      confidence: analysis.confidence,
+    });
+  }
 
   const evidence: SourceEvidence[] = [];
   for (const ev of analysis.evidence) {

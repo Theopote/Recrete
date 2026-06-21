@@ -195,6 +195,29 @@ enum AIAnalysisType {
   conflict_detection
 }
 
+enum BimModelFormat {
+  ifc
+  dwg
+  dxf
+}
+
+enum BimModelStatus {
+  ready
+  processing
+  failed
+  unsupported
+}
+
+enum DrawingType {
+  floor_plan
+  elevation
+  section
+  detail
+  structural
+  mep
+  unknown
+}
+
 enum SourceEvidenceType {
   document
   photo
@@ -230,6 +253,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   uploadedDocuments DocumentAsset[]
+  uploadedBimModels BimModel[]
   assignedIssues    SiteIssue[]     @relation("AssignedIssues")
   assignedAITasks   AITask[]        @relation("AssignedAITasks")
   createdReports    Report[]
@@ -286,6 +310,8 @@ model Project {
   reports         Report[]
   aiConversations AIConversation[]
   costRecords     ProjectCostRecord[]
+  bimModels       BimModel[]
+  drawingAssets   DrawingAsset[]
 }
 
 model BuildingMemory {
@@ -410,8 +436,9 @@ model DocumentAsset {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  uploadedBy User?   @relation(fields: [uploadedById], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy    User?          @relation(fields: [uploadedById], references: [id])
+  drawingAssets DrawingAsset[]
 }
 
 model DiagnosisItem {
@@ -565,4 +592,52 @@ model MaterialPrice {
   createdAt    DateTime @default(now())
 
   @@index([region])
+}
+
+/// BIM / CAD model attached to a renovation project
+model BimModel {
+  id           String         @id @default(cuid())
+  projectId    String
+  name         String
+  format       BimModelFormat
+  status       BimModelStatus @default(processing)
+  fileUrl      String
+  previewUrl   String?
+  gltfUrl      String?
+  fileSize     Int
+  mimeType     String
+  errorMessage String?
+  metadata     Json?
+  uploadedById String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation(fields: [uploadedById], references: [id])
+
+  @@index([projectId])
+}
+
+/// Structured drawing analysis for a document page (vision + knowledge graph)
+model DrawingAsset {
+  id             String      @id @default(cuid())
+  documentId     String
+  projectId      String
+  pageNumber     Int         @default(1)
+  drawingType    DrawingType @default(unknown)
+  scale          String?
+  analysisResult Json
+  knowledgeGraph Json?
+  openCvResult   Json?
+  modelName      String
+  confidence     Float       @default(0.8)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  document DocumentAsset @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  project  Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber])
+  @@index([projectId])
+  @@index([drawingType])
 }

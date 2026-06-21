@@ -16,6 +16,7 @@ export interface PipelineResult extends DocumentAnalysisOutput {
   documentId: string;
   evidence: Omit<SourceEvidence, "id" | "createdAt">[];
   suggestedIssues?: SuggestedIssue[];
+  openCvResult?: import("./vision/opencv-analyzer").OpenCvAnalysisResult | null;
 }
 
 export interface SuggestedIssue {
@@ -111,13 +112,7 @@ async function analyzeDrawingDocument(
   const openCvNotes = openCv
     ? `\n\n--- OpenCV Analysis ---\nRooms suggested: ${openCv.suggestedRoomCount}\nContours: ${openCv.contourCount}\nConfidence: ${(openCv.confidence * 100).toFixed(0)}%\n${openCv.notes.join("\n")}`
     : "";
-  const extractedText = [
-    ...drawing.extractedText,
-    openCvNotes,
-    "",
-    "--- Knowledge Graph ---",
-    JSON.stringify(graph, null, 2),
-  ].join("\n");
+  const extractedText = [...drawing.extractedText, openCvNotes].filter(Boolean).join("\n");
 
   const aiSummary =
     openCv && openCv.confidence > 0.5
@@ -133,6 +128,7 @@ async function analyzeDrawingDocument(
     modelName: drawingAnalyzer.modelName,
     drawing,
     knowledgeGraphJson: JSON.stringify(graph),
+    openCvResult: openCv,
     evidence,
   };
 }
