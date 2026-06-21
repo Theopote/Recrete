@@ -3,7 +3,8 @@ import "server-only";
 import type { AIService } from "./types";
 import { isOpenAIConfigured } from "./model-router";
 import { mockAIProvider } from "./providers/mock-provider";
-import { openAIProvider, openAIPlatform } from "./providers/openai-provider";
+import { openAIProvider } from "./providers/openai-provider";
+import { openAIPlatform } from "./providers/openai-platform";
 
 export function getAIService(): AIService {
   if (isOpenAIConfigured()) {
