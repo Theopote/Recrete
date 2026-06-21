@@ -10,7 +10,7 @@ interface OpenBimViewerProps {
 }
 
 /**
- * That Open / openbim-components IFC viewer (alternative to raw web-ifc loader).
+ * That Open Components (@thatopen/components) IFC viewer — openbim-components v2 lineage.
  */
 export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,24 +22,30 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
     if (!container) return;
 
     let disposed = false;
+    let components: import("@thatopen/components").Components | null = null;
 
     async function init() {
       try {
         const OBC = await import("@thatopen/components");
         const THREE = await import("three");
 
-        const components = new OBC.Components();
-        components.scene = new OBC.SimpleScene(components);
-        components.renderer = new OBC.SimpleRenderer(components, container!);
-        components.camera = new OBC.OrthoPerspectiveCamera(components);
-        await components.init();
+        components = new OBC.Components();
+        components.init();
 
-        const sceneComponent = components.get(OBC.SimpleScene);
-        sceneComponent.setup();
-        components.get(OBC.Grids).create();
+        const worlds = components.get(OBC.Worlds);
+        const world = worlds.create();
+
+        const scene = new OBC.SimpleScene(components);
+        scene.setup();
+        world.scene = scene;
+        world.renderer = new OBC.SimpleRenderer(components, container!);
+        world.camera = new OBC.OrthoPerspectiveCamera(components);
+
+        components.get(OBC.Grids).create(world);
 
         const ifcLoader = components.get(OBC.IfcLoader);
         await ifcLoader.setup({
+          autoSetWasm: true,
           wasm: { path: "/wasm/web-ifc/", absolute: true },
         });
 
@@ -47,18 +53,26 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
           ? modelUrl
           : `${window.location.origin}${modelUrl}`;
 
-        const model = await ifcLoader.load(absoluteUrl);
-        sceneComponent.three.add(model);
+        const response = await fetch(absoluteUrl);
+        if (!response.ok) throw new Error(`Failed to fetch IFC (${response.status})`);
+        const buffer = await response.arrayBuffer();
+
+        const model = await ifcLoader.load(new Uint8Array(buffer));
+        world.scene.three.add(model);
 
         const bbox = new THREE.Box3().setFromObject(model);
         const center = bbox.getCenter(new THREE.Vector3());
-        components.get(OBC.OrthoPerspectiveCamera).controls.setLookAt(
-          center.x + 20,
-          center.y + 20,
-          center.z + 20,
+        const size = bbox.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z, 1);
+
+        await world.camera.controls?.setLookAt(
+          center.x + maxDim,
+          center.y + maxDim * 0.6,
+          center.z + maxDim,
           center.x,
           center.y,
-          center.z
+          center.z,
+          true
         );
 
         if (!disposed) setLoading(false);
@@ -75,6 +89,7 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
 
     return () => {
       disposed = true;
+      components?.dispose();
     };
   }, [modelUrl]);
 

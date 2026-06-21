@@ -4,7 +4,6 @@ import { ChatOpenAI } from "@langchain/openai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import {
   ChatPromptTemplate,
-  MessagesPlaceholder,
 } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import type { ProjectWithRelations } from "@/types";
@@ -153,13 +152,9 @@ Provide 3 actionable spatial planning recommendations.`,
 }
 
 /** Generic LangChain workflow step runner for future multi-agent pipelines. */
-export function createWorkflowChain<T extends Record<string, unknown>>(
-  systemPrompt: string,
-  humanTemplate: string
-) {
+export function createWorkflowChain(systemPrompt: string, humanTemplate: string) {
   const prompt = ChatPromptTemplate.fromMessages([
     ["system", systemPrompt],
-    MessagesPlaceholder.optional("history"),
     ["human", humanTemplate],
   ]);
 
