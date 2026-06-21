@@ -1,28 +1,50 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import { useState, useCallback, useEffect } from "react";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DocumentAsset } from "@/types";
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PdfViewerProps {
   fileUrl: string;
   className?: string;
 }
 
-export function PdfViewer({ fileUrl, className }: PdfViewerProps) {
+type ReactPdfModule = typeof import("react-pdf");
+
+function PdfViewer({ fileUrl, className }: PdfViewerProps) {
+  const [reactPdf, setReactPdf] = useState<ReactPdfModule | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
   const [scale, setScale] = useState(1.0);
+
+  useEffect(() => {
+    let active = true;
+    void import("react-pdf").then((mod) => {
+      if (!active) return;
+      mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${mod.pdfjs.version}/build/pdf.worker.min.mjs`;
+      setReactPdf(mod);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const onLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
     setNumPages(n);
     setPage(1);
   }, []);
+
+  if (!reactPdf) {
+    return (
+      <div className={cn("flex items-center justify-center min-h-[400px]", className)}>
+        <p className="text-xs text-muted-foreground p-8">Loading PDF viewer...</p>
+      </div>
+    );
+  }
+
+  const { Document, Page } = reactPdf;
 
   return (
     <div className={cn("flex flex-col", className)}>
