@@ -1,19 +1,90 @@
 import type { ProjectWithRelations, ReportType } from "@/types";
 
 export function buildDiagnosisPrompt(project: ProjectWithRelations): string {
-  return `Analyze the following existing building for renovation diagnosis:
+  const buildingAge = new Date().getFullYear() - project.constructionYear;
+  return `You are an expert building condition assessor specializing in existing building renovation.
 
-Project: ${project.name}
-Location: ${project.location}
-Building Type: ${project.buildingType}
-Construction Year: ${project.constructionYear}
-Structure: ${project.structureType}
-Current Function: ${project.currentFunction}
-Target Function: ${project.targetFunction}
-Renovation Goal: ${project.renovationGoal}
-Current Condition: ${project.building?.currentCondition ?? "Unknown"}
+Analyze the following existing building for comprehensive renovation diagnosis:
 
-Generate diagnosis items across architecture, structure, facade, MEP, fire safety, accessibility, energy, and heritage categories.`;
+## Building Information
+- Project: ${project.name}
+- Location: ${project.location}
+- Building Type: ${project.buildingType}
+- Construction Year: ${project.constructionYear} (Age: ${buildingAge} years)
+- Structure: ${project.structureType}
+- Floors: ${project.floorCount}, GFA: ${project.grossFloorArea} sqm
+- Current Function: ${project.currentFunction}
+- Target Function: ${project.targetFunction}
+- Renovation Goal: ${project.renovationGoal}
+- Current Condition: ${project.building?.currentCondition ?? "To be assessed"}
+- Budget Level: ${project.budgetLevel}
+
+## Analysis Requirements
+Generate detailed diagnosis items across ALL relevant categories:
+
+1. **Structure** - Focus on:
+   - Age-related deterioration (${buildingAge > 30 ? 'HIGH PRIORITY - building over 30 years old' : 'monitor periodically'})
+   - Load capacity for function change (${project.currentFunction !== project.targetFunction ? 'REQUIRED - function conversion detected' : 'verify if intensifying use'})
+   - Seismic performance per current codes
+   - Foundation and structural system integrity
+
+2. **Architecture** - Consider:
+   - Spatial layout suitability for target function
+   - Ceiling heights, natural lighting
+   - Circulation patterns
+   - Envelope condition
+
+3. **Facade** - Examine:
+   - Window performance and energy efficiency
+   - Facade material deterioration
+   - Waterproofing integrity
+   - Aesthetic renewal opportunities
+
+4. **MEP (Mechanical, Electrical, Plumbing)** - Assess:
+   - System capacity for new function
+   - Equipment age and efficiency
+   - Compliance with current codes
+   - Upgrade requirements
+
+5. **Fire Safety** - Verify:
+   - Fire compartmentation for occupancy change
+   - Egress capacity and stairway widths
+   - Fire protection systems
+   - Interior finish compliance
+
+6. **Accessibility** - Check:
+   - Barrier-free access requirements (${project.targetFunction.includes('公共') || project.targetFunction.toLowerCase().includes('public') ? 'MANDATORY for public buildings' : 'recommended'})
+   - Elevator and ramp provision
+   - Accessible toilet facilities
+
+7. **Energy** - Evaluate:
+   - Building envelope thermal performance
+   - HVAC system efficiency
+   - Opportunities for green renovation
+
+8. **Heritage** (if applicable) - Note:
+   - Heritage protection requirements
+   - Character-defining elements to preserve
+   - Intervention strategies
+
+## Output Format
+For each diagnosis item, provide:
+- Specific, actionable title
+- Appropriate category
+- Severity level (low/medium/high/critical)
+- Detailed description with technical reasoning
+- Evidence or assessment basis
+- Professional recommendation
+- Specific location if applicable
+- Whether structural engineer review is required
+
+Prioritize items that are:
+- Critical for safety
+- Required for code compliance
+- Essential for function conversion
+- Age-related deterioration
+
+Generate 6-12 diverse diagnosis items covering multiple categories. Be specific and professional.`;
 }
 
 export function buildStrategyPrompt(
