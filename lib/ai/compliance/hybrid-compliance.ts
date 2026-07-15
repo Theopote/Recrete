@@ -2,7 +2,8 @@ import "server-only";
 
 import type { ProjectWithRelations, DiagnosisItem } from "@/types";
 import { complianceAgent } from "../agents/compliance-agent";
-import { runComplianceEngine, type ComplianceMeasurements } from "./engine";
+import { runComplianceEngine } from "./engine";
+import type { ComplianceMeasurements } from "./types";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
 import { isLangChainEnabled } from "../langchain/chains";
 import { runComplianceHybridChain } from "../langchain/compliance-chain";

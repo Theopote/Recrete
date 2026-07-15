@@ -11,7 +11,7 @@ import {
   type ComplianceEngineReport,
   type ComplianceCategory,
   type ComplianceCheck,
-} from "./index";
+} from "../compliance";
 
 /**
  * Compliance Review Agent — delegates rule evaluation to the compliance engine.
