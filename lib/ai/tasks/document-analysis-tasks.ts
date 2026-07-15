@@ -113,6 +113,26 @@ export async function getDocumentAnalysisTask(taskId: string): Promise<DocumentA
   return tasks.get(taskId) ?? null;
 }
 
+import { updateDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
+
+export async function linkAnalysisTaskToJob(
+  taskId: string,
+  jobId: string
+): Promise<void> {
+  await updateDocumentAnalysisTask(taskId, {
+    message: `Queued (job ${jobId})`,
+  });
+
+  const { shouldUseDatabase } = await import("@/lib/db/resolve");
+  if (await shouldUseDatabase()) {
+    const { prisma } = await import("@/lib/db/prisma");
+    await prisma.documentAnalysisTaskRecord.update({
+      where: { id: taskId },
+      data: { jobId },
+    });
+  }
+}
+
 export function listDocumentAnalysisTasks(projectId: string): DocumentAnalysisTask[] {
   return [...tasks.values()]
     .filter((t) => t.projectId === projectId)

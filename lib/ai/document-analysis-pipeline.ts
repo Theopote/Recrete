@@ -6,17 +6,30 @@ import { drawingAnalyzer } from "./vision/drawing-analyzer";
 import { documentExtractor } from "./vision/document-extractor";
 import { photoDefectDetector } from "./vision/photo-detector";
 import { extractPdfText, readFileAsDataUrl } from "./vision/pdf-utils";
+import { readUploadBuffer } from "@/lib/storage/file-access";
+import { convertCadBufferToSvg } from "@/lib/bim/dwg-converter";
 import { analyzeDrawingFileWithOpenCv } from "./vision/opencv-analyzer";
 import { runDocumentSummaryChain } from "./langchain/chains";
 import { buildDrawingKnowledgeGraph } from "./knowledge/drawing-knowledge-graph";
 import { isPdf } from "@/lib/storage/file-utils";
 import type { DocumentAnalysisOutput, VisionAnalysisOptions } from "./vision/types";
 
+export interface DrawingPageResult {
+  pageNumber: number;
+  drawing: NonNullable<DocumentAnalysisOutput["drawing"]>;
+  knowledgeGraphJson?: string;
+  openCvResult?: import("./vision/opencv-analyzer").OpenCvAnalysisResult | null;
+  aiSummary: string;
+  extractedText: string;
+  confidence: number;
+}
+
 export interface PipelineResult extends DocumentAnalysisOutput {
   documentId: string;
   evidence: Omit<SourceEvidence, "id" | "createdAt">[];
   suggestedIssues?: SuggestedIssue[];
   openCvResult?: import("./vision/opencv-analyzer").OpenCvAnalysisResult | null;
+  drawingPages?: DrawingPageResult[];
 }
 
 export interface SuggestedIssue {
@@ -88,21 +101,153 @@ async function analyzeDrawingDocument(
   options: VisionAnalysisOptions
 ): Promise<PipelineResult> {
   if (/\.(dwg|dxf)$/i.test(doc.name)) {
-    return {
-      documentId: doc.id,
-      kind: "drawing",
-      aiSummary: `[DWG/CAD] ${doc.name} — CAD file stored. Convert to PDF/image for full vision analysis. Drawing metadata pending conversion.`,
-      extractedText: JSON.stringify({ format: "dwg", status: "pending_conversion" }),
-      confidence: 0.5,
-      modelName: "pending",
-      evidence: [],
-    };
+    return analyzeCadDrawingDocument(projectId, doc, options);
+  }
+
+  if (isPdf(doc.mimeType, doc.name)) {
+    const pdfText = await extractPdfText(doc.fileUrl);
+    if (pdfText.pageCount > 1) {
+      return analyzeMultiPageDrawingPdf(projectId, doc, options, pdfText);
+    }
   }
 
   const imageData = await readFileAsDataUrl(
     doc.fileUrl,
     doc.mimeType.startsWith("image/") ? doc.mimeType : "image/jpeg"
   );
+
+  return analyzeDrawingImage(projectId, doc, imageData, options, 1);
+}
+
+async function analyzeCadDrawingDocument(
+  projectId: string,
+  doc: DocumentAsset,
+  options: VisionAnalysisOptions
+): Promise<PipelineResult> {
+  const buffer = await readUploadBuffer(doc.fileUrl);
+  const format = /\.dxf$/i.test(doc.name) ? "dxf" : "dwg";
+  const converted = await convertCadBufferToSvg(
+    projectId,
+    `doc-${doc.id}`,
+    buffer,
+    format
+  );
+
+  const svgData = await readFileAsDataUrl(converted.previewUrl, "image/svg+xml");
+  const result = await analyzeDrawingImage(projectId, doc, svgData, options, 1);
+
+  const cadMeta = {
+    format,
+    previewUrl: converted.previewUrl,
+    rooms: converted.metadata.rooms ?? [],
+    totalArea: converted.metadata.totalArea,
+    entityCount: converted.metadata.entityCount,
+  };
+
+  return {
+    ...result,
+    aiSummary: `${result.aiSummary}\n\n[CAD] ${format.toUpperCase()} 已转换为预览图并完成视觉分析。识别 ${cadMeta.rooms.length} 个空间。`,
+    extractedText: JSON.stringify({ cad: cadMeta, vision: result.extractedText }),
+    confidence: Math.max(result.confidence, 0.75),
+    modelName: `${result.modelName}+cad-convert`,
+  };
+}
+
+async function analyzeMultiPageDrawingPdf(
+  projectId: string,
+  doc: DocumentAsset,
+  options: VisionAnalysisOptions,
+  pdfText: Awaited<ReturnType<typeof extractPdfText>>
+): Promise<PipelineResult> {
+  const maxPages = Math.min(pdfText.pageCount, 5);
+  const drawingPages: DrawingPageResult[] = [];
+
+  const imageData = await readFileAsDataUrl(doc.fileUrl, "application/pdf");
+  const firstPage = await analyzeDrawingImage(projectId, doc, imageData, options, 1);
+  drawingPages.push({
+    pageNumber: 1,
+    drawing: firstPage.drawing!,
+    knowledgeGraphJson: firstPage.knowledgeGraphJson,
+    openCvResult: firstPage.openCvResult,
+    aiSummary: firstPage.aiSummary,
+    extractedText: firstPage.extractedText,
+    confidence: firstPage.confidence,
+  });
+
+  for (let pageNum = 2; pageNum <= maxPages; pageNum++) {
+    const pageText = pdfText.pages[pageNum - 1]?.text ?? "";
+    if (pageText.length < 80) continue;
+
+    const extracted = documentExtractor.analyzeExtractedText(pageText, {
+      filename: `${doc.name} (p${pageNum})`,
+      category: doc.category,
+    });
+
+    const pageDrawing: NonNullable<DocumentAnalysisOutput["drawing"]> = {
+      drawingType: "floor_plan",
+      rooms: [],
+      annotations: extracted.keyFindings.map((f) => ({
+        text: f,
+        type: "note" as const,
+        location: { x: 0, y: 0, width: 0, height: 0 },
+      })),
+      dimensions: [],
+      structuralElements: [],
+      confidence: 0.7,
+      extractedText: [pageText.slice(0, 500)],
+      summary: extracted.summary,
+    };
+
+    const graph = buildDrawingKnowledgeGraph(
+      projectId,
+      doc.id,
+      `${doc.name} p${pageNum}`,
+      pageDrawing
+    );
+
+    drawingPages.push({
+      pageNumber: pageNum,
+      drawing: pageDrawing,
+      knowledgeGraphJson: JSON.stringify(graph),
+      aiSummary: extracted.summary,
+      extractedText: pageText,
+      confidence: 0.72,
+    });
+  }
+
+  const allEvidence = drawingPages.flatMap((page) =>
+    buildDrawingEvidence(projectId, doc.id, page.drawing).map((ev) => ({
+      ...ev,
+      locationLabel: `p${page.pageNumber} — ${ev.locationLabel}`,
+    }))
+  );
+
+  const summaryLines = drawingPages.map(
+    (p) => `第 ${p.pageNumber} 页：${p.aiSummary.slice(0, 100)}`
+  );
+
+  return {
+    documentId: doc.id,
+    kind: "drawing",
+    aiSummary: `共 ${pdfText.pageCount} 页图纸，已分析 ${drawingPages.length} 页。\n${summaryLines.join("\n")}`,
+    extractedText: JSON.stringify({ pageCount: pdfText.pageCount, pages: drawingPages.length }),
+    confidence: drawingPages.reduce((s, p) => s + p.confidence, 0) / drawingPages.length,
+    modelName: drawingAnalyzer.modelName,
+    drawing: drawingPages[0].drawing,
+    knowledgeGraphJson: drawingPages[0].knowledgeGraphJson,
+    openCvResult: drawingPages[0].openCvResult,
+    drawingPages,
+    evidence: allEvidence,
+  };
+}
+
+async function analyzeDrawingImage(
+  projectId: string,
+  doc: DocumentAsset,
+  imageData: string,
+  options: VisionAnalysisOptions,
+  pageNumber: number
+): Promise<PipelineResult> {
 
   const drawing = await drawingAnalyzer.analyzeDrawing(imageData, options);
   const openCv = await analyzeDrawingFileWithOpenCv(doc.fileUrl);
@@ -130,6 +275,17 @@ async function analyzeDrawingDocument(
     knowledgeGraphJson: JSON.stringify(graph),
     openCvResult: openCv,
     evidence,
+    drawingPages: [
+      {
+        pageNumber,
+        drawing,
+        knowledgeGraphJson: JSON.stringify(graph),
+        openCvResult: openCv,
+        aiSummary,
+        extractedText,
+        confidence: drawing.confidence,
+      },
+    ],
   };
 }
 

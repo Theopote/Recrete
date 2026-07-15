@@ -1,4 +1,5 @@
 import { VisionProvider, parseVisionJson } from "./vision-provider";
+import { useVisionMockFallback, rethrowVisionError } from "./vision-mode";
 import type { DrawingAnalysisResult, VisionAnalysisOptions } from "./types";
 
 /**
@@ -33,6 +34,7 @@ export class DrawingAnalyzer {
       return this.parseDrawingResponse(content);
     } catch (error) {
       console.error("Drawing analysis error:", error);
+      if (!useVisionMockFallback()) rethrowVisionError(error);
       return this.getMockDrawingAnalysis();
     }
   }

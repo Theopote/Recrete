@@ -23,6 +23,7 @@
     "db:acceptance": "tsx scripts/run-db-acceptance.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1087.0",
     "@hookform/resolvers": "^3.9.1",
     "@langchain/core": "^0.3.42",
     "@langchain/openai": "^0.5.4",

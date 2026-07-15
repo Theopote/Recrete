@@ -9,48 +9,20 @@ import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Select } from "@/components/ui/select";
 import { documentCategoryLabels } from "@/lib/utils/labels";
-import type { DocumentAsset, ProjectWithRelations } from "@/types";
+import { inferDocumentCategory } from "@/lib/storage/category-detect";
+import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
+import type { DocumentAsset, DocumentCategory, ProjectWithRelations } from "@/types";
 import { FileText } from "lucide-react";
 
 interface DocumentsSectionProps {
   project: ProjectWithRelations;
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function pollAnalysisTask(
-  projectId: string,
-  taskId: string,
-  onUpdate: (message: string) => void
-): Promise<"completed" | "failed" | "timeout"> {
-  for (let attempt = 0; attempt < 45; attempt++) {
-    await sleep(2000);
-    const res = await fetch(`/api/projects/${projectId}/analysis-tasks/${taskId}`);
-    if (!res.ok) return "failed";
-
-    const data = (await res.json()) as {
-      task?: { status: string; progress: number; message?: string; error?: string };
-    };
-    const task = data.task;
-    if (!task) return "failed";
-
-    onUpdate(task.message ?? `Analyzing… ${task.progress}%`);
-
-    if (task.status === "completed") return "completed";
-    if (task.status === "failed") {
-      onUpdate(task.error ?? "Analysis failed");
-      return "failed";
-    }
-  }
-  return "timeout";
-}
-
 export function DocumentsSection({ project: initialProject }: DocumentsSectionProps) {
   const router = useRouter();
   const [documents, setDocuments] = useState(initialProject.documents ?? []);
   const [filter, setFilter] = useState<string>("all");
+  const [uploadCategory, setUploadCategory] = useState<DocumentCategory | "auto">("auto");
   const [previewDoc, setPreviewDoc] = useState<DocumentAsset | null>(null);
   const [uploading, setUploading] = useState(false);
   const [analysisNotice, setAnalysisNotice] = useState<string | null>(null);
@@ -60,9 +32,14 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
     setAnalysisNotice(null);
     try {
       for (const file of files) {
+        const category =
+          uploadCategory === "auto"
+            ? inferDocumentCategory(file.name, file.type)
+            : uploadCategory;
+
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("category", "others");
+        formData.append("category", category);
 
         const res = await fetch(`/api/projects/${initialProject.id}/documents`, {
           method: "POST",
@@ -77,24 +54,30 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
         ]);
 
         if (doc.autoAnalysisQueued && doc.analysisTaskId) {
-          setAnalysisNotice(`Analyzing ${doc.name}…`);
+          setAnalysisNotice(`正在分析 ${doc.name}…`);
           void pollAnalysisTask(initialProject.id, doc.analysisTaskId, setAnalysisNotice).then(
             (result) => {
               if (result === "completed") {
-                setAnalysisNotice("AI analysis complete. Building Memory updated.");
+                setAnalysisNotice("AI 分析完成，Building Memory 已更新。");
                 router.refresh();
               } else if (result === "timeout") {
-                setAnalysisNotice("Analysis is taking longer than expected. Refresh later to see results.");
+                setAnalysisNotice("分析耗时较长，请稍后刷新页面查看结果。");
+              } else if (result === "failed") {
+                setAnalysisNotice("分析失败，请重试。");
               }
             }
           );
         } else if (doc.autoAnalysisQueued) {
-          setAnalysisNotice("AI analysis queued for uploaded files.");
+          setAnalysisNotice("文档已加入分析队列。");
         }
       }
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleDeleted = (docId: string) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
   };
 
   const filtered =
@@ -107,13 +90,27 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
         description="Upload and organize old drawings, survey photos, and project records"
       />
 
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="text-xs text-muted-foreground">上传类别</label>
+        <Select
+          value={uploadCategory}
+          onChange={(e) => setUploadCategory(e.target.value as DocumentCategory | "auto")}
+          className="w-52 h-8 text-xs"
+        >
+          <option value="auto">自动识别</option>
+          {Object.entries(documentCategoryLabels).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </Select>
+      </div>
+
       <UploadDropzone
         onUpload={handleUpload}
-        accept=".pdf,.dwg,.jpg,.jpeg,.png,.zip"
+        accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png,.zip"
         disabled={uploading}
       />
       {uploading && (
-        <p className="text-xs text-muted-foreground">Uploading files...</p>
+        <p className="text-xs text-muted-foreground">正在上传…</p>
       )}
       {analysisNotice && !uploading && (
         <p className="text-xs text-muted-foreground">{analysisNotice}</p>
@@ -142,6 +139,7 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
                   prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d))
                 )
               }
+              onDeleted={handleDeleted}
             />
           ))}
         </div>

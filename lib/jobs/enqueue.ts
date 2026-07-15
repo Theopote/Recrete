@@ -3,6 +3,7 @@ import "server-only";
 import { enqueueJob } from "@/lib/jobs/jobs-store";
 import { processJobById } from "@/lib/jobs/processor";
 import { dispatchViaBullMQ, isBullMQEnabled } from "@/lib/jobs/bullmq";
+import { linkAnalysisTaskToJob } from "@/lib/ai/tasks/document-analysis-tasks";
 import type {
   BimCadConversionJobPayload,
   DocumentIngestJobPayload,
@@ -60,10 +61,16 @@ export async function enqueueDocumentIngestJob(
   payload: DocumentIngestJobPayload,
   options?: EnqueueJobOptions
 ) {
-  return enqueueAndDispatch(
+  const job = await enqueueAndDispatch(
     { type: "document_ingest", payload, projectId: payload.projectId },
     options
   );
+
+  if (payload.taskId) {
+    await linkAnalysisTaskToJob(payload.taskId, job.id);
+  }
+
+  return job;
 }
 
 export async function enqueueBimCadConversionJob(

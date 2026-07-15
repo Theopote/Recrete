@@ -91,24 +91,47 @@ export async function runDocumentIngestWorkflow(
   }))!;
 
   if (analysis.kind === "drawing" && analysis.drawing) {
-    const knowledgeGraph =
-      analysis.knowledgeGraphJson
-        ? (JSON.parse(analysis.knowledgeGraphJson) as ReturnType<
-            typeof buildDrawingKnowledgeGraph
-          >)
-        : buildDrawingKnowledgeGraph(projectId, doc.id, doc.name, analysis.drawing);
+    const pages =
+      analysis.drawingPages && analysis.drawingPages.length > 0
+        ? analysis.drawingPages
+        : [
+            {
+              pageNumber: 1,
+              drawing: analysis.drawing,
+              knowledgeGraphJson: analysis.knowledgeGraphJson,
+              openCvResult: analysis.openCvResult,
+              aiSummary: analysis.aiSummary,
+              extractedText: analysis.extractedText,
+              confidence: analysis.confidence,
+            },
+          ];
 
-    await upsertDrawingAsset({
-      documentId: doc.id,
-      projectId,
-      drawingType: analysis.drawing.drawingType,
-      scale: analysis.drawing.scale ?? null,
-      analysisResult: analysis.drawing,
-      knowledgeGraph,
-      openCvResult: analysis.openCvResult ?? null,
-      modelName: analysis.modelName,
-      confidence: analysis.confidence,
-    });
+    for (const page of pages) {
+      const knowledgeGraph =
+        page.knowledgeGraphJson
+          ? (JSON.parse(page.knowledgeGraphJson) as ReturnType<
+              typeof buildDrawingKnowledgeGraph
+            >)
+          : buildDrawingKnowledgeGraph(
+              projectId,
+              doc.id,
+              page.pageNumber > 1 ? `${doc.name} (p${page.pageNumber})` : doc.name,
+              page.drawing
+            );
+
+      await upsertDrawingAsset({
+        documentId: doc.id,
+        projectId,
+        pageNumber: page.pageNumber,
+        drawingType: page.drawing.drawingType,
+        scale: page.drawing.scale ?? null,
+        analysisResult: page.drawing,
+        knowledgeGraph,
+        openCvResult: page.openCvResult ?? null,
+        modelName: analysis.modelName,
+        confidence: page.confidence,
+      });
+    }
   }
 
   const evidence: SourceEvidence[] = [];

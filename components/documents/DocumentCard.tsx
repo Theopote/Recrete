@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatFileSize, formatDate } from "@/lib/utils";
 import { documentCategoryLabels } from "@/lib/utils/labels";
 import { isPdf } from "@/lib/storage/file-utils";
+import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
+import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import type { DocumentAsset } from "@/types";
-import { FileText, Image, Archive, Eye, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import { FileText, Image, Archive, Eye, Sparkles, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DocumentCardProps {
@@ -16,11 +19,14 @@ interface DocumentCardProps {
   projectId?: string;
   onPreview?: (document: DocumentAsset) => void;
   onAnalyzed?: (document: DocumentAsset) => void;
+  onDeleted?: (documentId: string) => void;
 }
 
-export function DocumentCard({ document, projectId, onPreview, onAnalyzed }: DocumentCardProps) {
+export function DocumentCard({ document, projectId, onPreview, onAnalyzed, onDeleted }: DocumentCardProps) {
+  const router = useRouter();
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [analyzeNotice, setAnalyzeNotice] = useState<string | null>(null);
   const Icon =
     document.mimeType.startsWith("image/") ? Image :
     document.type === "folder" ? Archive : FileText;
@@ -35,23 +41,54 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed }: Doc
 
     setAnalyzing(true);
     setAnalyzeError(null);
+    setAnalyzeNotice(null);
     try {
       const res = await fetch(
         `/api/projects/${projectId}/documents/${document.id}/analyze`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ async: true }),
+        }
       );
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.document) {
+      if (!res.ok) {
+        const parsed = parseAIErrorResponse(data);
+        setAnalyzeError(parsed.message);
+        return;
+      }
+
+      if (data.analysisTaskId) {
+        setAnalyzeNotice("分析中…");
+        const result = await pollAnalysisTask(projectId, data.analysisTaskId, setAnalyzeNotice);
+        if (result === "completed") {
+          router.refresh();
+          onAnalyzed?.({ ...document, aiSummary: document.aiSummary ?? "分析完成" });
+        } else if (result === "failed") {
+          setAnalyzeError("分析失败，请重试。");
+        } else {
+          setAnalyzeError("分析超时，请稍后刷新页面。");
+        }
+      } else if (data.document) {
         onAnalyzed?.(data.document);
-      } else {
-        setAnalyzeError(
-          typeof data.error === "string" ? data.error : "Analysis failed. Please try again."
-        );
       }
     } catch {
-      setAnalyzeError("Network error. Please try again.");
+      setAnalyzeError("网络异常，请稍后重试。");
     } finally {
       setAnalyzing(false);
+      setAnalyzeNotice(null);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!projectId || !confirm(`删除文档「${document.name}」？`)) return;
+
+    const res = await fetch(`/api/projects/${projectId}/documents/${document.id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      onDeleted?.(document.id);
     }
   };
 
@@ -103,25 +140,38 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed }: Doc
                   <span>{formatFileSize(document.fileSize)}</span>
                   <span>{formatDate(document.createdAt)}</span>
                 </div>
+                {analyzeNotice && (
+                  <p className="text-[10px] text-muted-foreground">{analyzeNotice}</p>
+                )}
                 {analyzeError && (
                   <p className="text-[10px] text-destructive">{analyzeError}</p>
                 )}
               </div>
               {projectId && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px]"
-                  onClick={handleAnalyze}
-                  disabled={analyzing}
-                >
-                  {analyzing ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3 w-3 mr-1" />
-                  )}
-                  {document.aiSummary ? "Re-analyze" : "Analyze"}
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={handleAnalyze}
+                    disabled={analyzing}
+                  >
+                    {analyzing ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 mr-1" />
+                    )}
+                    {document.aiSummary ? "重新分析" : "分析"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               )}
             </div>
           </div>

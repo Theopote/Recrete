@@ -205,6 +205,15 @@ export async function updateDocument(
   }
 }
 
+export async function deleteDocument(documentId: string): Promise<boolean> {
+  try {
+    await prisma.documentAsset.delete({ where: { id: documentId } });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function addSourceEvidence(
   evidence: Omit<import("@/types/ai").SourceEvidence, "id" | "createdAt">
 ): Promise<import("@/types/ai").SourceEvidence> {

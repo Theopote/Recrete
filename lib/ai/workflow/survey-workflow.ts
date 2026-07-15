@@ -9,6 +9,8 @@ import {
 } from "@/lib/db/repository";
 import { detectMissingInformation, generateSurveyTaskList } from "@/lib/ai/agents/survey-agent";
 import { runDocumentIngestWorkflow } from "./document-ingest-workflow";
+import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
+import { enqueueDocumentIngestJob } from "@/lib/jobs/enqueue";
 import type { BuildingMemory, AIInsight, AITask, AIAnalysisRun } from "@/types/ai";
 
 export interface SurveyWorkflowOptions {
@@ -33,6 +35,107 @@ export interface SurveyWorkflowResult {
     documentsProcessed: number;
     evidenceCreated: number;
     issuesCreated: number;
+  };
+}
+
+export interface SurveyQueueResult {
+  taskIds: string[];
+  queued: number;
+  message: string;
+}
+
+export async function queueSurveyDocumentJobs(
+  projectId: string,
+  organizationId: string,
+  options: SurveyWorkflowOptions = {}
+): Promise<SurveyQueueResult | null> {
+  const { onlyUnanalyzed = true } = options;
+
+  const project = await getProjectById(projectId, organizationId);
+  if (!project) return null;
+
+  const docs = project.documents ?? [];
+  const targets = onlyUnanalyzed ? docs.filter((d) => !d.aiSummary) : docs;
+
+  const taskIds: string[] = [];
+  for (const doc of targets) {
+    const task = await createDocumentAnalysisTask({
+      projectId,
+      documentId: doc.id,
+      documentName: doc.name,
+    });
+    await enqueueDocumentIngestJob({
+      projectId,
+      organizationId,
+      documentId: doc.id,
+      taskId: task.id,
+      language: options.language,
+      createIssues: options.createIssues,
+      refreshBuildingMemory: false,
+    });
+    taskIds.push(task.id);
+  }
+
+  return {
+    taskIds,
+    queued: taskIds.length,
+    message:
+      taskIds.length > 0
+        ? `已排队 ${taskIds.length} 个文档分析任务`
+        : "没有待分析的文档",
+  };
+}
+
+export async function runSurveyFinalizeWorkflow(
+  projectId: string,
+  organizationId: string,
+  options: SurveyWorkflowOptions = {}
+): Promise<SurveyWorkflowResult | null> {
+  const { refreshBuildingMemory = true } = options;
+
+  const project = await getProjectById(projectId, organizationId);
+  if (!project) return null;
+
+  const docs = project.documents ?? [];
+  const missingDrafts = await detectMissingInformation(project);
+  const taskDrafts = await generateSurveyTaskList(project);
+
+  const missingInsights = await addInsights(projectId, missingDrafts);
+  const surveyTasks = await addTasks(projectId, taskDrafts);
+
+  const summaries = docs.map((doc) => ({
+    documentId: doc.id,
+    category: doc.category,
+    aiSummary: doc.aiSummary ?? `Pending analysis for ${doc.name}`,
+    confidence: doc.aiSummary ? 0.85 : 0,
+  }));
+
+  const analysisRun = await addAnalysisRun({
+    projectId,
+    analysisType: "missing_info_detection",
+    inputSummary: `Survey finalize — ${docs.length} documents on file`,
+    outputSummary: `Persisted ${missingInsights.length} missing-info insights and ${surveyTasks.length} survey tasks`,
+    generatedItemCount: missingInsights.length + surveyTasks.length,
+    modelName: "recrete-survey-v1",
+    confidence: 0.86,
+  });
+
+  let buildingMemory: BuildingMemory | null | undefined;
+  if (refreshBuildingMemory) {
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+  }
+
+  return {
+    summaries,
+    missingInsights,
+    surveyTasks,
+    analysisRun,
+    buildingMemory,
+    stats: {
+      documentsProcessed: docs.filter((d) => d.aiSummary).length,
+      evidenceCreated: 0,
+      issuesCreated: 0,
+    },
   };
 }
 
@@ -69,45 +172,20 @@ export async function runSurveyWorkflow(
     }
   }
 
-  const updatedProject = (await getProjectById(projectId, organizationId))!;
-  const missingDrafts = await detectMissingInformation(updatedProject);
-  const taskDrafts = await generateSurveyTaskList(updatedProject);
-
-  const missingInsights = await addInsights(projectId, missingDrafts);
-  const surveyTasks = await addTasks(projectId, taskDrafts);
-
-  const summaries = (updatedProject.documents ?? []).map((doc) => ({
-    documentId: doc.id,
-    category: doc.category,
-    aiSummary: doc.aiSummary ?? `Pending analysis for ${doc.name}`,
-    confidence: doc.aiSummary ? 0.85 : 0,
-  }));
-
-  const analysisRun = await addAnalysisRun({
-    projectId,
-    analysisType: "missing_info_detection",
-    inputSummary: `Survey workflow — ${docs.length} documents (${targets.length} processed)`,
-    outputSummary: `Persisted ${missingInsights.length} missing-info insights and ${surveyTasks.length} survey tasks`,
-    generatedItemCount: targets.length + missingInsights.length + surveyTasks.length + evidenceCreated,
-    modelName: "recrete-survey-v1",
-    confidence: 0.86,
-  });
-
-  let buildingMemory: BuildingMemory | null | undefined;
-  if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId, organizationId);
-  }
-
-  return {
-    summaries,
-    missingInsights,
-    surveyTasks,
-    analysisRun,
-    buildingMemory,
-    stats: {
-      documentsProcessed: targets.length,
-      evidenceCreated,
-      issuesCreated,
-    },
-  };
+  return runSurveyFinalizeWorkflow(projectId, organizationId, {
+    ...options,
+    refreshBuildingMemory,
+    onlyUnanalyzed: false,
+  }).then((finalize) =>
+    finalize
+      ? {
+          ...finalize,
+          stats: {
+            documentsProcessed: targets.length,
+            evidenceCreated,
+            issuesCreated,
+          },
+        }
+      : null
+  );
 }

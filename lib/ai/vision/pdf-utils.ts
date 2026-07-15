@@ -1,7 +1,6 @@
 import "server-only";
 
-import { readFile } from "fs/promises";
-import path from "path";
+import { readUploadBuffer } from "@/lib/storage/file-access";
 
 export interface PdfTextPage {
   pageNumber: number;
@@ -73,8 +72,7 @@ async function extractWithPdfJs(buffer: Buffer): Promise<PdfExtractionResult> {
  * Extract text from PDF — tries pdf-parse first (faster for text PDFs), falls back to pdfjs-dist.
  */
 export async function extractPdfText(fileUrl: string): Promise<PdfExtractionResult> {
-  const filePath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""));
-  const buffer = await readFile(filePath);
+  const buffer = await readUploadBuffer(fileUrl);
 
   const parsed = await extractWithPdfParse(buffer);
   if (parsed && parsed.fullText.length > 50) {
@@ -93,7 +91,6 @@ export async function readFileAsDataUrl(
   fileUrl: string,
   mimeType: string
 ): Promise<string> {
-  const filePath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""));
-  const buffer = await readFile(filePath);
-  return `data:${mimeType};base64,${buffer.toString("base64")}`;
+  const { readUploadAsDataUrl } = await import("@/lib/storage/file-access");
+  return readUploadAsDataUrl(fileUrl, mimeType);
 }

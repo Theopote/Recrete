@@ -130,6 +130,10 @@ export async function updateDocument(
   return (await resolveDb()) ? db.updateDocument(documentId, data) : mock.updateDocument(documentId, data);
 }
 
+export async function deleteDocument(documentId: string) {
+  return (await resolveDb()) ? db.deleteDocument(documentId) : mock.deleteDocument(documentId);
+}
+
 export async function addSourceEvidence(
   evidence: Parameters<typeof mock.addSourceEvidence>[0]
 ) {

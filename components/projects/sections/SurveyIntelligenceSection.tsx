@@ -9,7 +9,7 @@ import { MissingInformationList } from "@/components/ai/MissingInformationList";
 import { RecommendedActions } from "@/components/ai/RecommendedActions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { missingDocumentCategories } from "@/lib/mock-data/ai-native";
+import { pollAnalysisTasks } from "@/lib/documents/poll-analysis-task";
 import type { ProjectWithRelations } from "@/types";
 import { Sparkles, Loader2, FileSearch } from "lucide-react";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
@@ -21,12 +21,49 @@ interface SurveyIntelligenceSectionProps {
 export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSectionProps) {
   const router = useRouter();
   const [analyzing, setAnalyzing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const documents = project.documents ?? [];
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
+    setNotice(null);
     try {
-      await fetch(`/api/projects/${project.id}/survey/analyze`, { method: "POST" });
+      const queueRes = await fetch(`/api/projects/${project.id}/survey/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ async: true }),
+      });
+      const queued = await queueRes.json();
+
+      if (!queueRes.ok) {
+        setNotice(queued.message ?? "分析排队失败");
+        return;
+      }
+
+      if (queued.taskIds?.length > 0) {
+        setNotice(queued.message ?? `已排队 ${queued.taskIds.length} 个任务`);
+        const poll = await pollAnalysisTasks(project.id, queued.taskIds, setNotice);
+        setNotice(
+          `文档分析完成：${poll.completed} 成功，${poll.failed} 失败，${poll.timeout} 超时`
+        );
+
+        const finalizeRes = await fetch(`/api/projects/${project.id}/survey/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ finalize: true }),
+        });
+        if (!finalizeRes.ok) {
+          setNotice("文档已分析，但缺失信息检测失败，请重试。");
+        }
+      } else {
+        setNotice(queued.message ?? "没有待分析的文档");
+        await fetch(`/api/projects/${project.id}/survey/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ finalize: true }),
+        });
+      }
+
       router.refresh();
     } finally {
       setAnalyzing(false);
@@ -49,6 +86,10 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
           </Button>
         }
       />
+
+      {notice && (
+        <p className="text-xs text-muted-foreground">{notice}</p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -80,12 +121,12 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
               .filter((d) => d.aiSummary)
               .map((doc) => (
                 <Card key={doc.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-xs font-semibold">{doc.name}</p>
-                      <ConfidenceBadge confidence={0.85} />
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium truncate">{doc.name}</p>
+                      <ConfidenceBadge value={0.85} />
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{doc.aiSummary}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-4">{doc.aiSummary}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -93,10 +134,8 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
         </div>
       )}
 
-      <MissingInformationList items={missingDocumentCategories} fromMemory={project.buildingMemory} />
-
-      <RecommendedActions tasks={(project.tasks ?? []).filter((t) => t.category === "survey")} />
-
+      <MissingInformationList items={[]} fromMemory={project.buildingMemory} />
+      <RecommendedActions tasks={project.tasks ?? []} projectId={project.id} />
       <DocumentsSection project={project} />
     </div>
   );

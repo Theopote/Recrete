@@ -1,4 +1,5 @@
 import { saveUploadedFile } from "@/lib/storage/upload";
+import { readUploadBuffer } from "@/lib/storage/file-access";
 import { detectBimFormat } from "@/lib/bim/formats";
 import {
   addBimModel,
@@ -6,10 +7,8 @@ import {
   updateBimModel,
 } from "@/lib/bim/bim-model-repository";
 import { enqueueBimCadConversionJob } from "@/lib/jobs/enqueue";
-import type { BimModel, BimModelFormat } from "@/types/bim";
-import { readFile } from "fs/promises";
-import path from "path";
 import { convertCadBufferToSvg } from "@/lib/bim/dwg-converter";
+import type { BimModel, BimModelFormat } from "@/types/bim";
 
 function generateModelId() {
   return `bim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -22,9 +21,7 @@ const MIME_BY_FORMAT: Record<BimModelFormat, string> = {
 };
 
 async function readUploadedFile(fileUrl: string) {
-  const relative = fileUrl.replace(/^\//, "");
-  const filePath = path.join(process.cwd(), "public", relative);
-  return readFile(filePath);
+  return readUploadBuffer(fileUrl);
 }
 
 export async function processCadConversion(

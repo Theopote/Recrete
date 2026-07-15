@@ -1,4 +1,5 @@
 import { VisionProvider, parseVisionJson } from "./vision-provider";
+import { useVisionMockFallback, rethrowVisionError } from "./vision-mode";
 import { normalizeBilingualText } from "@/lib/ai/knowledge/term-dictionary";
 import type {
   DamageMetrics,
@@ -41,6 +42,7 @@ export class PhotoDefectDetector {
       return this.enrichWithMetrics(parsed);
     } catch (error) {
       console.error("Photo analysis error:", error);
+      if (!useVisionMockFallback()) rethrowVisionError(error);
       return this.getMockDefectAnalysis(context);
     }
   }

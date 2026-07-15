@@ -431,6 +431,13 @@ export async function updateDocument(
   return doc;
 }
 
+export async function deleteDocument(documentId: string): Promise<boolean> {
+  const idx = store.documents.findIndex((d) => d.id === documentId);
+  if (idx < 0) return false;
+  store.documents.splice(idx, 1);
+  return true;
+}
+
 export async function addSourceEvidence(
   evidence: Omit<import("@/types/ai").SourceEvidence, "id" | "createdAt">
 ): Promise<import("@/types/ai").SourceEvidence> {
