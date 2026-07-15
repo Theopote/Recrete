@@ -214,7 +214,7 @@ OPENAI_MODEL_COPILOT=gpt-4o-mini   # sidebar assistant
 
 Anthropic Vision: set `VISION_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
 
-**Async document analysis:** uploads return `analysisTaskId`; poll `GET /api/projects/{id}/analysis-tasks/{taskId}` for progress.
+**Async document analysis:** uploads return `analysisTaskId`; poll `GET /api/projects/{id}/analysis-tasks/{taskId}` for progress. Background jobs (document ingest, BIM CAD conversion) run via `lib/jobs/` — set `REDIS_URL` + `npm run jobs:worker` for multi-instance BullMQ, or use the built-in internal API dispatcher for single-instance dev.
 
 The AI layer lives in `lib/ai/` (`model-router.ts`, providers, agents, LangChain chains).
 
@@ -235,7 +235,8 @@ The AI layer lives in `lib/ai/` (`model-router.ts`, providers, agents, LangChain
 | `npm run db:generate` | Generate Prisma client |
 | `npm run db:push` | Push schema to database |
 | `npm run db:seed` | Seed demo data |
-| `npm run db:up` | Start PostgreSQL (Docker Compose) |
+| `npm run test` | Run unit tests (Vitest) |
+| `npm run jobs:worker` | Start BullMQ worker (requires `REDIS_URL`) |
 
 ---
 

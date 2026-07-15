@@ -6,6 +6,7 @@ import type {
   BimPoint2D,
   BimRoomCostCell,
   BimRoomInfo,
+  BimSpatialAnnotation,
 } from "@/types/bim";
 import { costHeatColor, impactHeatColor } from "@/lib/bim/spatial-cost";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,10 @@ interface FloorPlanOverlayViewerProps {
   mode?: FloorPlanOverlayMode;
   label?: string;
   className?: string;
+  selectedRoomId?: string | null;
+  onRoomClick?: (roomId: string) => void;
+  annotations?: BimSpatialAnnotation[];
+  layoutAssignments?: Record<string, number>;
 }
 
 function pointsToPath(points: BimPoint2D[]) {
@@ -60,6 +65,10 @@ export function FloorPlanOverlayViewer({
   mode = "none",
   label,
   className,
+  selectedRoomId,
+  onRoomClick,
+  annotations = [],
+  layoutAssignments = {},
 }: FloorPlanOverlayViewerProps) {
   const [svgMarkup, setSvgMarkup] = useState<string | null>(null);
 
@@ -143,18 +152,38 @@ export function FloorPlanOverlayViewer({
             />
           )}
 
-          {mode !== "none" &&
+          {(mode !== "none" || onRoomClick) &&
             rooms.map((room) =>
               room.polygon ? (
                 <path
                   key={`fill-${room.id}`}
                   d={polygonToPath(room.polygon)}
-                  fill={roomFill(room, mode, roomCosts)}
-                  stroke="rgba(51,65,85,0.35)"
-                  strokeWidth={0.4}
+                  fill={
+                    selectedRoomId === room.id
+                      ? "rgba(205,127,50,0.35)"
+                      : mode !== "none"
+                        ? roomFill(room, mode, roomCosts)
+                        : "rgba(148,163,184,0.08)"
+                  }
+                  stroke={selectedRoomId === room.id ? "#cd7f32" : "rgba(51,65,85,0.35)"}
+                  strokeWidth={selectedRoomId === room.id ? 1 : 0.4}
+                  style={{ cursor: onRoomClick ? "pointer" : undefined }}
+                  onClick={() => onRoomClick?.(room.id)}
                 />
               ) : null
             )}
+
+          {annotations.map((ann) => {
+            const room = rooms.find((r) => r.id === ann.roomId);
+            const pos = ann.position ?? room?.centroid;
+            if (!pos) return null;
+            return (
+              <g key={ann.id} transform={`translate(${pos.x}, ${pos.y})`}>
+                <circle r={2.5} fill="#cd7f32" stroke="#fff" strokeWidth={0.5} />
+                <circle r={0.8} fill="#fff" />
+              </g>
+            );
+          })}
 
           {mode === "circulation" && activePath && (
             <>

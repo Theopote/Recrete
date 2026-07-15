@@ -134,6 +134,31 @@ export interface BimSpatialAnalytics {
   planningAdvice?: string;
 }
 
+export type BimAnnotationCategory =
+  | "structure"
+  | "heritage"
+  | "mep"
+  | "program"
+  | "fire_safety"
+  | "note";
+
+export interface BimSpatialAnnotation {
+  id: string;
+  projectId: string;
+  modelId: string;
+  roomId?: string | null;
+  roomLabel?: string | null;
+  category: BimAnnotationCategory;
+  title: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  authorParty?: string | null;
+  position?: BimPoint2D | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface BimModelMetadata {
   entityCount?: number;
   layerCount?: number;

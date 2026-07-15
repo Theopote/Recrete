@@ -23,9 +23,11 @@ describe("background job queue", () => {
     expect(job.status).toBe("pending");
 
     const processed = await processJobById(job.id);
-    expect(processed?.status).toBe("failed");
+    expect(processed).not.toBeNull();
+    expect(processed!.attempts).toBeGreaterThan(0);
 
     const stored = await getJob(job.id);
     expect(stored?.attempts).toBeGreaterThan(0);
+    expect(stored?.error).toBeTruthy();
   });
 });

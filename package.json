@@ -17,7 +17,8 @@
     "db:up": "docker compose up -d",
     "postinstall": "prisma generate || true && node scripts/setup-bim-wasm.mjs",
     "setup:bim-wasm": "node scripts/setup-bim-wasm.mjs",
-    "knowledge:sync": "tsx scripts/sync-knowledge-pinecone.ts"
+    "knowledge:sync": "tsx scripts/sync-knowledge-pinecone.ts",
+    "jobs:worker": "tsx scripts/job-worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -41,6 +42,7 @@
     "@thatopen/components": "^2.4.0",
     "@thatopen/fragments": "~3.0.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.80.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

@@ -7,6 +7,7 @@ import type {
   BimRoomCostCell,
   BimRoomInfo,
   BimSpatialAnalytics,
+  BimSpatialAnnotation,
 } from "@/types/bim";
 import { costHeatColor, impactHeatColor } from "@/lib/bim/spatial-cost";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,10 @@ interface SchematicRoomPlanProps {
   mode?: "none" | "circulation" | "cost" | "impact";
   label?: string;
   className?: string;
+  selectedRoomId?: string | null;
+  onRoomClick?: (roomId: string) => void;
+  annotations?: BimSpatialAnnotation[];
+  layoutAssignments?: Record<string, number>;
 }
 
 function roomRadius(area: number) {
@@ -49,6 +54,10 @@ export function SchematicRoomPlan({
   mode = "none",
   label,
   className,
+  selectedRoomId,
+  onRoomClick,
+  annotations = [],
+  layoutAssignments = {},
 }: SchematicRoomPlanProps) {
   const locatedRooms = rooms.filter((room) => room.centroid);
   const activePath =
@@ -96,26 +105,63 @@ export function SchematicRoomPlan({
       <svg viewBox={viewBox} className="h-full min-h-[320px] w-full" preserveAspectRatio="xMidYMid meet">
         <g transform="scale(1,-1)">
           {locatedRooms.map((room) => (
-            <g key={room.id}>
+            <g
+              key={room.id}
+              style={{ cursor: onRoomClick ? "pointer" : undefined }}
+              onClick={() => onRoomClick?.(room.id)}
+            >
               {room.polygon ? (
                 <path
                   d={`${room.polygon.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ")} Z`}
-                  fill={roomFill(room, mode, roomCosts)}
-                  stroke="#64748b"
-                  strokeWidth={0.35}
+                  fill={
+                    selectedRoomId === room.id
+                      ? "rgba(205,127,50,0.35)"
+                      : roomFill(room, mode, roomCosts)
+                  }
+                  stroke={selectedRoomId === room.id ? "#cd7f32" : "#64748b"}
+                  strokeWidth={selectedRoomId === room.id ? 0.8 : 0.35}
                 />
               ) : (
                 <circle
                   cx={room.centroid!.x}
                   cy={room.centroid!.y}
                   r={roomRadius(room.area)}
-                  fill={roomFill(room, mode, roomCosts)}
-                  stroke="#64748b"
-                  strokeWidth={0.35}
+                  fill={
+                    selectedRoomId === room.id
+                      ? "rgba(205,127,50,0.35)"
+                      : roomFill(room, mode, roomCosts)
+                  }
+                  stroke={selectedRoomId === room.id ? "#cd7f32" : "#64748b"}
+                  strokeWidth={selectedRoomId === room.id ? 0.8 : 0.35}
                 />
+              )}
+              {layoutAssignments[room.id] != null && room.centroid && (
+                <text
+                  x={room.centroid.x}
+                  y={room.centroid.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={2}
+                  fill="#1e293b"
+                  fontWeight="bold"
+                >
+                  {layoutAssignments[room.id]}
+                </text>
               )}
             </g>
           ))}
+
+          {annotations.map((ann) => {
+            const room = locatedRooms.find((r) => r.id === ann.roomId);
+            const pos = ann.position ?? room?.centroid;
+            if (!pos) return null;
+            return (
+              <g key={ann.id} transform={`translate(${pos.x}, ${pos.y})`}>
+                <circle r={1.2} fill="#cd7f32" stroke="#fff" strokeWidth={0.3} />
+                <circle r={0.4} fill="#fff" />
+              </g>
+            );
+          })}
 
           {mode === "circulation" && activePath && (
             <>
@@ -152,8 +198,15 @@ export function SpatialPlanViewer(props: {
   activePathId?: string | null;
   label?: string;
   className?: string;
+  selectedRoomId?: string | null;
+  onRoomClick?: (roomId: string) => void;
+  annotations?: BimSpatialAnnotation[];
+  layoutAssignments?: Record<string, number>;
 }) {
-  const { previewUrl, rooms, bounds, analytics, mode, activePathId, label, className } = props;
+  const {
+    previewUrl, rooms, bounds, analytics, mode, activePathId, label, className,
+    selectedRoomId, onRoomClick, annotations, layoutAssignments,
+  } = props;
 
   if (previewUrl) {
     return (
@@ -167,6 +220,10 @@ export function SpatialPlanViewer(props: {
         mode={mode}
         label={label}
         className={className}
+        selectedRoomId={selectedRoomId}
+        onRoomClick={onRoomClick}
+        annotations={annotations}
+        layoutAssignments={layoutAssignments}
       />
     );
   }
@@ -180,6 +237,10 @@ export function SpatialPlanViewer(props: {
       mode={mode}
       label={label ?? "Schematic plan (IFC centroids)"}
       className={className}
+      selectedRoomId={selectedRoomId}
+      onRoomClick={onRoomClick}
+      annotations={annotations}
+      layoutAssignments={layoutAssignments}
     />
   );
 }

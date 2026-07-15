@@ -7,22 +7,22 @@ import type {
   EnqueueJobInput,
 } from "@/lib/jobs/types";
 
-async function useDb() {
+async function resolveDb() {
   return shouldUseDatabase();
 }
 
 export async function enqueueJob(input: EnqueueJobInput): Promise<BackgroundJobRecord> {
-  if (await useDb()) return db.enqueueDbJob(input);
+  if (await resolveDb()) return db.enqueueDbJob(input);
   return memory.enqueueMemoryJob(input);
 }
 
 export async function getJob(jobId: string): Promise<BackgroundJobRecord | null> {
-  if (await useDb()) return db.getDbJob(jobId);
+  if (await resolveDb()) return db.getDbJob(jobId);
   return memory.getMemoryJob(jobId);
 }
 
 export async function claimNextJob(): Promise<BackgroundJobRecord | null> {
-  if (await useDb()) return db.claimNextDbJob();
+  if (await resolveDb()) return db.claimNextDbJob();
   return memory.claimNextMemoryJob();
 }
 
@@ -30,12 +30,12 @@ export async function updateJob(
   jobId: string,
   patch: Parameters<typeof db.updateDbJob>[1]
 ): Promise<BackgroundJobRecord | null> {
-  if (await useDb()) return db.updateDbJob(jobId, patch);
+  if (await resolveDb()) return db.updateDbJob(jobId, patch);
   return memory.updateMemoryJob(jobId, patch);
 }
 
 export async function listJobsByStatus(status: BackgroundJobStatus): Promise<BackgroundJobRecord[]> {
-  if (await useDb()) return db.listDbJobsByStatus(status);
+  if (await resolveDb()) return db.listDbJobsByStatus(status);
   return memory.listMemoryJobsByStatus(status);
 }
 

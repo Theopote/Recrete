@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { RenovationStrategy } from "@/types";
 import type { BimModel, BimSpatialAnalytics } from "@/types/bim";
-import { Loader2, Route, Flame, GitCompare, LayoutGrid, Users, Armchair } from "lucide-react";
+import { Loader2, Route, Flame, GitCompare, LayoutGrid, Users, Armchair, Tag } from "lucide-react";
 import { SpatialPlanningPanel } from "@/components/bim/SpatialPlanningPanel";
+import { SpatialAnnotationPanel } from "@/components/bim/SpatialAnnotationPanel";
+import type { BimSpatialAnnotation } from "@/types/bim";
 
 const GltfModelViewer = dynamic(
   () => import("@/components/bim/GltfModelViewer").then((m) => m.GltfModelViewer),
@@ -20,7 +22,7 @@ const IfcModelViewer = dynamic(
   { ssr: false, loading: () => <div className="min-h-[280px] animate-pulse rounded-md border bg-muted/20" /> }
 );
 
-type AnalyticsTab = "circulation" | "cost" | "compare" | "layout" | "flow" | "furniture";
+type AnalyticsTab = "circulation" | "cost" | "compare" | "layout" | "flow" | "furniture" | "annotations";
 
 interface BimSpatialAnalyticsPanelProps {
   projectId: string;
@@ -38,6 +40,8 @@ export function BimSpatialAnalyticsPanel({
   const [fromRoomId, setFromRoomId] = useState<string>("");
   const [toRoomId, setToRoomId] = useState<string>("");
   const [activePathId, setActivePathId] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [annotations, setAnnotations] = useState<BimSpatialAnnotation[]>([]);
   const [analytics, setAnalytics] = useState<BimSpatialAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -79,6 +83,35 @@ export function BimSpatialAnalyticsPanel({
       cancelled = true;
     };
   }, [projectId, model.id, strategyId, fromRoomId, toRoomId, rooms.length, tab]);
+
+  useEffect(() => {
+    if (tab !== "annotations" && tab !== "layout") return;
+    fetch(`/api/projects/${projectId}/bim-models/${model.id}/annotations`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setAnnotations(
+          (data.annotations as BimSpatialAnnotation[]).map((a) => ({
+            ...a,
+            createdAt: new Date(a.createdAt),
+            updatedAt: new Date(a.updatedAt),
+          }))
+        );
+      })
+      .catch(() => undefined);
+  }, [projectId, model.id, tab]);
+
+  const layoutAssignmentScores = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const assignment of analytics?.layout?.assignments ?? []) {
+      map[assignment.roomId] = assignment.fitScore;
+    }
+    return map;
+  }, [analytics?.layout?.assignments]);
+
+  const selectedLayoutAssignment = analytics?.layout?.assignments.find(
+    (a) => a.roomId === selectedRoomId
+  );
 
   const selectedStrategy = strategies.find((strategy) => strategy.id === strategyId) ?? null;
   const planMode =
@@ -148,6 +181,14 @@ export function BimSpatialAnalyticsPanel({
           >
             <Armchair className="mr-1.5 h-3.5 w-3.5" />
             Furniture
+          </Button>
+          <Button
+            size="sm"
+            variant={tab === "annotations" ? "default" : "outline"}
+            onClick={() => setTab("annotations")}
+          >
+            <Tag className="mr-1.5 h-3.5 w-3.5" />
+            Annotations
           </Button>
         </div>
 
@@ -303,18 +344,31 @@ export function BimSpatialAnalyticsPanel({
               activePathId={activePathId}
               label={
                 tab === "layout"
-                  ? "功能布局"
+                  ? "功能布局 · 点击房间查看详情"
                   : tab === "flow"
                     ? "人流动线"
                     : "家具布置"
               }
               className="min-h-[360px]"
+              selectedRoomId={selectedRoomId}
+              onRoomClick={setSelectedRoomId}
+              annotations={annotations}
+              layoutAssignments={tab === "layout" ? layoutAssignmentScores : undefined}
             />
             <div className="rounded-md border p-3">
               {loading ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   分析中…
+                </div>
+              ) : tab === "layout" && selectedLayoutAssignment ? (
+                <div className="space-y-2 text-xs">
+                  <p className="font-medium">{selectedLayoutAssignment.roomLabel}</p>
+                  <p className="text-muted-foreground">
+                    分配功能：{selectedLayoutAssignment.assignedFunctionZh}
+                  </p>
+                  <p>面积 {selectedLayoutAssignment.area.toFixed(0)} m² · 匹配度 {selectedLayoutAssignment.fitScore}</p>
+                  <p className="text-muted-foreground">{selectedLayoutAssignment.rationale}</p>
                 </div>
               ) : (
                 <SpatialPlanningPanel
@@ -325,6 +379,32 @@ export function BimSpatialAnalyticsPanel({
                   activeTab={tab}
                 />
               )}
+            </div>
+          </div>
+        )}
+
+        {tab === "annotations" && (
+          <div className="grid gap-3 md:grid-cols-[1fr_300px]">
+            <SpatialPlanViewer
+              previewUrl={model.previewUrl}
+              rooms={rooms}
+              bounds={model.metadata?.bounds}
+              analytics={analytics}
+              mode="none"
+              label="空间标注 · 点击房间添加批注"
+              className="min-h-[360px]"
+              selectedRoomId={selectedRoomId}
+              onRoomClick={setSelectedRoomId}
+              annotations={annotations}
+            />
+            <div className="rounded-md border p-3">
+              <SpatialAnnotationPanel
+                projectId={projectId}
+                modelId={model.id}
+                rooms={rooms}
+                selectedRoomId={selectedRoomId}
+                onRoomSelect={setSelectedRoomId}
+              />
             </div>
           </div>
         )}
