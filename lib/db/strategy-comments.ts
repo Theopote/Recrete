@@ -1,5 +1,3 @@
-import "server-only";
-
 import { shouldUseDatabase } from "@/lib/db/resolve";
 import { prisma } from "@/lib/db/prisma";
 import { generateId } from "@/lib/mock-data";
