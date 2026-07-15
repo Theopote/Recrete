@@ -113,8 +113,6 @@ export async function getDocumentAnalysisTask(taskId: string): Promise<DocumentA
   return tasks.get(taskId) ?? null;
 }
 
-import { updateDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
-
 export async function linkAnalysisTaskToJob(
   taskId: string,
   jobId: string

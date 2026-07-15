@@ -124,7 +124,7 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium truncate">{doc.name}</p>
-                      <ConfidenceBadge value={0.85} />
+                      <ConfidenceBadge confidence={0.85} />
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-4">{doc.aiSummary}</p>
                   </CardContent>
