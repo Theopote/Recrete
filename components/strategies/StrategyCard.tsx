@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/app/RiskBadge";
+import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDialog";
 import { StrategyReviewThread } from "@/components/strategies/StrategyReviewThread";
 import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
 import { strategyTypeLabels } from "@/lib/utils/labels";

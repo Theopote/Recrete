@@ -32,6 +32,8 @@ import type {
 } from "@/types";
 import type { AIProjectDraft } from "@/lib/ai/agents/project-creation-agent";
 import type { BuildingMemory, AIInsight, AITask } from "@/types/ai";
+import type { StrategyWithMetrics } from "@/types";
+import type { ProjectStatus } from "@/types";
 
 function buildProjectWhere(
   organizationId: string,

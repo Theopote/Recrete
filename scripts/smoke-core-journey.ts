@@ -40,7 +40,7 @@ check("replace strategies persists three options", async () => {
   const strategies = await replaceStrategies(project.id, [
     {
       name: "Light",
-      type: "light_intervention",
+      type: "light_renewal",
       summary: "Minimal intervention",
       designGoal: "Preserve",
       spatialStrategy: "Keep layout",
@@ -56,7 +56,7 @@ check("replace strategies persists three options", async () => {
     },
     {
       name: "Medium",
-      type: "medium_reconfiguration",
+      type: "medium_renovation",
       summary: "Reconfigure",
       designGoal: "Adapt",
       spatialStrategy: "Replan",
@@ -112,7 +112,7 @@ check("strategy review comment round-trip", async () => {
   const strategies = await replaceStrategies(project.id, [
     {
       name: "Test Strategy",
-      type: "light_intervention",
+      type: "light_renewal",
       summary: "Test",
       designGoal: "Test",
       spatialStrategy: "Test",

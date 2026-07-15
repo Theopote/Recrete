@@ -25,7 +25,7 @@ describe("core journey (mock store)", () => {
     await replaceStrategies(project.id, [
       {
         name: "A",
-        type: "light_intervention",
+        type: "light_renewal",
         summary: "s",
         designGoal: "g",
         spatialStrategy: "s",
@@ -50,7 +50,7 @@ describe("core journey (mock store)", () => {
     const [strategy] = await replaceStrategies(project.id, [
       {
         name: "S1",
-        type: "light_intervention",
+        type: "light_renewal",
         summary: "s",
         designGoal: "g",
         spatialStrategy: "s",
