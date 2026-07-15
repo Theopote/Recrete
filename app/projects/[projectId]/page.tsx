@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { TopBar } from "@/components/app/TopBar";
 import { ProjectDetailLayout } from "@/components/projects/ProjectDetailLayout";
+import { getCollaborationSummary } from "@/lib/db/collaboration-store";
 import { getProjectById, getStrategiesWithMetrics } from "@/lib/db/repository";
 
 interface ProjectDetailPageProps {
@@ -20,6 +21,7 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const strategiesWithMetrics = await getStrategiesWithMetrics(projectId);
+  const collaboration = await getCollaborationSummary(projectId);
 
   return (
     <AppShell>
@@ -29,7 +31,7 @@ export default async function ProjectDetailPage({
         showAiToggle
       />
       <ProjectDetailLayout
-        project={project}
+        project={{ ...project, collaboration }}
         section={section}
         strategiesWithMetrics={strategiesWithMetrics}
       />

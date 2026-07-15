@@ -12,6 +12,7 @@ import { IssuesSection } from "./sections/IssuesSection";
 import { ReportsSection } from "./sections/ReportsSection";
 import { TimelineSection } from "./sections/TimelineSection";
 import { BimViewerSection } from "./sections/BimViewerSection";
+import { CollaborationSection } from "./sections/CollaborationSection";
 
 interface ProjectWorkspaceProps {
   project: ProjectWithRelations;
@@ -51,6 +52,8 @@ export function ProjectWorkspace({
     case "strategy-lab":
     case "strategies":
       return <StrategiesSection project={project} strategiesWithMetrics={strategiesWithMetrics} />;
+    case "collaboration":
+      return <CollaborationSection project={project} initialSummary={project.collaboration} />;
     case "cost-risk":
       return <CostRiskSection project={project} strategiesWithMetrics={strategiesWithMetrics} />;
     case "issues":

@@ -274,6 +274,7 @@ export interface ProjectWithRelations extends Project {
   strategies?: RenovationStrategy[];
   issues?: SiteIssue[];
   reports?: Report[];
+  collaboration?: import("@/types/collaboration").CollaborationSummary;
 }
 
 export interface DashboardStats {
@@ -313,6 +314,7 @@ export type ProjectSection =
   | "bim-viewer"
   | "diagnosis"
   | "strategy-lab"
+  | "collaboration"
   | "cost-risk"
   | "issues"
   | "reports"

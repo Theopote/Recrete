@@ -125,6 +125,8 @@ Open [http://localhost:3000](http://localhost:3000). You will be redirected to t
 | `lin.wei@recrete.io` | Architect |
 | `chen.hao@recrete.io` | Engineer |
 | `zhang.mei@recrete.io` | Project Manager |
+| `wang.fang@xian.gov.cn` | Owner (甲方) |
+| `liu.ming@heritage.cn` | Heritage Consultant |
 
 Password for all demo accounts: `recrete2026`
 

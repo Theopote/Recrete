@@ -15,6 +15,7 @@ import {
   FileBarChart,
   Bot,
   Box,
+  Users,
 } from "lucide-react";
 
 const sections: {
@@ -29,6 +30,7 @@ const sections: {
   { id: "diagnosis", label: "Diagnosis", icon: Stethoscope },
   { id: "expert-agents", label: "Expert Agents", icon: Bot },
   { id: "strategy-lab", label: "Strategy Lab", icon: FlaskConical },
+  { id: "collaboration", label: "Collaboration", icon: Users },
   { id: "cost-risk", label: "Cost & Risk", icon: Scale },
   { id: "issues", label: "Issues", icon: AlertTriangle },
   { id: "reports", label: "Reports", icon: FileBarChart },

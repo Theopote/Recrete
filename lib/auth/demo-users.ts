@@ -20,6 +20,8 @@ export async function getDemoUsers(): Promise<DemoUser[]> {
     { id: "user-1", name: "Lin Wei", email: "lin.wei@recrete.io", role: "architect", passwordHash: hash },
     { id: "user-2", name: "Chen Hao", email: "chen.hao@recrete.io", role: "engineer", passwordHash: hash },
     { id: "user-3", name: "Zhang Mei", email: "zhang.mei@recrete.io", role: "project_manager", passwordHash: hash },
+    { id: "user-4", name: "Wang Fang", email: "wang.fang@xian.gov.cn", role: "owner", passwordHash: hash },
+    { id: "user-5", name: "Dr. Liu Ming", email: "liu.ming@heritage.cn", role: "consultant", passwordHash: hash },
   ];
   return cachedUsers;
 }
