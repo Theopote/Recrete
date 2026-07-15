@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/app/RiskBadge";
-import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDialog";
+import { StrategyReviewThread } from "@/components/strategies/StrategyReviewThread";
 import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
 import { strategyTypeLabels } from "@/lib/utils/labels";
 import { cn, levelToPercent } from "@/lib/utils";
@@ -12,10 +12,11 @@ interface StrategyCardProps {
   strategy: StrategyWithMetrics | (RenovationStrategy & { rank?: number; compositeScore?: number; metrics?: StrategyWithMetrics["metrics"] });
   isRecommended?: boolean;
   projectId?: string;
+  riskOptions?: string[];
   onRefined?: (strategy: StrategyWithMetrics) => void;
 }
 
-export function StrategyCard({ strategy, isRecommended, projectId, onRefined }: StrategyCardProps) {
+export function StrategyCard({ strategy, isRecommended, projectId, riskOptions, onRefined }: StrategyCardProps) {
   return (
     <Card className={cn(isRecommended && "border-copper ring-1 ring-copper/20")}>
       <CardContent className="p-5 space-y-4">
@@ -99,6 +100,14 @@ export function StrategyCard({ strategy, isRecommended, projectId, onRefined }: 
             </p>
             <p className="text-xs">{strategy.recommendationReason}</p>
           </div>
+        )}
+
+        {projectId && (
+          <StrategyReviewThread
+            projectId={projectId}
+            strategyId={strategy.id}
+            riskOptions={riskOptions}
+          />
         )}
 
         {projectId && (

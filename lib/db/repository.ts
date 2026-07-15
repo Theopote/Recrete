@@ -29,7 +29,7 @@ export async function createProjectFromBrief(
   organizationId: string
 ) {
   if (await resolveDb()) {
-    return db.createProject(draft.project, organizationId);
+    return db.createProjectFromBrief(draft, organizationId);
   }
   return mock.createProjectFromBrief(draft, organizationId);
 }
@@ -83,10 +83,9 @@ export async function replaceStrategies(
   projectId: string,
   strategies: Parameters<typeof mock.replaceStrategies>[1]
 ) {
-  if (await resolveDb()) {
-    return mock.replaceStrategies(projectId, strategies);
-  }
-  return mock.replaceStrategies(projectId, strategies);
+  return (await resolveDb())
+    ? db.replaceStrategies(projectId, strategies)
+    : mock.replaceStrategies(projectId, strategies);
 }
 
 export async function updateStrategy(

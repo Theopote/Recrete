@@ -9,6 +9,7 @@ import type {
   Report,
   User,
 } from "@/types";
+import type { BuildingMemory, AIInsight, AITask } from "@/types/ai";
 import type {
   Project as PrismaProject,
   Building as PrismaBuilding,
@@ -118,10 +119,70 @@ type ProjectFull = PrismaProject & {
 };
 
 export function mapProjectWithRelations(p: ProjectFull): ProjectWithRelations {
+  return mapProjectWithRelationsExtended(p);
+}
+
+type ProjectExtended = ProjectFull & {
+  buildingMemory?: {
+    id: string;
+    projectId: string;
+    summary: string;
+    knownFacts: string[];
+    missingInformation: string[];
+    keyRisks: string[];
+    renovationPotential: string;
+    designConstraints: string[];
+    ownerRequirements: string[];
+    importantDecisions: string[];
+    unresolvedQuestions: string[];
+    lastUpdatedByAI: Date;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
+  insights?: Array<{
+    id: string;
+    projectId: string;
+    title: string;
+    type: AIInsight["type"];
+    priority: AIInsight["priority"];
+    summary: string;
+    evidence: string | null;
+    recommendation: string | null;
+    confidence: number;
+    status: AIInsight["status"];
+    sourceType: string | null;
+    sourceId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+  tasks?: Array<{
+    id: string;
+    projectId: string;
+    insightId: string | null;
+    title: string;
+    description: string;
+    category: AITask["category"];
+    priority: AITask["priority"];
+    status: AITask["status"];
+    assignedToId: string | null;
+    dueDate: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+};
+
+export function mapProjectWithRelationsExtended(p: ProjectExtended): ProjectWithRelations {
   return {
     ...mapProject(p),
     building: p.building ? mapBuilding(p.building) : null,
+    buildingMemory: p.buildingMemory
+      ? ({
+          ...p.buildingMemory,
+        } satisfies BuildingMemory)
+      : null,
     documents: p.documents.map(mapDocument),
+    insights: p.insights?.map((i) => ({ ...i })) ?? [],
+    tasks: p.tasks?.map((t) => ({ ...t, dueDate: t.dueDate })) ?? [],
     diagnosis: p.diagnosis.map(mapDiagnosis),
     strategies: p.strategies.map(mapStrategy),
     issues: p.issues.map(mapIssue),

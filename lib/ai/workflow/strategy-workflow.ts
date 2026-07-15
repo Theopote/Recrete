@@ -114,6 +114,9 @@ export async function runStrategyWorkflow(
   let recommendationResult = null;
 
   if (recommendation) {
+    await updateStrategy(recommendation.strategyId, {
+      recommendationReason: recommendation.reason,
+    });
     const [insight] = await addInsights(projectId, [recommendation.insight]);
     recommendationResult = {
       strategyId: recommendation.strategyId,

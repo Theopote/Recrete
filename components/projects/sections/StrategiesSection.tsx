@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { StrategyCard } from "@/components/strategies/StrategyCard";
 import { StrategyComparisonTable } from "@/components/strategies/StrategyComparisonTable";
 import { CreateStrategyForm } from "@/components/strategies/CreateStrategyForm";
@@ -26,9 +26,15 @@ interface StrategiesSectionProps {
 
 export function StrategiesSection({ project, strategiesWithMetrics: initialMetrics }: StrategiesSectionProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const showWelcome = searchParams.get("welcome") === "1";
   const [strategies, setStrategies] = useState(initialMetrics);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
+  const [recommendation, setRecommendation] = useState<{
+    strategyId: string;
+    reason: string;
+  } | null>(null);
   const [showComparison, setShowComparison] = useState(true);
   const [labParams, setLabParams] = useState<Partial<StrategyLabParams>>({});
 
@@ -44,6 +50,7 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setStrategies(data.strategies.map(parseStrategy));
+        setRecommendation(data.recommendation ?? null);
         router.refresh();
       } else {
         setAiError(parseAIErrorResponse(data));
@@ -64,7 +71,14 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
     setStrategies((prev) => [strategy, ...prev]);
   };
 
-  const recommended = strategies.find((s) => s.recommendationReason);
+  const recommended =
+    strategies.find((s) => s.id === recommendation?.strategyId) ??
+    strategies.find((s) => s.recommendationReason);
+
+  const riskOptions = [
+    ...(project.buildingMemory?.keyRisks ?? []),
+    ...strategies.flatMap((s) => s.cons.slice(0, 2)),
+  ].slice(0, 8);
 
   return (
     <div className="space-y-6">
@@ -105,12 +119,28 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         />
       )}
 
+      {recommendation && (
+        <div className="rounded-lg border border-copper/30 bg-copper/5 px-4 py-3 text-xs">
+          <p className="font-medium text-copper">AI 推荐方案</p>
+          <p className="mt-1 text-muted-foreground leading-relaxed">{recommendation.reason}</p>
+        </div>
+      )}
+
       <StrategyLabParamsForm
         onChange={setLabParams}
         projectArea={project.grossFloorArea}
         projectBudget={project.budgetLevel}
         targetFunction={project.targetFunction}
       />
+
+      {strategies.length === 0 && showWelcome && (
+        <div className="rounded-lg border border-copper/30 bg-copper/5 px-4 py-3 text-xs">
+          <p className="font-medium">项目已创建！</p>
+          <p className="mt-1 text-muted-foreground">
+            下一步：点击「Generate Strategies」生成三套改造方案并对比。
+          </p>
+        </div>
+      )}
 
       <SimilarCasesPanel projectId={project.id} />
 
@@ -141,6 +171,7 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
               strategy={strategy}
               isRecommended={strategy.id === recommended?.id}
               projectId={project.id}
+              riskOptions={riskOptions}
               onRefined={handleRefined}
             />
           ))}

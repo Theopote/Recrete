@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { ProjectWithRelations } from "@/types";
-import { parseBriefSync, type AIProjectDraft } from "./project-creation-agent";
+import { parseBriefSync, parseProjectBrief, type AIProjectDraft } from "./project-creation-agent";
 import { createProjectFromBrief } from "@/lib/db/repository";
 import {
   CREATE_PHASES,
@@ -62,7 +62,7 @@ export async function streamProjectCreation(
 
   await phase("extract_profile", async () => {
     await sleep(500);
-    draft = parseBriefSync(brief);
+    draft = await parseProjectBrief(brief);
     await emitProfileItems(draft, emit);
   });
 

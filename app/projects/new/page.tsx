@@ -7,6 +7,7 @@ import { TopBar } from "@/components/app/TopBar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
 import { Sparkles, Loader2 } from "lucide-react";
 import {
   AICreateStreamPanel,
@@ -28,20 +29,25 @@ function CreateProjectContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamState, setStreamState] = useState<StreamState>(INITIAL_STREAM_STATE);
   const [autoStarted, setAutoStarted] = useState(false);
+  const [createError, setCreateError] = useState<{ message: string; retryable: boolean } | null>(null);
 
   const startCreate = useCallback(async (text: string) => {
     setIsGenerating(true);
+    setCreateError(null);
     setStreamState(INITIAL_STREAM_STATE);
 
     try {
       await consumeProjectCreateStream(text, (event) => {
-        setStreamState((prev) => applyStreamEvent(prev, event));
+        setStreamState((prev) => {
+          const next = applyStreamEvent(prev, event);
+          if (event.type === "error") {
+            setCreateError({ message: event.message, retryable: true });
+          }
+          return next;
+        });
       });
     } catch {
-      setStreamState((prev) => ({
-        ...prev,
-        error: "Something went wrong. Please try again.",
-      }));
+      setCreateError({ message: "创建失败，请稍后重试。", retryable: true });
     } finally {
       setIsGenerating(false);
     }
@@ -64,7 +70,9 @@ function CreateProjectContent() {
   useEffect(() => {
     if (!streamState.isComplete || !streamState.project) return;
     const timer = setTimeout(() => {
-      router.push(`/projects/${streamState.project!.id}?section=building-memory`);
+      router.push(
+        `/projects/${streamState.project!.id}?section=strategies&welcome=1`
+      );
     }, 2400);
     return () => clearTimeout(timer);
   }, [streamState.isComplete, streamState.project, router]);
@@ -146,6 +154,15 @@ function CreateProjectContent() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {createError && (
+            <AIErrorBanner
+              message={createError.message}
+              retryable={createError.retryable}
+              onRetry={() => brief.trim().length >= 20 && void startCreate(brief.trim())}
+              onDismiss={() => setCreateError(null)}
+            />
           )}
 
           {showStream && <AICreateStreamPanel state={streamState} />}

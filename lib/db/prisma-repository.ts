@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   mapProject,
   mapProjectWithRelations,
+  mapProjectWithRelationsExtended,
   mapDocument,
   mapDiagnosis,
   mapStrategy,
@@ -29,8 +30,8 @@ import type {
   StrategyWithProject,
   User,
 } from "@/types";
-import type { StrategyWithMetrics } from "@/types";
-import type { ProjectStatus } from "@/types";
+import type { AIProjectDraft } from "@/lib/ai/agents/project-creation-agent";
+import type { BuildingMemory, AIInsight, AITask } from "@/types/ai";
 
 function buildProjectWhere(
   organizationId: string,
@@ -72,14 +73,17 @@ export async function getProjectById(
     where: { id, organizationId },
     include: {
       building: true,
+      buildingMemory: true,
       documents: { orderBy: { createdAt: "desc" } },
       diagnosis: { orderBy: { updatedAt: "desc" } },
       strategies: { orderBy: { updatedAt: "desc" } },
       issues: { orderBy: { updatedAt: "desc" } },
       reports: { orderBy: { createdAt: "desc" } },
+      insights: { orderBy: { createdAt: "desc" } },
+      tasks: { orderBy: { createdAt: "desc" } },
     },
   });
-  return row ? mapProjectWithRelations(row) : null;
+  return row ? mapProjectWithRelationsExtended(row) : null;
 }
 
 export async function createProject(
@@ -130,6 +134,131 @@ export async function createProject(
     },
   });
   return mapProjectWithRelations(project);
+}
+
+export async function createProjectFromBrief(
+  draft: AIProjectDraft,
+  organizationId: string
+): Promise<ProjectWithRelations> {
+  const input = draft.project;
+
+  const project = await prisma.project.create({
+    data: {
+      organizationId,
+      name: input.name,
+      code: input.code,
+      location: input.location,
+      buildingType: input.buildingType,
+      originalFunction: input.originalFunction,
+      currentFunction: input.currentFunction,
+      targetFunction: input.targetFunction,
+      constructionYear: input.constructionYear,
+      structureType: input.structureType,
+      floorCount: input.floorCount,
+      grossFloorArea: input.grossFloorArea,
+      status: "survey",
+      renovationGoal: input.renovationGoal,
+      budgetLevel: input.budgetLevel,
+      riskLevel: draft.riskLevel,
+      healthScore: draft.healthScore,
+      potentialScore: draft.potentialScore,
+      aiReadinessScore: draft.aiReadinessScore,
+      dataCompletenessScore: draft.dataCompletenessScore,
+      description: input.description,
+      building: {
+        create: {
+          name: input.buildingName ?? input.name,
+          address: input.address ?? input.location,
+          constructionYear: input.constructionYear,
+          structureType: input.structureType,
+          floorCount: input.floorCount,
+          basementCount: input.basementCount ?? 0,
+          grossFloorArea: input.grossFloorArea,
+          currentCondition: input.currentCondition ?? "",
+          heritageLevel: input.heritageLevel ?? "none",
+        },
+      },
+      buildingMemory: {
+        create: {
+          summary: draft.buildingMemory.summary,
+          knownFacts: draft.buildingMemory.knownFacts,
+          missingInformation: draft.buildingMemory.missingInformation,
+          keyRisks: draft.buildingMemory.keyRisks,
+          renovationPotential: draft.buildingMemory.renovationPotential,
+          designConstraints: draft.buildingMemory.designConstraints,
+          ownerRequirements: draft.buildingMemory.ownerRequirements,
+          importantDecisions: draft.buildingMemory.importantDecisions,
+          unresolvedQuestions: draft.buildingMemory.unresolvedQuestions,
+        },
+      },
+      tasks: {
+        create: draft.tasks.map((task) => ({
+          title: task.title,
+          description: task.description,
+          category: task.category,
+          priority: task.priority,
+          status: task.status,
+          assignedToId: task.assignedToId,
+          dueDate: task.dueDate,
+          insightId: task.insightId,
+        })),
+      },
+      insights: {
+        create: draft.insights.map((insight) => ({
+          title: insight.title,
+          type: insight.type,
+          priority: insight.priority,
+          summary: insight.summary,
+          evidence: insight.evidence,
+          recommendation: insight.recommendation,
+          confidence: insight.confidence,
+          status: insight.status,
+          sourceType: insight.sourceType,
+          sourceId: insight.sourceId,
+        })),
+      },
+      analysisRuns: {
+        create: {
+          analysisType: "copilot_chat",
+          inputSummary: input.renovationGoal.slice(0, 120),
+          outputSummary: draft.analysisSummary,
+          generatedItemCount: draft.tasks.length + draft.insights.length + 1,
+          modelName: "recrete-create-v1",
+          confidence: 0.91,
+        },
+      },
+    },
+    include: {
+      building: true,
+      buildingMemory: true,
+      documents: true,
+      diagnosis: true,
+      strategies: true,
+      issues: true,
+      reports: true,
+      insights: true,
+      tasks: true,
+    },
+  });
+
+  return mapProjectWithRelationsExtended(project);
+}
+
+export async function replaceStrategies(
+  projectId: string,
+  strategies: Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]
+): Promise<RenovationStrategy[]> {
+  await prisma.renovationStrategy.deleteMany({ where: { projectId } });
+
+  const created = await Promise.all(
+    strategies.map((s) =>
+      prisma.renovationStrategy.create({
+        data: { ...s, projectId },
+      })
+    )
+  );
+
+  return created.map(mapStrategy);
 }
 
 export async function addDiagnosisItems(
@@ -494,10 +623,58 @@ export async function updateBuildingMemory(projectId: string, organizationId: st
 
 export async function addInsights(
   projectId: string,
-  insights: Parameters<typeof import("@/lib/db/mock-repository").addInsights>[1]
-) {
-  const { addInsights: mockAdd } = await import("@/lib/db/mock-repository");
-  return mockAdd(projectId, insights);
+  insights: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[]
+): Promise<AIInsight[]> {
+  const created = await Promise.all(
+    insights.map((insight) =>
+      prisma.aIInsight.create({
+        data: { ...insight, projectId },
+      })
+    )
+  );
+  return created.map((i) => ({
+    id: i.id,
+    projectId: i.projectId,
+    title: i.title,
+    type: i.type,
+    priority: i.priority,
+    summary: i.summary,
+    evidence: i.evidence,
+    recommendation: i.recommendation,
+    confidence: i.confidence,
+    status: i.status,
+    sourceType: i.sourceType,
+    sourceId: i.sourceId,
+    createdAt: i.createdAt,
+    updatedAt: i.updatedAt,
+  }));
+}
+
+export async function addTasks(
+  projectId: string,
+  tasks: Omit<AITask, "id" | "projectId" | "createdAt" | "updatedAt">[]
+): Promise<AITask[]> {
+  const created = await Promise.all(
+    tasks.map((task) =>
+      prisma.aITask.create({
+        data: { ...task, projectId },
+      })
+    )
+  );
+  return created.map((t) => ({
+    id: t.id,
+    projectId: t.projectId,
+    insightId: t.insightId,
+    title: t.title,
+    description: t.description,
+    category: t.category,
+    priority: t.priority,
+    status: t.status,
+    assignedToId: t.assignedToId,
+    dueDate: t.dueDate,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+  }));
 }
 
 export async function replaceInsightsBySourceType(
@@ -505,24 +682,26 @@ export async function replaceInsightsBySourceType(
   sourceType: string,
   insights: Parameters<typeof import("@/lib/db/mock-repository").replaceInsightsBySourceType>[2]
 ) {
-  const { replaceInsightsBySourceType: mockReplace } = await import("@/lib/db/mock-repository");
-  return mockReplace(projectId, sourceType, insights);
-}
-
-export async function addTasks(
-  projectId: string,
-  tasks: Parameters<typeof import("@/lib/db/mock-repository").addTasks>[1]
-) {
-  const { addTasks: mockAdd } = await import("@/lib/db/mock-repository");
-  return mockAdd(projectId, tasks);
+  await prisma.aIInsight.deleteMany({ where: { projectId, sourceType } });
+  return addInsights(
+    projectId,
+    insights.map((insight) => ({ ...insight, sourceType }))
+  );
 }
 
 export async function updateStrategy(
   strategyId: string,
-  data: Parameters<typeof import("@/lib/db/mock-repository").updateStrategy>[1]
-) {
-  const { updateStrategy: mockUpdate } = await import("@/lib/db/mock-repository");
-  return mockUpdate(strategyId, data);
+  data: Partial<Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">>
+): Promise<RenovationStrategy | null> {
+  try {
+    const updated = await prisma.renovationStrategy.update({
+      where: { id: strategyId },
+      data,
+    });
+    return mapStrategy(updated);
+  } catch {
+    return null;
+  }
 }
 
 export async function addStrategyVersion(

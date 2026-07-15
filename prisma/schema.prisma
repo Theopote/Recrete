@@ -360,6 +360,7 @@ model Project {
   strategies      RenovationStrategy[]
   issues          SiteIssue[]
   reports         Report[]
+  strategyReviewComments StrategyReviewComment[]
   aiConversations AIConversation[]
   costRecords     ProjectCostRecord[]
   bimModels       BimModel[]
@@ -540,7 +541,8 @@ model RenovationStrategy {
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project          Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reviewComments   StrategyReviewComment[]
 }
 
 model SiteIssue {
@@ -814,4 +816,23 @@ model AIUsageEvent {
 
   @@index([organizationId, createdAt])
   @@index([organizationId, operation])
+}
+
+// ─── Strategy review comments (Month 4: lightweight collaboration) ───────────
+
+model StrategyReviewComment {
+  id               String   @id @default(cuid())
+  projectId        String
+  strategyId       String
+  authorId         String
+  authorName       String
+  content          String   @db.Text
+  riskTag          String?
+  mentionedUserIds String[] @default([])
+  createdAt        DateTime @default(now())
+
+  project  Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  strategy RenovationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, strategyId])
 }
