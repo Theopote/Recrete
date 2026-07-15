@@ -22,7 +22,9 @@
     "db:verify": "tsx scripts/verify-db-acceptance.ts",
     "db:acceptance": "tsx scripts/run-db-acceptance.ts",
     "smoke:core": "tsx scripts/smoke-core-journey.ts",
-    "smoke:trial-prep": "tsx scripts/smoke-trial-prep.ts"
+    "smoke:trial-prep": "tsx scripts/smoke-trial-prep.ts",
+    "trial:summary": "tsx scripts/trial-feedback-summary.ts",
+    "trial:create-org": "tsx scripts/create-trial-org.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1087.0",

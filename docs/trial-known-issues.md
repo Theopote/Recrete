@@ -23,7 +23,7 @@
 
 | 级别 | 问题 | 说明 / 规避 |
 |------|------|-------------|
-| P2 | `updateBuildingMemory` | prisma-repository 仍委托 mock，手改建筑记忆可能不持久 |
+| P2 | `updateBuildingMemory` | ~~prisma-repository 仍委托 mock~~ → **第 6 个月预置修复：DB upsert** |
 | P2 | `addStrategyVersion` | 方案版本历史 mock-only，主方案流不受影响 |
 | P3 | 完整审计日志 | 未实现 |
 
@@ -51,4 +51,4 @@
 
 ---
 
-*最后更新：路线图第 5 个月 · 小范围真实试用准备*
+*最后更新：路线图第 6 个月 · 根据反馈收口准备*

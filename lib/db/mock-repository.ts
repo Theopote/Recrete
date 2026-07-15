@@ -721,11 +721,13 @@ export async function getCommandCenterData(organizationId: string) {
 }
 
 export async function updateBuildingMemory(projectId: string, organizationId: string) {
-  const { getAIPlatform } = await import("@/lib/ai");
   const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
-  const updated = await getAIPlatform().buildingMemory.updateBuildingMemory(project);
+  const { updateBuildingMemory: computeBuildingMemory } = await import(
+    "@/lib/ai/agents/building-memory-agent"
+  );
+  const updated = await computeBuildingMemory(project);
   const now = new Date();
   const existing = store.buildingMemories.find((m) => m.projectId === projectId);
 

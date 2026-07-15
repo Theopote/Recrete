@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { parseBriefSync } from "@/lib/ai/agents/project-creation-agent";
-import { createProjectFromBrief, getProjectById, replaceStrategies } from "@/lib/db/repository";
+import { createProjectFromBrief, getProjectById, replaceStrategies, updateBuildingMemory } from "@/lib/db/repository";
 import { addStrategyComment, clearStrategyCommentsMemory } from "@/lib/db/strategy-comments";
 
 describe("core journey (mock store)", () => {
@@ -73,5 +73,19 @@ describe("core journey (mock store)", () => {
       content: "hello",
     });
     expect(comment.content).toBe("hello");
+  });
+
+  it("updates building memory and persists summary change", async () => {
+    const draft = parseBriefSync(`building memory ${Date.now()}`);
+    const project = await createProjectFromBrief(draft, "org-1");
+    const before = await getProjectById(project.id, "org-1");
+    const beforeSummary = before?.buildingMemory?.summary ?? "";
+
+    const updated = await updateBuildingMemory(project.id, "org-1");
+    expect(updated).toBeTruthy();
+    expect(updated!.summary).not.toBe(beforeSummary);
+
+    const reloaded = await getProjectById(project.id, "org-1");
+    expect(reloaded?.buildingMemory?.summary).toBe(updated!.summary);
   });
 });

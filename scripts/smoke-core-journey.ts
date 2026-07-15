@@ -9,6 +9,7 @@ import {
   getProjectById,
   replaceStrategies,
   getProjects,
+  updateBuildingMemory,
 } from "@/lib/db/repository";
 import { addStrategyComment, clearStrategyCommentsMemory } from "@/lib/db/strategy-comments";
 
@@ -136,6 +137,23 @@ check("strategy review comment round-trip", async () => {
     mentionedUserIds: ["user-2"],
   });
   if (!comment.id) throw new Error("Comment not created");
+});
+
+check("building memory update persists", async () => {
+  const draft = parseBriefSync(`${BRIEF} memory ${Date.now()}`);
+  const project = await createProjectFromBrief(draft, "org-1");
+  const before = await getProjectById(project.id, "org-1");
+  const beforeSummary = before?.buildingMemory?.summary ?? "";
+
+  const updated = await updateBuildingMemory(project.id, "org-1");
+  if (!updated?.summary || updated.summary === beforeSummary) {
+    throw new Error("Building memory update did not change summary");
+  }
+
+  const reloaded = await getProjectById(project.id, "org-1");
+  if (reloaded?.buildingMemory?.summary !== updated.summary) {
+    throw new Error("Building memory not persisted after update");
+  }
 });
 
 async function main() {

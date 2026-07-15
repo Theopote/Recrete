@@ -619,8 +619,72 @@ export async function getCommandCenterData(organizationId: string) {
 }
 
 export async function updateBuildingMemory(projectId: string, organizationId: string) {
-  const { updateBuildingMemory: mockUpdate } = await import("@/lib/db/mock-repository");
-  return mockUpdate(projectId, organizationId);
+  const project = await getProjectById(projectId, organizationId);
+  if (!project) return null;
+
+  const { updateBuildingMemory: computeBuildingMemory } = await import(
+    "@/lib/ai/agents/building-memory-agent"
+  );
+  const updated = await computeBuildingMemory(project);
+  const now = new Date();
+
+  const memory = await prisma.buildingMemory.upsert({
+    where: { projectId },
+    create: {
+      projectId,
+      summary: updated.summary,
+      knownFacts: updated.knownFacts,
+      missingInformation: updated.missingInformation,
+      keyRisks: updated.keyRisks,
+      renovationPotential: updated.renovationPotential,
+      designConstraints: updated.designConstraints,
+      ownerRequirements: updated.ownerRequirements,
+      importantDecisions: updated.importantDecisions,
+      unresolvedQuestions: updated.unresolvedQuestions,
+      lastUpdatedByAI: now,
+    },
+    update: {
+      summary: updated.summary,
+      knownFacts: updated.knownFacts,
+      missingInformation: updated.missingInformation,
+      keyRisks: updated.keyRisks,
+      renovationPotential: updated.renovationPotential,
+      designConstraints: updated.designConstraints,
+      ownerRequirements: updated.ownerRequirements,
+      importantDecisions: updated.importantDecisions,
+      unresolvedQuestions: updated.unresolvedQuestions,
+      lastUpdatedByAI: now,
+    },
+  });
+
+  await prisma.aIAnalysisRun.create({
+    data: {
+      projectId,
+      analysisType: "building_memory_update",
+      inputSummary: `Project ${project.name} — ${project.documents?.length ?? 0} docs, ${project.diagnosis?.length ?? 0} diagnosis items`,
+      outputSummary: "Building Memory updated with latest AI analysis",
+      generatedItemCount: 1,
+      modelName: "recrete-mock-v1",
+      confidence: 0.89,
+    },
+  });
+
+  return {
+    id: memory.id,
+    projectId: memory.projectId,
+    summary: memory.summary,
+    knownFacts: memory.knownFacts,
+    missingInformation: memory.missingInformation,
+    keyRisks: memory.keyRisks,
+    renovationPotential: memory.renovationPotential,
+    designConstraints: memory.designConstraints,
+    ownerRequirements: memory.ownerRequirements,
+    importantDecisions: memory.importantDecisions,
+    unresolvedQuestions: memory.unresolvedQuestions,
+    lastUpdatedByAI: memory.lastUpdatedByAI,
+    createdAt: memory.createdAt,
+    updatedAt: memory.updatedAt,
+  };
 }
 
 export async function addInsights(
