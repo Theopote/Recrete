@@ -1,4 +1,5 @@
 import { SidebarNav } from "./SidebarNav";
+import { TrialFeedbackWidget } from "@/components/trial/TrialFeedbackWidget";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ export function AppShell({ children }: AppShellProps) {
       <div className="flex flex-1 flex-col overflow-hidden">
         {children}
       </div>
+      <TrialFeedbackWidget />
     </div>
   );
 }

@@ -16,6 +16,13 @@ import { DEMO_PASSWORD } from "../lib/auth/demo-users";
 
 const prisma = new PrismaClient();
 
+type SeedPrisma = PrismaClient & {
+  strategyReviewComment?: { deleteMany: () => Promise<unknown> };
+  trialFeedback?: { deleteMany: () => Promise<unknown> };
+};
+
+const db = prisma as SeedPrisma;
+
 async function main() {
   console.log("Seeding database...");
 
@@ -27,6 +34,8 @@ async function main() {
   await prisma.passwordResetToken.deleteMany();
   await prisma.backgroundJob.deleteMany();
   await prisma.documentAnalysisTaskRecord.deleteMany();
+  await db.strategyReviewComment?.deleteMany();
+  await db.trialFeedback?.deleteMany();
   await prisma.drawingAsset.deleteMany();
   await prisma.bimModel.deleteMany();
   await prisma.report.deleteMany();

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettingsForm } from "@/components/settings/SettingsForm";
 import { AccountSettingsCard } from "@/components/settings/AccountSettingsCard";
+import { TrialFeedbackPanel } from "@/components/trial/TrialFeedbackPanel";
 
 export default function SettingsPage() {
   const aiService = process.env.AI_SERVICE ?? "mock";
@@ -58,6 +59,8 @@ export default function SettingsPage() {
           </Card>
 
           <AccountSettingsCard />
+
+          <TrialFeedbackPanel />
 
           <SettingsForm />
         </div>

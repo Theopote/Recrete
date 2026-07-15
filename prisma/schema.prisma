@@ -282,9 +282,10 @@ model Organization {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users    User[]
-  projects Project[]
-  aiUsageEvents AIUsageEvent[]
+  users           User[]
+  projects        Project[]
+  aiUsageEvents   AIUsageEvent[]
+  trialFeedbacks  TrialFeedback[]
 }
 
 model User {
@@ -835,4 +836,47 @@ model StrategyReviewComment {
   strategy RenovationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
 
   @@index([projectId, strategyId])
+}
+
+// ─── Trial feedback (Month 5: pilot observation) ─────────────────────────────
+
+enum TrialFeedbackKind {
+  stuck
+  unclear_copy
+  ai_quality
+  general
+}
+
+enum TrialFeedbackStep {
+  login
+  create_project
+  upload_document
+  document_analysis
+  diagnosis
+  generate_strategies
+  strategy_review
+  reports
+  other
+}
+
+model TrialFeedback {
+  id             String             @id @default(cuid())
+  organizationId String
+  userId         String
+  userName       String
+  userEmail      String
+  kind           TrialFeedbackKind
+  step           TrialFeedbackStep?
+  pagePath       String?
+  projectId      String?
+  aiValueRating  Int?
+  isBlocker      Boolean            @default(false)
+  confusingText  String?            @db.Text
+  notes          String             @db.Text
+  createdAt      DateTime           @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([createdAt])
 }

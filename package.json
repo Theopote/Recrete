@@ -21,7 +21,8 @@
     "jobs:worker": "tsx scripts/job-worker.ts",
     "db:verify": "tsx scripts/verify-db-acceptance.ts",
     "db:acceptance": "tsx scripts/run-db-acceptance.ts",
-    "smoke:core": "tsx scripts/smoke-core-journey.ts"
+    "smoke:core": "tsx scripts/smoke-core-journey.ts",
+    "smoke:trial-prep": "tsx scripts/smoke-trial-prep.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1087.0",

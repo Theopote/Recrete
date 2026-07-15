@@ -96,4 +96,7 @@ USE_DATABASE=true DATABASE_URL="..." npm run db:seed
 Neon 免费档有休眠；首次请求可能慢 1–2 秒，可升级或保持 ping。
 
 **文件上传**  
-当前上传存本地 `public/uploads`；Vercel 无持久磁盘。试用阶段建议限制上传量，或后续接 S3/R2（路线图阶段二之后）。
+本地开发默认 `STORAGE_PROVIDER=local`。Vercel 生产环境必须配置 S3/R2（见 `.env.example` 中 `S3_*`），否则上传在重启后丢失。试用前运行 `npm run smoke:trial-prep`。
+
+**试用反馈**  
+试用期间保持 `NEXT_PUBLIC_TRIAL_FEEDBACK=true`；事务所在应用内右下角提交反馈，管理员在 Settings 导出 CSV。详见 `docs/trial-pilot-guide.md`。
