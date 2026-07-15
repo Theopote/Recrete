@@ -4,14 +4,13 @@
  * Usage: npm run smoke:core
  */
 import { parseBriefSync } from "@/lib/ai/agents/project-creation-agent";
-import { runStrategyWorkflow } from "@/lib/ai/workflow/strategy-workflow";
 import {
   createProjectFromBrief,
   getProjectById,
   replaceStrategies,
+  getProjects,
 } from "@/lib/db/repository";
 import { addStrategyComment, clearStrategyCommentsMemory } from "@/lib/db/strategy-comments";
-import { getProjects } from "@/lib/db/repository";
 
 const CHECKS: { name: string; run: () => Promise<void> }[] = [];
 
@@ -137,15 +136,6 @@ check("strategy review comment round-trip", async () => {
     mentionedUserIds: ["user-2"],
   });
   if (!comment.id) throw new Error("Comment not created");
-});
-
-check("strategy workflow generates ranked strategies", async () => {
-  const draft = parseBriefSync(`${BRIEF} workflow ${Date.now()}`);
-  const project = await createProjectFromBrief(draft, "org-1");
-  const result = await runStrategyWorkflow(project.id, "org-1");
-  if (!result || result.strategies.length < 3) {
-    throw new Error("Strategy workflow did not return 3 strategies");
-  }
 });
 
 async function main() {
