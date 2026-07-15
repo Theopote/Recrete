@@ -17,6 +17,11 @@ export async function getSessionUser() {
   };
 }
 
+export async function getCurrentUserId(): Promise<string | null> {
+  const user = await getSessionUser();
+  return user?.id ?? null;
+}
+
 export async function requireSession() {
   const user = await getSessionUser();
   if (!user) {

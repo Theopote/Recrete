@@ -235,6 +235,8 @@ The AI layer lives in `lib/ai/` (`model-router.ts`, providers, agents, LangChain
 | `npm run db:generate` | Generate Prisma client |
 | `npm run db:push` | Push schema to database |
 | `npm run db:seed` | Seed demo data |
+| `npm run db:verify` | DB acceptance checks (`USE_DATABASE=true`) |
+| `npm run db:acceptance` | Push schema + seed + verify (one command) |
 | `npm run test` | Run unit tests (Vitest) |
 | `npm run jobs:worker` | Start BullMQ worker (requires `REDIS_URL`) |
 
