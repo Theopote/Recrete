@@ -1,5 +1,8 @@
 import "server-only";
 
+import { shouldUseDatabase } from "@/lib/db/resolve";
+import * as db from "@/lib/db/prisma-analysis-tasks";
+
 export type AnalysisTaskPhase =
   | "queued"
   | "reading_file"
@@ -32,12 +35,22 @@ function now() {
   return new Date().toISOString();
 }
 
-export function createDocumentAnalysisTask(input: {
+function generateTaskId() {
+  return `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export async function createDocumentAnalysisTask(input: {
   projectId: string;
   documentId: string;
   documentName: string;
-}): DocumentAnalysisTask {
-  const id = `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  jobId?: string;
+}): Promise<DocumentAnalysisTask> {
+  const id = generateTaskId();
+
+  if (await shouldUseDatabase()) {
+    return db.createDbAnalysisTask({ id, ...input });
+  }
+
   const task: DocumentAnalysisTask = {
     id,
     projectId: input.projectId,
@@ -54,12 +67,16 @@ export function createDocumentAnalysisTask(input: {
   return task;
 }
 
-export function updateDocumentAnalysisTask(
+export async function updateDocumentAnalysisTask(
   taskId: string,
   patch: Partial<
     Pick<DocumentAnalysisTask, "status" | "phase" | "progress" | "message" | "error">
   >
-): DocumentAnalysisTask | null {
+): Promise<DocumentAnalysisTask | null> {
+  if (await shouldUseDatabase()) {
+    return db.updateDbAnalysisTask(taskId, patch);
+  }
+
   const task = tasks.get(taskId);
   if (!task) return null;
   const updated: DocumentAnalysisTask = {
@@ -71,7 +88,7 @@ export function updateDocumentAnalysisTask(
   return updated;
 }
 
-export function completeDocumentAnalysisTask(taskId: string, message = "Analysis complete") {
+export async function completeDocumentAnalysisTask(taskId: string, message = "Analysis complete") {
   return updateDocumentAnalysisTask(taskId, {
     status: "completed",
     phase: "completed",
@@ -80,7 +97,7 @@ export function completeDocumentAnalysisTask(taskId: string, message = "Analysis
   });
 }
 
-export function failDocumentAnalysisTask(taskId: string, error: string) {
+export async function failDocumentAnalysisTask(taskId: string, error: string) {
   return updateDocumentAnalysisTask(taskId, {
     status: "failed",
     phase: "failed",
@@ -89,7 +106,10 @@ export function failDocumentAnalysisTask(taskId: string, error: string) {
   });
 }
 
-export function getDocumentAnalysisTask(taskId: string): DocumentAnalysisTask | null {
+export async function getDocumentAnalysisTask(taskId: string): Promise<DocumentAnalysisTask | null> {
+  if (await shouldUseDatabase()) {
+    return db.getDbAnalysisTask(taskId);
+  }
   return tasks.get(taskId) ?? null;
 }
 
@@ -97,4 +117,8 @@ export function listDocumentAnalysisTasks(projectId: string): DocumentAnalysisTa
   return [...tasks.values()]
     .filter((t) => t.projectId === projectId)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function resetDocumentAnalysisTasks() {
+  tasks.clear();
 }

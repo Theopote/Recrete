@@ -1,7 +1,8 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getProjectById } from "@/lib/db/repository";
-import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
 import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
+import { enqueueDocumentIngestJob } from "@/lib/jobs/enqueue";
+import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
 
 export async function POST(
   request: Request,
@@ -21,19 +22,19 @@ export async function POST(
 
   if (asyncMode) {
     const doc = project.documents?.find((d) => d.id === docId);
-    const task = createDocumentAnalysisTask({
+    const task = await createDocumentAnalysisTask({
       projectId,
       documentId: docId,
       documentName: doc?.name ?? docId,
     });
 
-    after(async () => {
-      await runDocumentIngestWorkflow(projectId, docId, {
-        language,
-        createIssues,
-        refreshBuildingMemory,
-        taskId: task.id,
-      });
+    await enqueueDocumentIngestJob({
+      projectId,
+      documentId: docId,
+      taskId: task.id,
+      language,
+      createIssues,
+      refreshBuildingMemory,
     });
 
     return NextResponse.json({

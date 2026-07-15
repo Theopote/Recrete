@@ -218,6 +218,26 @@ enum DrawingType {
   unknown
 }
 
+enum BackgroundJobType {
+  document_ingest
+  bim_cad_conversion
+}
+
+enum BackgroundJobStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
+enum AnalysisTaskStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
 enum SourceEvidenceType {
   document
   photo
@@ -312,6 +332,8 @@ model Project {
   costRecords     ProjectCostRecord[]
   bimModels       BimModel[]
   drawingAssets   DrawingAsset[]
+  backgroundJobs  BackgroundJob[]
+  analysisTasks   DocumentAnalysisTaskRecord[]
 }
 
 model BuildingMemory {
@@ -640,4 +662,53 @@ model DrawingAsset {
   @@unique([documentId, pageNumber])
   @@index([projectId])
   @@index([drawingType])
+  analysisTasks DocumentAnalysisTaskRecord[]
+}
+
+/// Durable background job queue (replaces Next.js after() for async work)
+model BackgroundJob {
+  id          String              @id @default(cuid())
+  type        BackgroundJobType
+  status      BackgroundJobStatus @default(pending)
+  projectId   String?
+  payload     Json
+  result      Json?
+  error       String?             @db.Text
+  attempts    Int                 @default(0)
+  maxAttempts Int                 @default(3)
+  progress    Int                 @default(0)
+  phase       String?
+  message     String?
+  runAfter    DateTime            @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([status, runAfter])
+  @@index([projectId])
+}
+
+/// Persisted document analysis task progress (dual-mode with in-memory fallback)
+model DocumentAnalysisTaskRecord {
+  id           String             @id
+  projectId    String
+  documentId   String
+  documentName String
+  status       AnalysisTaskStatus @default(queued)
+  phase        String             @default("queued")
+  progress     Int                @default(0)
+  message      String?
+  error        String?            @db.Text
+  jobId        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  project  Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  document DocumentAsset @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([documentId])
 }

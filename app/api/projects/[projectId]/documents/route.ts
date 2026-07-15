@@ -1,9 +1,9 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getProjectById, addDocument } from "@/lib/db/repository";
 import { getCurrentUserId } from "@/lib/auth/session";
 import { saveUploadedFile } from "@/lib/storage/upload";
-import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
 import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
+import { enqueueDocumentIngestJob } from "@/lib/jobs/enqueue";
 
 export async function POST(
   request: Request,
@@ -42,14 +42,16 @@ export async function POST(
     const autoAnalyze = formData.get("autoAnalyze") !== "false";
     let analysisTaskId: string | undefined;
     if (autoAnalyze) {
-      const task = createDocumentAnalysisTask({
+      const task = await createDocumentAnalysisTask({
         projectId,
         documentId: doc.id,
         documentName: doc.name,
       });
       analysisTaskId = task.id;
-      after(async () => {
-        await runDocumentIngestWorkflow(projectId, doc.id, { taskId: task.id });
+      await enqueueDocumentIngestJob({
+        projectId,
+        documentId: doc.id,
+        taskId: task.id,
       });
     }
 
@@ -71,14 +73,16 @@ export async function POST(
   const autoAnalyze = body.autoAnalyze !== false;
   let analysisTaskId: string | undefined;
   if (autoAnalyze) {
-    const task = createDocumentAnalysisTask({
+    const task = await createDocumentAnalysisTask({
       projectId,
       documentId: doc.id,
       documentName: doc.name,
     });
     analysisTaskId = task.id;
-    after(async () => {
-      await runDocumentIngestWorkflow(projectId, doc.id, { taskId: task.id });
+    await enqueueDocumentIngestJob({
+      projectId,
+      documentId: doc.id,
+      taskId: task.id,
     });
   }
 

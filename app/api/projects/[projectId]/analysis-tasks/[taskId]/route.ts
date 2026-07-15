@@ -12,7 +12,7 @@ export async function GET(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const task = getDocumentAnalysisTask(taskId);
+  const task = await getDocumentAnalysisTask(taskId);
   if (!task || task.projectId !== projectId) {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }

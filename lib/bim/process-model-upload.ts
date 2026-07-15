@@ -1,15 +1,15 @@
-import { after } from "next/server";
 import { saveUploadedFile } from "@/lib/storage/upload";
 import { detectBimFormat } from "@/lib/bim/formats";
-import { convertCadBufferToSvg } from "@/lib/bim/dwg-converter";
 import {
   addBimModel,
   buildMetadata,
   updateBimModel,
 } from "@/lib/bim/bim-model-repository";
+import { enqueueBimCadConversionJob } from "@/lib/jobs/enqueue";
 import type { BimModel, BimModelFormat } from "@/types/bim";
 import { readFile } from "fs/promises";
 import path from "path";
+import { convertCadBufferToSvg } from "@/lib/bim/dwg-converter";
 
 function generateModelId() {
   return `bim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -27,7 +27,7 @@ async function readUploadedFile(fileUrl: string) {
   return readFile(filePath);
 }
 
-async function processCadConversion(
+export async function processCadConversion(
   projectId: string,
   modelId: string,
   fileUrl: string,
@@ -88,8 +88,11 @@ export async function createBimModelFromUpload(input: {
   await addBimModel(model);
 
   if (format === "dwg" || format === "dxf") {
-    after(async () => {
-      await processCadConversion(input.projectId, modelId, saved.fileUrl, format);
+    await enqueueBimCadConversionJob({
+      projectId: input.projectId,
+      modelId,
+      fileUrl: saved.fileUrl,
+      format,
     });
   }
 

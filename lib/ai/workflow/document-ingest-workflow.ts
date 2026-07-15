@@ -49,9 +49,9 @@ export async function runDocumentIngestWorkflow(
     taskId,
   } = options;
 
-  const touch = (phase: import("@/lib/ai/tasks/document-analysis-tasks").AnalysisTaskPhase, progress: number, message: string) => {
+  const touch = async (phase: import("@/lib/ai/tasks/document-analysis-tasks").AnalysisTaskPhase, progress: number, message: string) => {
     if (taskId) {
-      updateDocumentAnalysisTask(taskId, {
+      await updateDocumentAnalysisTask(taskId, {
         status: "processing",
         phase,
         progress,
@@ -61,7 +61,7 @@ export async function runDocumentIngestWorkflow(
   };
 
   try {
-  touch("reading_file", 10, "Reading document metadata");
+  await touch("reading_file", 10, "Reading document metadata");
 
   const project = await getProjectById(projectId);
   if (!project) return null;
@@ -73,7 +73,7 @@ export async function runDocumentIngestWorkflow(
     ? new Date().getFullYear() - project.constructionYear
     : undefined;
 
-  touch("vision_analysis", 35, "Running vision / document analysis");
+  await touch("vision_analysis", 35, "Running vision / document analysis");
 
   const analysis = await analyzeDocumentAsset(
     projectId,
@@ -82,7 +82,7 @@ export async function runDocumentIngestWorkflow(
     buildingAge
   );
 
-  touch("persisting", 70, "Saving analysis results and evidence");
+  await touch("persisting", 70, "Saving analysis results and evidence");
 
   const document = (await updateDocument(docId, {
     aiSummary: analysis.aiSummary,
@@ -145,7 +145,7 @@ export async function runDocumentIngestWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    touch("building_memory", 90, "Updating Building Memory");
+    await touch("building_memory", 90, "Updating Building Memory");
     buildingMemory = await updateBuildingMemory(projectId);
     await runConflictDetectionWorkflow(projectId, {
       refreshBuildingMemory: false,
@@ -154,7 +154,7 @@ export async function runDocumentIngestWorkflow(
   }
 
   if (taskId) {
-    completeDocumentAnalysisTask(taskId, `Analyzed ${doc.name} (${analysis.kind})`);
+    await completeDocumentAnalysisTask(taskId, `Analyzed ${doc.name} (${analysis.kind})`);
   }
 
   return {
@@ -167,7 +167,7 @@ export async function runDocumentIngestWorkflow(
   };
   } catch (error) {
     if (taskId) {
-      failDocumentAnalysisTask(
+      await failDocumentAnalysisTask(
         taskId,
         error instanceof Error ? error.message : "Document analysis failed"
       );
