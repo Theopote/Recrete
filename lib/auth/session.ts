@@ -1,19 +1,50 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/options";
+import "server-only";
 
-export async function getSession() {
-  return getServerSession(authOptions);
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
+import { authOptions } from "@/lib/auth/options";
+import { canPerformAction, type ProjectAction } from "@/lib/auth/permissions";
+import type { UserRole } from "@/types";
+
+export async function getSessionUser() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+  return {
+    id: session.user.id,
+    name: session.user.name ?? "User",
+    email: session.user.email ?? "",
+    role: (session.user.role as UserRole) ?? "viewer",
+  };
 }
 
 export async function requireSession() {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+  const user = await getSessionUser();
+  if (!user) {
+    return { user: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
-  return session;
+  return { user, error: null };
 }
 
-export async function getCurrentUserId(): Promise<string | null> {
-  const session = await getSession();
-  return session?.user?.id ?? null;
+export async function requireProjectAction(action: ProjectAction) {
+  const result = await requireSession();
+  if (result.error) return result;
+  if (!canPerformAction(result.user!.role, action)) {
+    return {
+      user: null,
+      error: NextResponse.json({ error: "Insufficient permissions" }, { status: 403 }),
+    };
+  }
+  return result;
+}
+
+export async function requireRoles(...roles: UserRole[]) {
+  const result = await requireSession();
+  if (result.error) return result;
+  if (!roles.includes(result.user!.role)) {
+    return {
+      user: null,
+      error: NextResponse.json({ error: "Insufficient permissions" }, { status: 403 }),
+    };
+  }
+  return result;
 }

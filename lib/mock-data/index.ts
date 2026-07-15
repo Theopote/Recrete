@@ -53,6 +53,24 @@ export const mockUsers: User[] = [
     createdAt: daysAgo(90),
     updatedAt: daysAgo(3),
   },
+  {
+    id: "user-4",
+    name: "Wang Fang",
+    email: "wang.fang@xian.gov.cn",
+    avatarUrl: null,
+    role: "owner",
+    createdAt: daysAgo(60),
+    updatedAt: daysAgo(4),
+  },
+  {
+    id: "user-5",
+    name: "Dr. Liu Ming",
+    email: "liu.ming@heritage.cn",
+    avatarUrl: null,
+    role: "consultant",
+    createdAt: daysAgo(45),
+    updatedAt: daysAgo(5),
+  },
 ];
 
 export const mockOrganization: Organization = {

@@ -4,6 +4,7 @@ import { SectionHeader } from "@/components/app/SectionHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettingsForm } from "@/components/settings/SettingsForm";
+import { AccountSettingsCard } from "@/components/settings/AccountSettingsCard";
 
 export default function SettingsPage() {
   const aiService = process.env.AI_SERVICE ?? "mock";
@@ -55,6 +56,8 @@ export default function SettingsPage() {
               </dl>
             </CardContent>
           </Card>
+
+          <AccountSettingsCard />
 
           <SettingsForm />
         </div>

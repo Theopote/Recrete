@@ -265,7 +265,10 @@ types/                  Shared TypeScript types
 ## Authentication
 
 - NextAuth.js with JWT sessions and a credentials provider
-- All routes except `/login` are protected by middleware
+- **Registration** at `/register` (default role: `viewer`)
+- **Password reset** at `/forgot-password` → `/reset-password?token=...`
+- **Account settings** at `/settings` — change password and view role permissions
+- All routes except `/login`, `/register`, `/forgot-password`, `/reset-password` are protected by middleware
 - With PostgreSQL enabled, users are validated against `User.passwordHash`
 
 ---

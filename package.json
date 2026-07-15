@@ -19,7 +19,8 @@
     "setup:bim-wasm": "node scripts/setup-bim-wasm.mjs",
     "knowledge:sync": "tsx scripts/sync-knowledge-pinecone.ts",
     "jobs:worker": "tsx scripts/job-worker.ts",
-    "db:verify": "tsx scripts/verify-db-acceptance.ts"
+    "db:verify": "tsx scripts/verify-db-acceptance.ts",
+    "db:acceptance": "tsx scripts/run-db-acceptance.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

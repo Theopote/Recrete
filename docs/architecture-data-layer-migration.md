@@ -212,6 +212,7 @@ USE_DATABASE=true npm run db:migrate-bim
 - [ ] **待 DB**：`npm run db:push` 同步 schema
 - [ ] **待 DB**：`USE_DATABASE=true` 下 BIM 上传与图纸分析写入 PostgreSQL
 - [ ] **待 DB**：`npm run db:migrate-bim` 成功导入现有 BIM 清单
+- [ ] **待 DB**：`USE_DATABASE=true npm run db:verify` 验收脚本全部通过
 - [ ] **待手动**：`USE_DATABASE=false` 下回归 BIM 上传、图纸分析、知识图谱 API
 
 ## 10. 实施记录

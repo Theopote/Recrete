@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { Building2 } from "lucide-react";
@@ -14,6 +15,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const registered = searchParams.get("registered");
+  const reset = searchParams.get("reset");
   const [email, setEmail] = useState("lin.wei@recrete.io");
   const [password, setPassword] = useState(DEMO_PASSWORD);
   const [error, setError] = useState("");
@@ -68,7 +71,12 @@ function LoginForm() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link href="/forgot-password" className="text-[10px] text-primary hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"
@@ -78,6 +86,12 @@ function LoginForm() {
                   className="h-9"
                 />
               </div>
+              {registered && (
+                <p className="text-xs text-emerald-500">Account created. Please sign in.</p>
+              )}
+              {reset && (
+                <p className="text-xs text-emerald-500">Password updated. Please sign in.</p>
+              )}
               {error && (
                 <p className="text-xs text-destructive">{error}</p>
               )}
@@ -86,11 +100,18 @@ function LoginForm() {
               </Button>
             </form>
 
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              No account?{" "}
+              <Link href="/register" className="text-primary hover:underline">Create one</Link>
+            </p>
+
             <div className="mt-6 rounded-md bg-muted/50 p-3 text-[10px] text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">Demo accounts</p>
               <p>lin.wei@recrete.io — Architect</p>
               <p>chen.hao@recrete.io — Engineer</p>
               <p>zhang.mei@recrete.io — Project Manager</p>
+              <p>wang.fang@xian.gov.cn — Owner</p>
+              <p>liu.ming@heritage.cn — Heritage Consultant</p>
               <p className="pt-1">Password: <code className="bg-muted px-1 rounded">{DEMO_PASSWORD}</code></p>
             </div>
           </CardContent>

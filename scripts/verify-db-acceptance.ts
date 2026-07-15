@@ -114,6 +114,13 @@ check("DrawingAsset upsert/read", async () => {
   await prisma.drawingAsset.delete({ where: { id: record.id } });
 });
 
+check("seeded users present", async () => {
+  const count = await prisma.user.count();
+  if (count < 5) {
+    throw new Error(`Expected at least 5 seeded users, found ${count}`);
+  }
+});
+
 check("BackgroundJob enqueue/process", async () => {
   const projectId = await getDemoProjectId();
   const documentId = await getDemoDocumentId(projectId);
