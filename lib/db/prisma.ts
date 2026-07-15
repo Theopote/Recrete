@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { assertDatabaseModeForProduction } from "@/lib/db/resolve";
+
+assertDatabaseModeForProduction();
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
