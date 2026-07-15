@@ -46,6 +46,11 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     targetLoad: "",
   });
 
+  const [complianceMeta, setComplianceMeta] = useState<{
+    scenarios?: string[];
+    applicableCodes?: Array<{ code: string; nameZh: string; category: string }>;
+  } | null>(null);
+
   const [complianceInput, setComplianceInput] = useState({
     ceilingHeight: "",
     stairWidth: "",
@@ -99,9 +104,21 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     }
   };
 
+  const loadComplianceMeta = async () => {
+    const res = await fetch(`/api/projects/${project.id}/compliance`);
+    if (res.ok) {
+      const data = await res.json();
+      setComplianceMeta({
+        scenarios: data.scenarios,
+        applicableCodes: data.applicableCodes,
+      });
+    }
+  };
+
   const runCompliance = async () => {
     setComplianceLoading(true);
     try {
+      if (!complianceMeta) await loadComplianceMeta();
       const res = await fetch(`/api/projects/${project.id}/experts/compliance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -286,17 +303,40 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   };
 
   const report = complianceResult?.report as {
+    engineVersion?: string;
     overallCompliance?: string;
+    scenarios?: string[];
+    climateZone?: string;
+    summary?: {
+      total: number;
+      compliant: number;
+      nonCompliant: number;
+      requiresVerification: number;
+    };
+    applicableCodes?: Array<{ code: string; nameZh: string; category: string }>;
     checks?: Array<{
+      ruleId: string;
       requirement: string;
+      requirementZh?: string;
       status: string;
       code: string;
+      section?: string;
       priority: string;
       note: string;
+      noteZh?: string;
+      remediation?: string;
+      requiredValue?: string;
+      actualValue?: string;
     }>;
     criticalIssues?: string[];
     recommendations?: string[];
   } | undefined;
+
+  const statusColor = (status: string) => {
+    if (status === "compliant") return "border-green-300 text-green-700";
+    if (status === "non_compliant") return "border-destructive text-destructive";
+    return "border-amber-300 text-amber-700";
+  };
 
   return (
     <div className="space-y-6">
@@ -320,7 +360,10 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           variant={activeTab === "compliance" ? "default" : "outline"}
           size="sm"
           className="text-xs gap-1.5"
-          onClick={() => setActiveTab("compliance")}
+          onClick={() => {
+            setActiveTab("compliance");
+            if (!complianceMeta) void loadComplianceMeta();
+          }}
         >
           <ShieldCheck className="h-3.5 w-3.5" /> Compliance
         </Button>
@@ -501,9 +544,29 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
 
       {activeTab === "compliance" && (
         <div className="space-y-4">
+          {complianceMeta && (
+            <Card>
+              <CardContent className="p-4 space-y-2 text-xs">
+                <p className="font-medium">Applicable codes · 适用规范</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {complianceMeta.applicableCodes?.map((c) => (
+                    <Badge key={c.code} variant="outline" className="text-[10px]">
+                      {c.code} {c.nameZh}
+                    </Badge>
+                  ))}
+                </div>
+                {complianceMeta.scenarios && complianceMeta.scenarios.length > 0 && (
+                  <p className="text-muted-foreground">
+                    Scenarios: {complianceMeta.scenarios.join(", ")}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Compliance Review Agent</CardTitle>
+              <CardTitle className="text-sm">Compliance Engine · 合规引擎</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -575,23 +638,74 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           {report && (
             <Card>
               <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs text-muted-foreground">Overall</span>
                   <Badge variant="outline" className="text-[10px] uppercase">
                     {report.overallCompliance}
                   </Badge>
+                  {report.climateZone && (
+                    <Badge variant="outline" className="text-[10px]">
+                      Climate: {report.climateZone}
+                    </Badge>
+                  )}
+                  {report.engineVersion && (
+                    <Badge variant="outline" className="text-[10px]">
+                      Engine v{report.engineVersion}
+                    </Badge>
+                  )}
                 </div>
+
+                {report.summary && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                    <div className="border rounded-md p-2">
+                      <p className="text-muted-foreground">Total</p>
+                      <p className="font-semibold">{report.summary.total}</p>
+                    </div>
+                    <div className="border rounded-md p-2 border-green-200">
+                      <p className="text-muted-foreground">Compliant</p>
+                      <p className="font-semibold">{report.summary.compliant}</p>
+                    </div>
+                    <div className="border rounded-md p-2 border-destructive/30">
+                      <p className="text-muted-foreground">Non-compliant</p>
+                      <p className="font-semibold">{report.summary.nonCompliant}</p>
+                    </div>
+                    <div className="border rounded-md p-2 border-amber-200">
+                      <p className="text-muted-foreground">Verify</p>
+                      <p className="font-semibold">{report.summary.requiresVerification}</p>
+                    </div>
+                  </div>
+                )}
+
                 {report.checks && (
                   <div className="space-y-2">
                     {report.checks.map((c) => (
-                      <div key={c.requirement} className="text-xs border rounded-md p-2">
+                      <div key={c.ruleId} className="text-xs border rounded-md p-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium">{c.requirement}</span>
-                          <Badge variant="outline" className="text-[10px]">
-                            {c.status}
-                          </Badge>
+                          <span className="font-medium">
+                            {c.requirementZh ?? c.requirement}
+                          </span>
+                          <div className="flex gap-1">
+                            <Badge variant="outline" className={`text-[10px] ${statusColor(c.status)}`}>
+                              {c.status}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px]">
+                              {c.priority}
+                            </Badge>
+                          </div>
                         </div>
-                        <p className="text-muted-foreground mt-1">{c.code} — {c.note}</p>
+                        <p className="text-muted-foreground mt-1">
+                          {c.code}
+                          {c.section ? ` §${c.section}` : ""} — {c.noteZh ?? c.note}
+                        </p>
+                        {(c.requiredValue || c.actualValue) && (
+                          <p className="text-muted-foreground mt-0.5">
+                            Required: {c.requiredValue}
+                            {c.actualValue ? ` · Actual: ${c.actualValue}` : ""}
+                          </p>
+                        )}
+                        {c.remediation && (
+                          <p className="text-muted-foreground mt-0.5">→ {c.remediation}</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -601,6 +715,16 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     <p className="text-xs font-medium text-destructive mb-1">Critical issues</p>
                     <ul className="text-xs text-muted-foreground space-y-1">
                       {report.criticalIssues.map((i) => (
+                        <li key={i}>• {i}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {report.recommendations && report.recommendations.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium mb-1">Recommendations</p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      {report.recommendations.slice(0, 5).map((i) => (
                         <li key={i}>• {i}</li>
                       ))}
                     </ul>

@@ -44,6 +44,8 @@ export const API_ACTION_GUARDS: Record<string, ProjectAction> = {
   "POST /api/projects/*/reports/generate": "publish_report",
   "POST /api/projects/*/diagnosis/generate": "run_ai_analysis",
   "POST /api/projects/*/diagnosis": "run_ai_analysis",
+  "POST /api/projects/*/compliance": "run_ai_analysis",
+  "POST /api/projects/*/experts/compliance": "run_ai_analysis",
   "POST /api/projects/*/survey/analyze": "run_ai_analysis",
   "POST /api/projects/*/knowledge-graph": "run_ai_analysis",
   "POST /api/projects/*/collaboration/reviews/*": "manage_collaboration",

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { ProjectWithRelations, DiagnosisItem } from "@/types";
 import { complianceAgent } from "../agents/compliance-agent";
+import { runComplianceEngine, type ComplianceMeasurements } from "./engine";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
 import { isLangChainEnabled } from "../langchain/chains";
 import { runComplianceHybridChain } from "../langchain/compliance-chain";
@@ -22,10 +23,11 @@ function dedupeDiagnosis(
  * Rule engine first, then RAG + LLM for gaps (hybrid compliance reasoning).
  */
 export async function generateComplianceDiagnosisHybrid(
-  project: ProjectWithRelations
+  project: ProjectWithRelations,
+  measurements?: ComplianceMeasurements
 ): Promise<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]> {
-  const checkResult = await complianceAgent.performComplianceCheck(project);
-  const ruleItems = await complianceAgent.generateComplianceDiagnosis(project);
+  const checkResult = runComplianceEngine(project, { measurements });
+  const ruleItems = await complianceAgent.generateComplianceDiagnosis(project, measurements);
 
   if (!isLangChainEnabled()) {
     return ruleItems;
