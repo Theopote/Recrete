@@ -127,6 +127,7 @@ Open [http://localhost:3000](http://localhost:3000). You will be redirected to t
 | `zhang.mei@recrete.io` | Project Manager |
 | `wang.fang@xian.gov.cn` | Owner (甲方) |
 | `liu.ming@heritage.cn` | Heritage Consultant |
+| `test.other@recrete.io` | Architect (org-2 isolation test) |
 
 Password for all demo accounts: `recrete2026`
 
@@ -172,6 +173,8 @@ AI_SERVICE="mock"
 
 ## PostgreSQL Persistence
 
+> **Firm trials require database mode.** In-memory mock data resets on restart.
+
 ```bash
 # Start PostgreSQL via Docker
 npm run db:up
@@ -179,10 +182,19 @@ npm run db:up
 # Enable database mode in .env
 USE_DATABASE="true"
 
-# Push schema and seed
+# One-command acceptance: push schema + seed + verify
+npm run db:acceptance
+```
+
+Manual steps:
+
+```bash
 npm run db:push
 npm run db:seed
+USE_DATABASE=true npm run db:verify
 ```
+
+Deploy to Vercel + hosted Postgres: see [docs/deployment.md](docs/deployment.md).
 
 The repository layer (`lib/db/repository.ts`) automatically selects:
 

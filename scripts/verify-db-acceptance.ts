@@ -10,7 +10,10 @@ import { addBimModel, getBimModel, listBimModels } from "@/lib/db/bim-models";
 import { upsertDrawingAsset, listDrawingAssetsByProject } from "@/lib/db/drawing-assets";
 import { enqueueJob, getJob } from "@/lib/jobs/jobs-store";
 import { processJobById } from "@/lib/jobs/processor";
+import { saveComplianceRun } from "@/lib/db/compliance-store";
+import { runComplianceEngine } from "@/lib/ai/compliance";
 import type { BimModel } from "@/types/bim";
+import type { ProjectWithRelations } from "@/types";
 
 const CHECKS: { name: string; run: () => Promise<void> }[] = [];
 
@@ -116,9 +119,79 @@ check("DrawingAsset upsert/read", async () => {
 
 check("seeded users present", async () => {
   const count = await prisma.user.count();
-  if (count < 5) {
-    throw new Error(`Expected at least 5 seeded users, found ${count}`);
+  if (count < 6) {
+    throw new Error(`Expected at least 6 seeded users, found ${count}`);
   }
+});
+
+check("users belong to organizations", async () => {
+  const users = await prisma.user.findMany();
+  for (const user of users) {
+    const org = await prisma.organization.findUnique({ where: { id: user.organizationId } });
+    if (!org) {
+      throw new Error(`User ${user.email} references missing organization ${user.organizationId}`);
+    }
+  }
+  const org2User = await prisma.user.findUnique({ where: { email: "test.other@recrete.io" } });
+  if (!org2User || org2User.organizationId !== "org-2") {
+    throw new Error("org-2 test user not seeded correctly");
+  }
+});
+
+check("two organizations and tenant-scoped projects", async () => {
+  const orgCount = await prisma.organization.count();
+  if (orgCount < 2) {
+    throw new Error(`Expected 2 organizations, found ${orgCount}`);
+  }
+
+  const org1Projects = await prisma.project.findMany({ where: { organizationId: "org-1" } });
+  const org2Projects = await prisma.project.findMany({ where: { organizationId: "org-2" } });
+
+  if (!org1Projects.some((p) => p.code === "RC-XA-1986-001")) {
+    throw new Error("Demo project RC-XA-1986-001 not found under org-1");
+  }
+  if (!org2Projects.some((p) => p.id === "proj-org2")) {
+    throw new Error("proj-org2 not found under org-2");
+  }
+
+  const crossLeak = await prisma.project.findFirst({
+    where: { id: "proj-demo", organizationId: "org-2" },
+  });
+  if (crossLeak) {
+    throw new Error("proj-demo incorrectly associated with org-2");
+  }
+});
+
+check("ComplianceCheckRun persistence", async () => {
+  const project = await prisma.project.findFirst({ where: { code: "RC-XA-1986-001" } });
+  if (!project) throw new Error("Demo project missing");
+
+  const demoProject = {
+    ...project,
+    building: null,
+  } as ProjectWithRelations;
+
+  const report = runComplianceEngine(demoProject, {
+    measurements: { stairWidth: 1.3, hasAccessibleEntrance: true },
+  });
+
+  const run = await saveComplianceRun({
+    projectId: project.id,
+    report,
+    measurements: { stairWidth: 1.3 },
+  });
+
+  const row = await prisma.complianceCheckRun.findUnique({
+    where: { id: run.id },
+    include: { checks: true },
+  });
+
+  if (!row || row.checks.length === 0) {
+    throw new Error("ComplianceCheckRun or child checks not persisted");
+  }
+
+  await prisma.complianceCheckRecord.deleteMany({ where: { runId: run.id } });
+  await prisma.complianceCheckRun.delete({ where: { id: run.id } });
 });
 
 check("BackgroundJob enqueue/process", async () => {

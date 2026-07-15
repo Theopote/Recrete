@@ -21,6 +21,8 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
+  await prisma.complianceCheckRecord.deleteMany();
+  await prisma.complianceCheckRun.deleteMany();
   await prisma.aIConversation.deleteMany();
   await prisma.passwordResetToken.deleteMany();
   await prisma.backgroundJob.deleteMany();
@@ -37,12 +39,12 @@ async function main() {
   await prisma.organization.deleteMany();
   await prisma.user.deleteMany();
 
+  await prisma.organization.create({ data: mockOrganization });
+  await prisma.organization.create({ data: mockOrganization2 });
+
   for (const user of mockUsers) {
     await prisma.user.create({ data: { ...user, passwordHash } });
   }
-
-  await prisma.organization.create({ data: mockOrganization });
-  await prisma.organization.create({ data: mockOrganization2 });
 
   for (const project of mockProjects) {
     await prisma.project.create({ data: project });
@@ -74,6 +76,8 @@ async function main() {
 
   console.log("Seed completed.");
   console.log(`Demo password for all users: ${DEMO_PASSWORD}`);
+  console.log("Organizations: org-1 (Recrete Studio), org-2 (Northern Heritage Studio)");
+  console.log("Cross-tenant test: test.other@recrete.io → org-2 only (proj-org2)");
 }
 
 main()
