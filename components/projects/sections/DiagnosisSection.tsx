@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { diagnosisCategoryLabels } from "@/lib/utils/labels";
 import type { DiagnosisItem, ProjectWithRelations } from "@/types";
 import { Sparkles, Stethoscope, Plus } from "lucide-react";
+import { RoleGate } from "@/components/auth/RoleGate";
 
 interface DiagnosisSectionProps {
   project: ProjectWithRelations;
@@ -73,16 +74,18 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         title="Building Diagnosis"
         description="AI-assisted condition assessment grouped by discipline"
         action={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={openCreate}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Add Item
-            </Button>
-            <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              {isGenerating ? "Generating..." : "Generate AI Diagnosis"}
-            </Button>
-          </div>
+          <RoleGate action="run_ai_analysis">
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={openCreate}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add Item
+              </Button>
+              <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                {isGenerating ? "Generating..." : "Generate AI Diagnosis"}
+              </Button>
+            </div>
+          </RoleGate>
         }
       />
 

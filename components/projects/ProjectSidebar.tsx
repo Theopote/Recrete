@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { ProjectSection } from "@/types";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   LayoutDashboard,
   Brain,
@@ -17,6 +17,7 @@ import {
   Box,
   Users,
 } from "lucide-react";
+import type { ProjectSection } from "@/types";
 
 const sections: {
   id: ProjectSection;
@@ -41,6 +42,8 @@ interface ProjectSidebarProps {
 }
 
 export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
+  const { canAccessSection } = usePermissions();
+  const visibleSections = sections.filter((s) => canAccessSection(s.id));
   const searchParams = useSearchParams();
   const rawSection = searchParams.get("section") as ProjectSection | null;
   const legacyMap: Record<string, ProjectSection> = {
@@ -57,7 +60,7 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
   return (
     <aside className="w-48 shrink-0 border-r bg-muted/30 p-3">
       <nav className="space-y-0.5">
-        {sections.map((section) => {
+        {visibleSections.map((section) => {
           const href = `/projects/${projectId}?section=${section.id}`;
           const isActive = currentSection === section.id;
 

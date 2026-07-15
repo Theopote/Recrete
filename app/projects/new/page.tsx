@@ -15,12 +15,14 @@ import {
   INITIAL_STREAM_STATE,
   type StreamState,
 } from "@/components/projects/AICreateStreamPanel";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const EXAMPLE_BRIEF =
   "我有一栋 1986 年建成的混凝土框架办公楼，位于西安，原本是政府办公，现在想改成社区文化中心，预算有限，希望保留主体结构。";
 
 function CreateProjectContent() {
   const router = useRouter();
+  const { can, isLoading } = usePermissions();
   const searchParams = useSearchParams();
   const [brief, setBrief] = useState(searchParams.get("brief") ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -73,6 +75,25 @@ function CreateProjectContent() {
   };
 
   const showStream = isGenerating || streamState.items.length > 0 || streamState.error;
+
+  if (!isLoading && !can("edit_profile")) {
+    return (
+      <AppShell>
+        <TopBar title="AI Create Project" subtitle="Access restricted" />
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="mx-auto max-w-lg rounded-lg border border-dashed p-8 text-center space-y-3">
+            <p className="text-sm font-medium">Project creation not available</p>
+            <p className="text-xs text-muted-foreground">
+              Your account role does not include permission to create projects. Contact a project manager.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => router.push("/projects")}>
+              Back to Projects
+            </Button>
+          </div>
+        </main>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

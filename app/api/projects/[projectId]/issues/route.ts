@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { addIssue } from "@/lib/db/repository";
 import { siteIssueSchema } from "@/lib/validators/project";
+import { guardOrRespond } from "@/lib/auth/api-guard";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const denied = await guardOrRespond("POST", "/api/projects/*/issues");
+  if (denied) return denied;
+
   const { projectId } = await params;
   try {
     const body = await request.json();

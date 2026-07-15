@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { IssueCard } from "@/components/issues/IssueCard";
 import { CreateIssueForm } from "@/components/issues/CreateIssueForm";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import type { ProjectWithRelations, IssueStatus, SiteIssue } from "@/types";
@@ -39,7 +40,11 @@ export function IssuesSection({ project: initialProject }: IssuesSectionProps) {
       <SectionHeader
         title="Site Issue Tracker"
         description="Track and manage on-site findings and construction issues"
-        action={<CreateIssueForm projectId={initialProject.id} onCreated={handleCreated} />}
+        action={
+          <RoleGate action="manage_issues">
+            <CreateIssueForm projectId={initialProject.id} onCreated={handleCreated} />
+          </RoleGate>
+        }
       />
 
       {issues.length > 0 ? (

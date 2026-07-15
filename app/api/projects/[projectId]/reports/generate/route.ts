@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { getProjectById } from "@/lib/db/repository";
 import { runReportWorkflow } from "@/lib/ai/workflow/report-workflow";
 import type { ReportType } from "@/types";
+import { guardOrRespond } from "@/lib/auth/api-guard";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const denied = await guardOrRespond("POST", "/api/projects/*/reports/generate");
+  if (denied) return denied;
+
   const { projectId } = await params;
   const project = await getProjectById(projectId);
   if (!project) {

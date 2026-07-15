@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createProject, getProjects } from "@/lib/db/repository";
 import { createProjectSchema } from "@/lib/validators/project";
+import { guardOrRespond } from "@/lib/auth/api-guard";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,6 +16,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const denied = await guardOrRespond("POST", "/api/projects");
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const parsed = createProjectSchema.parse(body);

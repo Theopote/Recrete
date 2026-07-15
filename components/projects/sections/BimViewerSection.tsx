@@ -12,6 +12,7 @@ import { SAMPLE_IFC_URL } from "@/lib/bim/formats";
 import type { BimModel } from "@/types/bim";
 import type { ProjectWithRelations } from "@/types";
 import { Box, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { BimSpatialAnalyticsPanel } from "@/components/bim/BimSpatialAnalyticsPanel";
 import { IfcLightweightProcessor } from "@/components/bim/IfcLightweightProcessor";
 
@@ -183,7 +184,9 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
               <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-            <BimModelUploadButton projectId={project.id} onUploaded={handleUploaded} />
+            <RoleGate action="upload_documents">
+              <BimModelUploadButton projectId={project.id} onUploaded={handleUploaded} />
+            </RoleGate>
           </div>
         }
       />
@@ -363,7 +366,9 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
         </div>
       </div>
 
-      <BimModelUpload projectId={project.id} onUploaded={handleUploaded} />
+      <RoleGate action="upload_documents">
+        <BimModelUpload projectId={project.id} onUploaded={handleUploaded} />
+      </RoleGate>
     </div>
   );
 }

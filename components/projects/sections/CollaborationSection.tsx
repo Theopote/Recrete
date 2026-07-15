@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Handshake,
 } from "lucide-react";
+import { RoleGate } from "@/components/auth/RoleGate";
 
 const PARTY_LABELS: Record<StakeholderParty, string> = {
   owner: "甲方 / Owner",
@@ -249,9 +250,11 @@ function ReviewCard({
                   ) : (
                     <>
                       <span className="text-muted-foreground">Pending</span>
-                      <Button variant="outline" size="sm" className="h-6 text-[10px]" onClick={() => onApprove(a.party)}>
-                        Approve
-                      </Button>
+                      <RoleGate anyOf={["approve_strategy", "manage_collaboration"]}>
+                        <Button variant="outline" size="sm" className="h-6 text-[10px]" onClick={() => onApprove(a.party)}>
+                          Approve
+                        </Button>
+                      </RoleGate>
                     </>
                   )}
                 </div>

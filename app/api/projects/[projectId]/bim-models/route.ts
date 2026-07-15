@@ -3,6 +3,7 @@ import { getProjectById } from "@/lib/db/repository";
 import { getCurrentUserId } from "@/lib/auth/session";
 import { listBimModels } from "@/lib/bim/bim-model-repository";
 import { createBimModelFromUpload } from "@/lib/bim/process-model-upload";
+import { guardOrRespond } from "@/lib/auth/api-guard";
 
 export async function GET(
   _request: Request,
@@ -22,6 +23,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const denied = await guardOrRespond("POST", "/api/projects/*/bim-models");
+  if (denied) return denied;
+
   const { projectId } = await params;
   const project = await getProjectById(projectId);
   if (!project) {

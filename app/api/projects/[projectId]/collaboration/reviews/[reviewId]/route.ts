@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth/options";
 import { canApproveReview } from "@/lib/auth/permissions";
 import { addReviewComment, updateReviewApproval } from "@/lib/db/collaboration-store";
+import { guardOrRespond } from "@/lib/auth/api-guard";
 import type { UserRole } from "@/types";
 import type { StakeholderParty } from "@/types/collaboration";
 
@@ -42,6 +43,9 @@ export async function POST(
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const denied = await guardOrRespond("POST", "/api/projects/*/collaboration/reviews/*");
+  if (denied) return denied;
 
   const { projectId, reviewId } = await params;
   const body = await request.json();

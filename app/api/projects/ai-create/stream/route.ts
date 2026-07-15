@@ -3,12 +3,16 @@ import {
   streamProjectCreation,
   type AICreateStreamEvent,
 } from "@/lib/ai/agents/project-creation-stream";
+import { guardOrRespond } from "@/lib/auth/api-guard";
 
 const schema = z.object({
   brief: z.string().min(20, "Please describe your building and renovation goals in at least one sentence."),
 });
 
 export async function POST(request: Request) {
+  const denied = await guardOrRespond("POST", "/api/projects/ai-create/stream");
+  if (denied) return denied;
+
   let brief: string;
 
   try {

@@ -161,7 +161,12 @@ AI_SERVICE="mock"
 | `NEXTAUTH_URL` | App URL for NextAuth |
 | `NEXTAUTH_SECRET` | Session encryption secret (change in production) |
 | `AI_SERVICE` | `mock` (default) or `openai` |
-| `OPENAI_API_KEY` | Required when `AI_SERVICE=openai` |
+| `JOB_RUNNER_SECRET` | Secret for internal job runner API |
+| `SMTP_HOST` | SMTP server for password reset emails (optional in dev) |
+| `SMTP_PORT` | SMTP port (default `587`) |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASSWORD` | SMTP password |
+| `SMTP_FROM` | From address for outbound email |
 
 ---
 
@@ -270,6 +275,8 @@ types/                  Shared TypeScript types
 - **Registration** at `/register` (default role: `viewer`)
 - **Password reset** at `/forgot-password` → `/reset-password?token=...`
 - **Account settings** at `/settings` — change password and view role permissions
+- **RBAC** — sidebar, project sections, and action buttons hidden by role; mutating APIs return 403 when unauthorized
+- **Password reset email** — configure SMTP in `.env` (falls back to dev console link when unset)
 - All routes except `/login`, `/register`, `/forgot-password`, `/reset-password` are protected by middleware
 - With PostgreSQL enabled, users are validated against `User.passwordHash`
 

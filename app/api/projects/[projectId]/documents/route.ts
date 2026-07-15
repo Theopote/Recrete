@@ -4,11 +4,15 @@ import { getCurrentUserId } from "@/lib/auth/session";
 import { saveUploadedFile } from "@/lib/storage/upload";
 import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
 import { enqueueDocumentIngestJob } from "@/lib/jobs/enqueue";
+import { guardOrRespond } from "@/lib/auth/api-guard";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const denied = await guardOrRespond("POST", "/api/projects/*/documents");
+  if (denied) return denied;
+
   const { projectId } = await params;
   const project = await getProjectById(projectId);
   if (!project) {

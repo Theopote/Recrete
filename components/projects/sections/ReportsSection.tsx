@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { reportTypeLabels } from "@/lib/utils/labels";
 import type { ProjectWithRelations, Report, ReportType } from "@/types";
 import { FileText, Sparkles } from "lucide-react";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { formatDate } from "@/lib/utils";
 
 interface ReportsSectionProps {
@@ -53,21 +54,23 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
         title="Reports"
         description="Generate structured Markdown reports from project data"
         action={
-          <div className="flex gap-2">
-            <Select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as ReportType)}
-              className="w-56 h-8 text-xs"
-            >
-              {Object.entries(reportTypeLabels).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </Select>
-            <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              {isGenerating ? "Generating..." : "Generate Report"}
-            </Button>
-          </div>
+          <RoleGate action="publish_report">
+            <div className="flex gap-2">
+              <Select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value as ReportType)}
+                className="w-56 h-8 text-xs"
+              >
+                {Object.entries(reportTypeLabels).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </Select>
+              <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                {isGenerating ? "Generating..." : "Generate Report"}
+              </Button>
+            </div>
+          </RoleGate>
         }
       />
 

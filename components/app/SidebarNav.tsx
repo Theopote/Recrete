@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   Sparkles,
   FolderKanban,
@@ -32,6 +33,9 @@ const navItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { canAccessRoute } = usePermissions();
+
+  const visibleItems = navItems.filter((item) => canAccessRoute(item.href));
 
   return (
     <aside className="flex h-full w-56 flex-col border-r border-border/80 bg-card/95 shadow-[12px_0_36px_-30px_black] shrink-0">
@@ -48,7 +52,7 @@ export function SidebarNav() {
       </div>
 
       <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));

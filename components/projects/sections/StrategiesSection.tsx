@@ -14,6 +14,7 @@ import type { StrategyLabParams } from "@/types/ai";
 import { StrategyRankingPanel } from "@/components/strategies/StrategyRankingPanel";
 import { StrategySpatialCompareSection } from "@/components/strategies/StrategySpatialCompareSection";
 import { SimilarCasesPanel } from "@/components/ai/SimilarCasesPanel";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { Lightbulb, Sparkles, GitCompare } from "lucide-react";
 
 interface StrategiesSectionProps {
@@ -66,7 +67,9 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         descriptionZh="一键生成轻介入、中度重组、深度再造三套方案，并自动比较成本、风险、工期与可实施性。"
         action={
           <div className="flex flex-wrap gap-2">
-            <CreateStrategyForm projectId={project.id} onCreated={handleCreated} />
+            <RoleGate action="create_strategy">
+              <CreateStrategyForm projectId={project.id} onCreated={handleCreated} />
+            </RoleGate>
             <Button
               variant="outline"
               size="sm"
@@ -75,10 +78,12 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
               <GitCompare className="h-3.5 w-3.5 mr-1.5" />
               {showComparison ? "Hide" : "Show"} Comparison
             </Button>
-            <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              {isGenerating ? "Generating..." : "Generate Strategies"}
-            </Button>
+            <RoleGate action="create_strategy">
+              <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                {isGenerating ? "Generating..." : "Generate Strategies"}
+              </Button>
+            </RoleGate>
           </div>
         }
       />
