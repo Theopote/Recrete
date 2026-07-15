@@ -1,16 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { TopBar } from "@/components/app/TopBar";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { DocumentCard } from "@/components/documents/DocumentCard";
 import { MetricCard } from "@/components/app/MetricCard";
+import { getSessionUser } from "@/lib/auth/session";
 import { getAllDocuments, getProjects } from "@/lib/db/repository";
 import { documentCategoryLabels } from "@/lib/utils/labels";
 import { FileText, Camera, Layers, ExternalLink } from "lucide-react";
 
 export default async function SurveyPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+
   const documents = await getAllDocuments();
-  const projects = await getProjects();
+  const projects = await getProjects(user.organizationId);
   const surveyProjects = projects.filter((p) => p.status === "survey" || p.status === "diagnosis");
 
   const categoryCounts = Object.keys(documentCategoryLabels).map((cat) => ({

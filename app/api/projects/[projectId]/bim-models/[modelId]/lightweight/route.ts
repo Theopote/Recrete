@@ -1,12 +1,12 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
 import {
   buildMetadata,
   getBimModel,
   updateBimModel,
 } from "@/lib/bim/bim-model-repository";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import type { BimModelMetadata } from "@/types/bim";
 
 export async function POST(
@@ -14,10 +14,8 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string; modelId: string }> }
 ) {
   const { projectId, modelId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
 
   const model = await getBimModel(projectId, modelId);
   if (!model) {

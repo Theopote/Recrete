@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
 import { getCurrentUserId } from "@/lib/auth/session";
 import { listBimModels } from "@/lib/bim/bim-model-repository";
 import { createBimModelFromUpload } from "@/lib/bim/process-model-upload";
 import { guardOrRespond } from "@/lib/auth/api-guard";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
 
   const models = await listBimModels(projectId);
   return NextResponse.json({ models });
@@ -23,14 +21,12 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const { projectId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+
   const denied = await guardOrRespond("POST", "/api/projects/*/bim-models");
   if (denied) return denied;
-
-  const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
 
   const userId = await getCurrentUserId();
   const formData = await request.formData();

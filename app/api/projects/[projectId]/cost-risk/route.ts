@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { getProjectById, replaceInsightsBySourceType, addAnalysisRun } from "@/lib/db/repository";
+import { replaceInsightsBySourceType, addAnalysisRun } from "@/lib/db/repository";
 import { getAIPlatform } from "@/lib/ai";
 import type { AIInsight } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
+import { requireProjectAccess } from "@/lib/auth/authorize";
+
 type InsightDraft = Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">;
 
 export async function POST(
@@ -10,10 +12,9 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { project } = access;
 
   const strategies = project.strategies ?? [];
   const platform = getAIPlatform();

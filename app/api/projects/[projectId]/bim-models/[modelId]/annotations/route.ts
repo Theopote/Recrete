@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth/options";
 import { canPerformAction } from "@/lib/auth/permissions";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import {
   createSpatialAnnotation,
   listSpatialAnnotations,
 } from "@/lib/bim/spatial-annotation-store";
-import type { UserRole } from "@/types";
 
 const createSchema = z.object({
   roomId: z.string().optional().nullable(),
@@ -23,12 +21,10 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ projectId: string; modelId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { projectId, modelId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+
   const annotations = await listSpatialAnnotations(projectId, modelId);
   return NextResponse.json({ annotations });
 }
@@ -37,17 +33,15 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string; modelId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { projectId, modelId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { user } = access;
 
-  const role = (session.user.role as UserRole) ?? "viewer";
-  if (!canPerformAction(role, "manage_collaboration") && !canPerformAction(role, "upload_documents")) {
+  if (!canPerformAction(user.role, "manage_collaboration") && !canPerformAction(user.role, "upload_documents")) {
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
 
-  const { projectId, modelId } = await params;
   const body = await request.json();
   const parsed = createSchema.parse(body);
 
@@ -59,8 +53,8 @@ export async function POST(
     category: parsed.category,
     title: parsed.title,
     content: parsed.content,
-    authorId: session.user.id ?? "unknown",
-    authorName: session.user.name ?? "Unknown",
+    authorId: user.id,
+    authorName: user.name,
     authorParty: parsed.authorParty ?? null,
     position: parsed.position ?? null,
   });

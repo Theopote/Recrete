@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 import { shouldUseDatabase } from "@/lib/db/resolve";
 import { mapUser } from "@/lib/db/mappers";
-import { getDemoUsers, verifyDemoUser } from "@/lib/auth/demo-users";
+import { getDemoUsers, verifyDemoUser, DEFAULT_ORGANIZATION_ID } from "@/lib/auth/demo-users";
 import {
   createPasswordResetToken,
   hashResetToken,
@@ -16,6 +16,7 @@ import { generateId } from "@/lib/mock-data";
 
 interface MockRegisteredUser {
   id: string;
+  organizationId: string;
   name: string;
   email: string;
   role: UserRole;
@@ -73,6 +74,7 @@ export async function registerUser(input: {
   if (await shouldUseDatabase()) {
     const created = await prisma.user.create({
       data: {
+        organizationId: DEFAULT_ORGANIZATION_ID,
         name: input.name.trim(),
         email,
         passwordHash,
@@ -84,6 +86,7 @@ export async function registerUser(input: {
 
   const user: MockRegisteredUser = {
     id: generateId("user"),
+    organizationId: DEFAULT_ORGANIZATION_ID,
     name: input.name.trim(),
     email,
     role,
@@ -94,6 +97,7 @@ export async function registerUser(input: {
   mockRegisteredUsers.push(user);
   return {
     id: user.id,
+    organizationId: user.organizationId,
     name: user.name,
     email: user.email,
     role: user.role,
@@ -230,6 +234,7 @@ export async function verifyCredentials(email: string, password: string) {
   if (demoUser) {
     return {
       id: demoUser.id,
+      organizationId: demoUser.organizationId,
       name: demoUser.name,
       email: demoUser.email,
       role: demoUser.role,
@@ -245,6 +250,7 @@ export async function verifyCredentials(email: string, password: string) {
   if (!valid) return null;
   return {
     id: mock.id,
+    organizationId: mock.organizationId,
     name: mock.name,
     email: mock.email,
     role: mock.role,

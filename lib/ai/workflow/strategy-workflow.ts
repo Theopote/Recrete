@@ -66,11 +66,12 @@ function resolveParams(
 
 export async function runStrategyWorkflow(
   projectId: string,
+  organizationId: string,
   options: StrategyWorkflowOptions = {}
 ): Promise<StrategyWorkflowResult | null> {
   const { params, refreshBuildingMemory = true } = options;
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const platform = getAIPlatform();
@@ -133,7 +134,7 @@ export async function runStrategyWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
   }
 
   return {
@@ -146,11 +147,12 @@ export async function runStrategyWorkflow(
 
 export async function runStrategyIterationWorkflow(
   projectId: string,
+  organizationId: string,
   options: StrategyIterationOptions
 ): Promise<StrategyIterationResult | null> {
   const { strategyId, instruction, refreshBuildingMemory = true } = options;
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const existing = (project.strategies ?? []).find((s) => s.id === strategyId);
@@ -203,7 +205,7 @@ export async function runStrategyIterationWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
   }
 
   return { strategy, insight, analysisRun, buildingMemory, version, diffs };

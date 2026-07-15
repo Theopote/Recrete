@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { addStrategies, getProjectById } from "@/lib/db/repository";
+import { addStrategies } from "@/lib/db/repository";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import { strategySchema } from "@/lib/validators/project";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 
@@ -8,6 +9,9 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+
   try {
     const body = await request.json();
     const parsed = strategySchema.parse(body);
@@ -20,12 +24,11 @@ export async function POST(
       recommendationReason: recommendationReason || null,
     }]);
 
-    const project = await getProjectById(projectId);
-    const strategies = [...(project?.strategies ?? []), created];
+    const strategies = [...(access.project.strategies ?? []), created];
 
     return NextResponse.json({
       ...created,
-      metrics: computeStrategyMetrics(created, project, strategies),
+      metrics: computeStrategyMetrics(created, access.project, strategies),
     });
   } catch (error) {
     return NextResponse.json(

@@ -39,6 +39,7 @@ export interface DocumentIngestResult {
 
 export async function runDocumentIngestWorkflow(
   projectId: string,
+  organizationId: string,
   docId: string,
   options: DocumentIngestOptions = {}
 ): Promise<DocumentIngestResult | null> {
@@ -63,7 +64,7 @@ export async function runDocumentIngestWorkflow(
   try {
   await touch("reading_file", 10, "Reading document metadata");
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const doc = await getDocumentById(docId);
@@ -146,8 +147,8 @@ export async function runDocumentIngestWorkflow(
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
     await touch("building_memory", 90, "Updating Building Memory");
-    buildingMemory = await updateBuildingMemory(projectId);
-    await runConflictDetectionWorkflow(projectId, {
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+    await runConflictDetectionWorkflow(projectId, organizationId, {
       refreshBuildingMemory: false,
       persistInsights: true,
     });

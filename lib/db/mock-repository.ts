@@ -39,13 +39,15 @@ export function resetStore() {
   store = createMockStore();
 }
 
-export async function getProjects(filters?: {
+export async function getProjects(
+  organizationId: string,
+  filters?: {
   status?: string;
   riskLevel?: string;
   buildingType?: string;
   targetFunction?: string;
 }): Promise<Project[]> {
-  let projects = [...store.projects];
+  let projects = store.projects.filter((p) => p.organizationId === organizationId);
 
   if (filters?.status && filters.status !== "all") {
     projects = projects.filter((p) => p.status === filters.status);
@@ -63,8 +65,11 @@ export async function getProjects(filters?: {
   return projects.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 }
 
-export async function getProjectById(id: string): Promise<ProjectWithRelations | null> {
-  const project = store.projects.find((p) => p.id === id);
+export async function getProjectById(
+  id: string,
+  organizationId: string
+): Promise<ProjectWithRelations | null> {
+  const project = store.projects.find((p) => p.id === id && p.organizationId === organizationId);
   if (!project) return null;
 
   return {
@@ -82,6 +87,16 @@ export async function getProjectById(id: string): Promise<ProjectWithRelations |
   };
 }
 
+export function findProjectMetadataById(id: string) {
+  const project = store.projects.find((p) => p.id === id);
+  if (!project) return null;
+  return {
+    name: project.name,
+    code: project.code,
+    location: project.location,
+  };
+}
+
 export async function updateProjectStatus(
   projectId: string,
   status: Project["status"]
@@ -93,11 +108,14 @@ export async function updateProjectStatus(
   return true;
 }
 
-export async function createProject(input: CreateProjectInput): Promise<ProjectWithRelations> {
+export async function createProject(
+  input: CreateProjectInput,
+  organizationId: string
+): Promise<ProjectWithRelations> {
   const now = new Date();
   const project: Project = {
     id: generateId("proj"),
-    organizationId: "org-1",
+    organizationId,
     name: input.name,
     code: input.code,
     location: input.location,
@@ -142,16 +160,19 @@ export async function createProject(input: CreateProjectInput): Promise<ProjectW
     });
   }
 
-  return (await getProjectById(project.id))!;
+  return (await getProjectById(project.id, organizationId))!;
 }
 
-export async function createProjectFromBrief(draft: AIProjectDraft): Promise<ProjectWithRelations> {
+export async function createProjectFromBrief(
+  draft: AIProjectDraft,
+  organizationId: string
+): Promise<ProjectWithRelations> {
   const now = new Date();
   const input = draft.project;
 
   const project: Project = {
     id: generateId("proj"),
-    organizationId: "org-1",
+    organizationId,
     name: input.name,
     code: input.code,
     location: input.location,
@@ -234,7 +255,7 @@ export async function createProjectFromBrief(draft: AIProjectDraft): Promise<Pro
     createdAt: now,
   });
 
-  return (await getProjectById(project.id))!;
+  return (await getProjectById(project.id, organizationId))!;
 }
 
 export async function addDiagnosisItems(
@@ -632,22 +653,42 @@ export async function search(query: string): Promise<SearchResult[]> {
   return results.slice(0, 12);
 }
 
-export async function getDashboardData() {
+export async function getDashboardData(organizationId: string) {
+  const orgProjectIds = new Set(
+    store.projects.filter((p) => p.organizationId === organizationId).map((p) => p.id)
+  );
+  const orgProjects = store.projects.filter((p) => p.organizationId === organizationId);
+
   return {
-    stats: getDashboardStats(),
-    recentProjects: getRecentProjects(5),
-    recentDiagnosis: getRecentDiagnosis(5),
+    stats: {
+      ...getDashboardStats(),
+      totalProjects: orgProjects.length,
+      activeProjects: orgProjects.filter((p) =>
+        ["survey", "diagnosis", "strategy", "design", "construction"].includes(p.status)
+      ).length,
+      highRiskProjects: orgProjects.filter((p) => p.riskLevel === "high" || p.riskLevel === "critical")
+        .length,
+    },
+    recentProjects: orgProjects
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+      .slice(0, 5),
+    recentDiagnosis: getRecentDiagnosis(5).filter((d) => orgProjectIds.has(d.projectId)),
     aiInsights: getAIInsightsSummary(),
   };
 }
 
-export async function getCommandCenterData() {
-  const projects = [...store.projects].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-  const insights = [...store.insights].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-  const tasks = [...store.tasks];
-  const analysisRuns = [...store.analysisRuns].sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-  );
+export async function getCommandCenterData(organizationId: string) {
+  const projects = store.projects
+    .filter((p) => p.organizationId === organizationId)
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  const projectIds = new Set(projects.map((p) => p.id));
+  const insights = store.insights
+    .filter((i) => projectIds.has(i.projectId))
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  const tasks = store.tasks.filter((t) => projectIds.has(t.projectId));
+  const analysisRuns = store.analysisRuns
+    .filter((r) => projectIds.has(r.projectId))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const avgAiReadiness =
     projects.length > 0
@@ -672,9 +713,9 @@ export async function getCommandCenterData() {
   };
 }
 
-export async function updateBuildingMemory(projectId: string) {
+export async function updateBuildingMemory(projectId: string, organizationId: string) {
   const { getAIPlatform } = await import("@/lib/ai");
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const updated = await getAIPlatform().buildingMemory.updateBuildingMemory(project);

@@ -11,6 +11,7 @@ export async function getSessionUser() {
   if (!session?.user?.id) return null;
   return {
     id: session.user.id,
+    organizationId: session.user.organizationId,
     name: session.user.name ?? "User",
     email: session.user.email ?? "",
     role: (session.user.role as UserRole) ?? "viewer",

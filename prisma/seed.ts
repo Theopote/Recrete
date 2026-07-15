@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import {
   mockUsers,
   mockOrganization,
+  mockOrganization2,
   mockProjects,
   mockBuildings,
   mockDocuments,
@@ -41,6 +42,7 @@ async function main() {
   }
 
   await prisma.organization.create({ data: mockOrganization });
+  await prisma.organization.create({ data: mockOrganization2 });
 
   for (const project of mockProjects) {
     await prisma.project.create({ data: project });

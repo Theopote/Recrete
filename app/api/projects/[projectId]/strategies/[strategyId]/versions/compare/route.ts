@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { getStrategyVersionById } from "@/lib/db/repository";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import { diffStrategySnapshots } from "@/lib/utils/strategy-diff";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string; strategyId: string }> }
 ) {
+  const { projectId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+
   const { searchParams } = new URL(request.url);
   const fromId = searchParams.get("from");
   const toId = searchParams.get("to");

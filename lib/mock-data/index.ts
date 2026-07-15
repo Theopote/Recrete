@@ -28,6 +28,7 @@ const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
 export const mockUsers: User[] = [
   {
     id: "user-1",
+    organizationId: "org-1",
     name: "Lin Wei",
     email: "lin.wei@recrete.io",
     avatarUrl: null,
@@ -37,6 +38,7 @@ export const mockUsers: User[] = [
   },
   {
     id: "user-2",
+    organizationId: "org-1",
     name: "Chen Hao",
     email: "chen.hao@recrete.io",
     avatarUrl: null,
@@ -46,6 +48,7 @@ export const mockUsers: User[] = [
   },
   {
     id: "user-3",
+    organizationId: "org-1",
     name: "Zhang Mei",
     email: "zhang.mei@recrete.io",
     avatarUrl: null,
@@ -55,6 +58,7 @@ export const mockUsers: User[] = [
   },
   {
     id: "user-4",
+    organizationId: "org-1",
     name: "Wang Fang",
     email: "wang.fang@xian.gov.cn",
     avatarUrl: null,
@@ -64,12 +68,23 @@ export const mockUsers: User[] = [
   },
   {
     id: "user-5",
+    organizationId: "org-1",
     name: "Dr. Liu Ming",
     email: "liu.ming@heritage.cn",
     avatarUrl: null,
     role: "consultant",
     createdAt: daysAgo(45),
     updatedAt: daysAgo(5),
+  },
+  {
+    id: "user-6",
+    organizationId: "org-2",
+    name: "Test Other",
+    email: "test.other@recrete.io",
+    avatarUrl: null,
+    role: "architect",
+    createdAt: daysAgo(30),
+    updatedAt: daysAgo(1),
   },
 ];
 
@@ -79,6 +94,14 @@ export const mockOrganization: Organization = {
   description: "Adaptive reuse and renovation consultancy",
   createdAt: daysAgo(365),
   updatedAt: daysAgo(10),
+};
+
+export const mockOrganization2: Organization = {
+  id: "org-2",
+  name: "Northern Heritage Studio",
+  description: "Second firm for tenant isolation testing",
+  createdAt: daysAgo(200),
+  updatedAt: daysAgo(8),
 };
 
 export const mockProjects: Project[] = [
@@ -189,6 +212,32 @@ export const mockProjects: Project[] = [
     createdAt: daysAgo(120),
     updatedAt: daysAgo(1),
   },
+  {
+    id: "proj-org2",
+    organizationId: "org-2",
+    name: "Northern Guild Hall Renewal",
+    code: "RC-TJ-1978-101",
+    location: "Tianjin, China",
+    buildingType: "Civic building",
+    originalFunction: "Workers guild hall",
+    currentFunction: "Vacant civic hall",
+    targetFunction: "Community arts center",
+    constructionYear: 1978,
+    structureType: "Brick masonry with RC frame",
+    floorCount: 4,
+    grossFloorArea: 6200,
+    status: "survey",
+    renovationGoal: "Reactivate the guild hall as a community arts venue for org-2 isolation testing.",
+    budgetLevel: "medium",
+    riskLevel: "medium",
+    healthScore: 52,
+    potentialScore: 76,
+    aiReadinessScore: 48,
+    dataCompletenessScore: 35,
+    description: "Org-2 owned project used to verify cross-tenant access controls.",
+    createdAt: daysAgo(18),
+    updatedAt: daysAgo(2),
+  },
 ];
 
 export const mockBuildings: Building[] = [
@@ -252,6 +301,21 @@ export const mockBuildings: Building[] = [
     heritageLevel: "provincial",
     createdAt: daysAgo(120),
     updatedAt: daysAgo(1),
+  },
+  {
+    id: "bld-org2",
+    projectId: "proj-org2",
+    name: "Northern Guild Hall",
+    address: "No. 12 Hexi Road, Heping District, Tianjin",
+    constructionYear: 1978,
+    structureType: "Brick masonry with RC frame",
+    floorCount: 4,
+    basementCount: 0,
+    grossFloorArea: 6200,
+    currentCondition: "Roof leaks and outdated electrical service. Main hall structure stable.",
+    heritageLevel: "local",
+    createdAt: daysAgo(18),
+    updatedAt: daysAgo(2),
   },
 ];
 

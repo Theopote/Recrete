@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import { searchSimilarCasesAsync } from "@/lib/ai/knowledge/similar-cases";
 
 export async function GET(
@@ -7,15 +7,13 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
 
   const { searchParams } = new URL(request.url);
   const limit = Math.min(Number(searchParams.get("limit") ?? "5"), 10);
 
-  const result = await searchSimilarCasesAsync(project, { limit, includeWarnings: true });
+  const result = await searchSimilarCasesAsync(access.project, { limit, includeWarnings: true });
 
   return NextResponse.json(result);
 }

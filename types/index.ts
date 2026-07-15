@@ -99,6 +99,7 @@ export type HeritageLevel =
 
 export interface User {
   id: string;
+  organizationId: string;
   name: string;
   email: string;
   avatarUrl?: string | null;

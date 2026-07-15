@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getProjectById, getProjectEvidence } from "@/lib/db/repository";
+import { getProjectEvidence } from "@/lib/db/repository";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import { listDrawingAssetsByProject } from "@/lib/db/drawing-assets";
 import { mergeDrawingGraphs } from "@/lib/ai/document-analysis-pipeline";
 import { runDocumentIngestWorkflow } from "@/lib/ai/workflow";
@@ -22,10 +23,9 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { project } = access;
 
   const drawingAssets = await listDrawingAssetsByProject(projectId);
   const graphsFromAssets = drawingAssets
@@ -60,10 +60,9 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { project, user } = access;
 
   const body = await request.json().catch(() => ({}));
   const language = body.language === "zh" ? "zh" : body.language === "en" ? "en" : "auto";
@@ -74,7 +73,7 @@ export async function POST(
   const results = [];
 
   for (let i = 0; i < docs.length; i++) {
-    const result = await runDocumentIngestWorkflow(projectId, docs[i].id, {
+    const result = await runDocumentIngestWorkflow(projectId, user.organizationId, docs[i].id, {
       language,
       createIssues,
       refreshBuildingMemory: refreshBuildingMemory && i === docs.length - 1,

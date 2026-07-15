@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { updateReport } from "@/lib/db/repository";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -12,7 +13,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ projectId: string; reportId: string }> }
 ) {
-  const { reportId } = await params;
+  const { projectId, reportId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+
   try {
     const body = await request.json();
     const parsed = updateSchema.parse(body);

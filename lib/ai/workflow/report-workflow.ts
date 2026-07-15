@@ -28,6 +28,7 @@ export interface ReportWorkflowResult {
 
 export async function runReportWorkflow(
   projectId: string,
+  organizationId: string,
   options: ReportWorkflowOptions
 ): Promise<ReportWorkflowResult | null> {
   const {
@@ -38,7 +39,7 @@ export async function runReportWorkflow(
     strategyId,
   } = options;
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const platform = getAIPlatform();
@@ -89,7 +90,7 @@ export async function runReportWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
   }
 
   return { report, analysisRun, buildingMemory };

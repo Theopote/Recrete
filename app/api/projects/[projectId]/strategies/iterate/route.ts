@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
 import { runStrategyIterationWorkflow } from "@/lib/ai/workflow/strategy-workflow";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
 
   const body = await request.json();
   const { strategyId, instruction } = body as { strategyId?: string; instruction?: string };
@@ -22,7 +20,7 @@ export async function POST(
     );
   }
 
-  const result = await runStrategyIterationWorkflow(projectId, {
+  const result = await runStrategyIterationWorkflow(projectId, access.user.organizationId, {
     strategyId,
     instruction: instruction.trim(),
   });

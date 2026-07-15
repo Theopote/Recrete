@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
 import { runConflictDetectionWorkflow } from "@/lib/ai/workflow/conflict-workflow";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
 
-  const result = await runConflictDetectionWorkflow(projectId, {
+  const result = await runConflictDetectionWorkflow(projectId, access.user.organizationId, {
     refreshBuildingMemory: true,
     persistInsights: true,
   });

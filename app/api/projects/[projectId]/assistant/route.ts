@@ -5,6 +5,7 @@ import {
   runStrategyIterationWorkflow,
   findStrategyForInstruction,
 } from "@/lib/ai/workflow/strategy-workflow";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import type { AIMessage } from "@/types";
 
 function isStrategyIterationRequest(content: string): boolean {
@@ -27,11 +28,19 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { user } = access;
+
   const { messages } = (await request.json()) as { messages: AIMessage[] };
   const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
 
   if (lastUserMessage && isStrategyIterationRequest(lastUserMessage.content)) {
-    const projectContext = await buildProjectAIContext(projectId, lastUserMessage.content);
+    const projectContext = await buildProjectAIContext(
+      projectId,
+      user.organizationId,
+      lastUserMessage.content
+    );
     if (!projectContext) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
@@ -53,7 +62,7 @@ export async function POST(
       });
     }
 
-    const result = await runStrategyIterationWorkflow(projectId, {
+    const result = await runStrategyIterationWorkflow(projectId, user.organizationId, {
       strategyId: target.id,
       instruction: lastUserMessage.content,
     });
@@ -70,6 +79,7 @@ export async function POST(
 
   const projectContext = await buildProjectAIContext(
     projectId,
+    user.organizationId,
     lastUserMessage?.content
   );
   if (!projectContext) {

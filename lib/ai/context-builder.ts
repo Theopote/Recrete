@@ -4,9 +4,10 @@ import type { ProjectAIContext } from "@/types/ai";
 
 export async function buildProjectAIContext(
   projectId: string,
+  organizationId: string,
   userQuery?: string
 ): Promise<ProjectAIContext | null> {
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const allEvidence = await getProjectEvidence(projectId);

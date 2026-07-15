@@ -10,6 +10,10 @@ import * as db from "@/lib/db/prisma-project-costs";
 import { getProjectById } from "@/lib/db/repository";
 import * as mock from "@/lib/db/mock-repository";
 
+function findProjectMetadata(projectId: string) {
+  return mock.findProjectMetadataById(projectId);
+}
+
 type CostRecordInput = {
   strategyType?: string;
   actualCostPerSqm: number;
@@ -38,7 +42,7 @@ export async function listAllProjectCostRecordsWithProject(): Promise<ProjectCos
   const records = store.listAllCostRecords();
   const enriched: ProjectCostRecordWithProject[] = [];
   for (const record of records) {
-    const project = await getProjectById(record.projectId);
+    const project = findProjectMetadata(record.projectId);
     enriched.push({
       ...record,
       projectName: project?.name,
@@ -51,10 +55,11 @@ export async function listAllProjectCostRecordsWithProject(): Promise<ProjectCos
 
 export async function createProjectCostRecord(
   projectId: string,
+  organizationId: string,
   input: CostRecordInput,
   options?: { markCompleted?: boolean }
 ): Promise<{ record: ProjectCostRecord; calibration: BenchmarkCalibrationResult }> {
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) {
     throw new Error("Project not found");
   }

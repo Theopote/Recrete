@@ -116,6 +116,7 @@ describe("compliance-store", () => {
 
     const first = await persistComplianceResult({
       projectId: "proj-demo",
+      organizationId: "org-1",
       report,
       diagnosisDrafts,
       applyDiagnosis: true,
@@ -125,11 +126,12 @@ describe("compliance-store", () => {
     expect(first.run.diagnosisApplied).toBe(true);
     expect(first.run.diagnosisCount).toBe(2);
 
-    const projectAfter = await getProjectById("proj-demo");
+    const projectAfter = await getProjectById("proj-demo", "org-1");
     expect(projectAfter?.diagnosis?.length).toBeGreaterThanOrEqual(2);
 
     const second = await persistComplianceResult({
       projectId: "proj-demo",
+      organizationId: "org-1",
       report,
       diagnosisDrafts,
       applyDiagnosis: true,
@@ -158,10 +160,10 @@ describe("compliance-store", () => {
       },
     ];
 
-    const filtered = await filterNewComplianceDiagnosis("proj-demo", items);
+    const filtered = await filterNewComplianceDiagnosis("proj-demo", "org-1", items);
     expect(filtered).toHaveLength(1);
 
-    const result = await applyComplianceDiagnosis("proj-demo", run.id, items);
+    const result = await applyComplianceDiagnosis("proj-demo", "org-1", run.id, items);
     expect(result.created[0].evidence).toContain(`[compliance-run:${run.id}]`);
   });
 });

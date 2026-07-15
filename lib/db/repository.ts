@@ -7,24 +7,31 @@ async function resolveDb() {
 }
 
 export async function getProjects(
-  filters?: Parameters<typeof mock.getProjects>[0]
+  organizationId: string,
+  filters?: Parameters<typeof mock.getProjects>[1]
 ) {
-  return (await resolveDb()) ? db.getProjects(filters) : mock.getProjects(filters);
+  return (await resolveDb()) ? db.getProjects(organizationId, filters) : mock.getProjects(organizationId, filters);
 }
 
-export async function getProjectById(id: string) {
-  return (await resolveDb()) ? db.getProjectById(id) : mock.getProjectById(id);
+export async function getProjectById(id: string, organizationId: string) {
+  return (await resolveDb()) ? db.getProjectById(id, organizationId) : mock.getProjectById(id, organizationId);
 }
 
-export async function createProject(input: Parameters<typeof mock.createProject>[0]) {
-  return (await resolveDb()) ? db.createProject(input) : mock.createProject(input);
+export async function createProject(
+  input: Parameters<typeof mock.createProject>[0],
+  organizationId: string
+) {
+  return (await resolveDb()) ? db.createProject(input, organizationId) : mock.createProject(input, organizationId);
 }
 
-export async function createProjectFromBrief(draft: Parameters<typeof mock.createProjectFromBrief>[0]) {
+export async function createProjectFromBrief(
+  draft: Parameters<typeof mock.createProjectFromBrief>[0],
+  organizationId: string
+) {
   if (await resolveDb()) {
-    return db.createProject(draft.project);
+    return db.createProject(draft.project, organizationId);
   }
-  return mock.createProjectFromBrief(draft);
+  return mock.createProjectFromBrief(draft, organizationId);
 }
 
 export async function addDiagnosisItems(
@@ -197,8 +204,8 @@ export async function search(query: string) {
   return (await resolveDb()) ? db.search(query) : mock.search(query);
 }
 
-export async function getDashboardData() {
-  return (await resolveDb()) ? db.getDashboardData() : mock.getDashboardData();
+export async function getDashboardData(organizationId: string) {
+  return (await resolveDb()) ? db.getDashboardData(organizationId) : mock.getDashboardData(organizationId);
 }
 
 export async function getStrategiesWithMetrics(projectId: string) {
@@ -209,12 +216,14 @@ export async function getUserById(id: string) {
   return (await resolveDb()) ? db.getUserById(id) : mock.getUserById(id);
 }
 
-export async function getCommandCenterData() {
-  return (await resolveDb()) ? db.getCommandCenterData() : mock.getCommandCenterData();
+export async function getCommandCenterData(organizationId: string) {
+  return (await resolveDb()) ? db.getCommandCenterData(organizationId) : mock.getCommandCenterData(organizationId);
 }
 
-export async function updateBuildingMemory(projectId: string) {
-  return (await resolveDb()) ? db.updateBuildingMemory(projectId) : mock.updateBuildingMemory(projectId);
+export async function updateBuildingMemory(projectId: string, organizationId: string) {
+  return (await resolveDb())
+    ? db.updateBuildingMemory(projectId, organizationId)
+    : mock.updateBuildingMemory(projectId, organizationId);
 }
 
 export { updateProjectStatus } from "@/lib/db/project-costs";

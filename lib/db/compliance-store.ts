@@ -68,9 +68,10 @@ function tagDiagnosisEvidence(runId: string, evidence?: string | null) {
 
 export async function filterNewComplianceDiagnosis(
   projectId: string,
+  organizationId: string,
   items: Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]
 ) {
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   const existingTitles = new Set(
     (project?.diagnosis ?? []).map((d) => d.title.trim().toLowerCase())
   );
@@ -112,10 +113,11 @@ export async function listComplianceRuns(
 
 export async function applyComplianceDiagnosis(
   projectId: string,
+  organizationId: string,
   runId: string,
   items: Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]
 ): Promise<ApplyComplianceDiagnosisResult> {
-  const newItems = await filterNewComplianceDiagnosis(projectId, items);
+  const newItems = await filterNewComplianceDiagnosis(projectId, organizationId, items);
   const skipped = items.length - newItems.length;
 
   const tagged = newItems.map((item) => ({
@@ -144,6 +146,7 @@ export async function applyComplianceDiagnosis(
 
 export async function persistComplianceResult(input: {
   projectId: string;
+  organizationId: string;
   report: SaveComplianceRunInput["report"];
   measurements?: SaveComplianceRunInput["measurements"];
   diagnosisDrafts?: Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[];
@@ -161,6 +164,7 @@ export async function persistComplianceResult(input: {
 
   const diagnosis = await applyComplianceDiagnosis(
     input.projectId,
+    input.organizationId,
     run.id,
     input.diagnosisDrafts
   );

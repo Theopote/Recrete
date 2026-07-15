@@ -9,6 +9,7 @@ export type BackgroundJobStatus =
 
 export interface DocumentIngestJobPayload {
   projectId: string;
+  organizationId: string;
   documentId: string;
   taskId?: string;
   language?: "auto" | "zh" | "en";

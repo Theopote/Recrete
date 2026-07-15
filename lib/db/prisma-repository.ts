@@ -32,13 +32,15 @@ import type {
 import type { StrategyWithMetrics } from "@/types";
 import type { ProjectStatus } from "@/types";
 
-function buildProjectWhere(filters?: {
+function buildProjectWhere(
+  organizationId: string,
+  filters?: {
   status?: string;
   riskLevel?: string;
   buildingType?: string;
   targetFunction?: string;
 }) {
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { organizationId };
   if (filters?.status && filters.status !== "all") where.status = filters.status;
   if (filters?.riskLevel && filters.riskLevel !== "all") where.riskLevel = filters.riskLevel;
   if (filters?.buildingType && filters.buildingType !== "all") where.buildingType = filters.buildingType;
@@ -46,17 +48,28 @@ function buildProjectWhere(filters?: {
   return where;
 }
 
-export async function getProjects(filters?: Parameters<typeof buildProjectWhere>[0]): Promise<Project[]> {
+export async function getProjects(
+  organizationId: string,
+  filters?: {
+    status?: string;
+    riskLevel?: string;
+    buildingType?: string;
+    targetFunction?: string;
+  }
+): Promise<Project[]> {
   const rows = await prisma.project.findMany({
-    where: buildProjectWhere(filters),
+    where: buildProjectWhere(organizationId, filters),
     orderBy: { updatedAt: "desc" },
   });
   return rows.map(mapProject);
 }
 
-export async function getProjectById(id: string): Promise<ProjectWithRelations | null> {
-  const row = await prisma.project.findUnique({
-    where: { id },
+export async function getProjectById(
+  id: string,
+  organizationId: string
+): Promise<ProjectWithRelations | null> {
+  const row = await prisma.project.findFirst({
+    where: { id, organizationId },
     include: {
       building: true,
       documents: { orderBy: { createdAt: "desc" } },
@@ -69,10 +82,13 @@ export async function getProjectById(id: string): Promise<ProjectWithRelations |
   return row ? mapProjectWithRelations(row) : null;
 }
 
-export async function createProject(input: CreateProjectInput): Promise<ProjectWithRelations> {
+export async function createProject(
+  input: CreateProjectInput,
+  organizationId: string
+): Promise<ProjectWithRelations> {
   const project = await prisma.project.create({
     data: {
-      organizationId: "org-1",
+      organizationId,
       name: input.name,
       code: input.code,
       location: input.location,
@@ -452,19 +468,19 @@ export async function search(query: string): Promise<SearchResult[]> {
   return results.slice(0, 12);
 }
 
-export async function getDashboardData() {
+export async function getDashboardData(organizationId: string) {
   const { getDashboardData: mockDashboard } = await import("@/lib/db/mock-repository");
-  return mockDashboard();
+  return mockDashboard(organizationId);
 }
 
-export async function getCommandCenterData() {
+export async function getCommandCenterData(organizationId: string) {
   const { getCommandCenterData: mockCommandCenter } = await import("@/lib/db/mock-repository");
-  return mockCommandCenter();
+  return mockCommandCenter(organizationId);
 }
 
-export async function updateBuildingMemory(projectId: string) {
+export async function updateBuildingMemory(projectId: string, organizationId: string) {
   const { updateBuildingMemory: mockUpdate } = await import("@/lib/db/mock-repository");
-  return mockUpdate(projectId);
+  return mockUpdate(projectId, organizationId);
 }
 
 export async function addInsights(

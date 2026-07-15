@@ -44,6 +44,7 @@ async function emitProfileItems(
 
 export async function streamProjectCreation(
   brief: string,
+  organizationId: string,
   emit: (event: AICreateStreamEvent) => void
 ): Promise<void> {
   const phase = async (id: AICreateStreamPhase, fn: () => Promise<void>) => {
@@ -120,7 +121,7 @@ export async function streamProjectCreation(
 
   await phase("finalize", async () => {
     await sleep(500);
-    const project = await createProjectFromBrief(draft!);
+    const project = await createProjectFromBrief(draft!, organizationId);
     emit({
       type: "complete",
       project: serializeProject(project),

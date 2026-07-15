@@ -72,11 +72,12 @@ function buildExpertSummaryText(counts: {
 
 export async function runDiagnosisWorkflow(
   projectId: string,
+  organizationId: string,
   options: DiagnosisWorkflowOptions = {}
 ): Promise<DiagnosisWorkflowResult | null> {
   const { includeExpertAgents = true, refreshBuildingMemory = true } = options;
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const ai = getAIService();
@@ -174,7 +175,7 @@ export async function runDiagnosisWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
   }
 
   return {

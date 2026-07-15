@@ -4,6 +4,7 @@ import {
   type AICreateStreamEvent,
 } from "@/lib/ai/agents/project-creation-stream";
 import { guardOrRespond } from "@/lib/auth/api-guard";
+import { getSessionOrThrow } from "@/lib/auth/authorize";
 
 const schema = z.object({
   brief: z.string().min(20, "Please describe your building and renovation goals in at least one sentence."),
@@ -26,6 +27,9 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: message }), { status: 400 });
   }
 
+  const session = await getSessionOrThrow();
+  if ("error" in session) return session.error;
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -35,7 +39,7 @@ export async function POST(request: Request) {
       };
 
       try {
-        await streamProjectCreation(brief, send);
+        await streamProjectCreation(brief, session.user.organizationId, send);
       } catch (error) {
         send({
           type: "error",

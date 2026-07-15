@@ -21,11 +21,12 @@ export interface ConflictWorkflowResult {
 
 export async function runConflictDetectionWorkflow(
   projectId: string,
+  organizationId: string,
   options: { refreshBuildingMemory?: boolean; persistInsights?: boolean } = {}
 ): Promise<ConflictWorkflowResult | null> {
   const { refreshBuildingMemory = false, persistInsights = true } = options;
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const evidence = await getProjectEvidence(projectId);
@@ -64,7 +65,7 @@ export async function runConflictDetectionWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
   }
 
   return { conflicts, insights, analysisRun, buildingMemory };

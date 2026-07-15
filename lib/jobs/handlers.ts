@@ -12,7 +12,11 @@ export async function handleDocumentIngestJob(
   job: BackgroundJobRecord
 ): Promise<unknown> {
   const payload = job.payload as DocumentIngestJobPayload;
-  const result = await runDocumentIngestWorkflow(payload.projectId, payload.documentId, {
+  const result = await runDocumentIngestWorkflow(
+    payload.projectId,
+    payload.organizationId,
+    payload.documentId,
+    {
     language: payload.language,
     createIssues: payload.createIssues,
     refreshBuildingMemory: payload.refreshBuildingMemory,

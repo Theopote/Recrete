@@ -23,6 +23,7 @@ import type {
 export function mapUser(u: PrismaUser): User {
   return {
     id: u.id,
+    organizationId: u.organizationId,
     name: u.name,
     email: u.email,
     avatarUrl: u.avatarUrl,

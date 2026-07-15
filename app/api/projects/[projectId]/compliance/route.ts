@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
 import { getAIPlatform } from "@/lib/ai";
 import { guardOrRespond } from "@/lib/auth/api-guard";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 import {
   runComplianceEngine,
   getApplicableCodesForProject,
@@ -40,10 +40,9 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { project } = access;
 
   const url = new URL(request.url);
   const historyLimit = Number(url.searchParams.get("history") ?? "0");
@@ -70,14 +69,13 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const { projectId } = await params;
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { project, user } = access;
+
   const denied = await guardOrRespond("POST", "/api/projects/*/compliance");
   if (denied) return denied;
-
-  const { projectId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const measurements = parseMeasurements(body);
@@ -92,6 +90,7 @@ export async function POST(
 
   const persisted = await persistComplianceResult({
     projectId,
+    organizationId: user.organizationId,
     report,
     measurements,
     diagnosisDrafts,

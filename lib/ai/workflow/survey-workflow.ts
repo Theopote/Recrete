@@ -38,6 +38,7 @@ export interface SurveyWorkflowResult {
 
 export async function runSurveyWorkflow(
   projectId: string,
+  organizationId: string,
   options: SurveyWorkflowOptions = {}
 ): Promise<SurveyWorkflowResult | null> {
   const {
@@ -47,7 +48,7 @@ export async function runSurveyWorkflow(
     onlyUnanalyzed = true,
   } = options;
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
   const docs = project.documents ?? [];
@@ -57,7 +58,7 @@ export async function runSurveyWorkflow(
   let issuesCreated = 0;
 
   for (const doc of targets) {
-    const result = await runDocumentIngestWorkflow(projectId, doc.id, {
+    const result = await runDocumentIngestWorkflow(projectId, organizationId, doc.id, {
       language,
       createIssues,
       refreshBuildingMemory: false,
@@ -68,7 +69,7 @@ export async function runSurveyWorkflow(
     }
   }
 
-  const updatedProject = (await getProjectById(projectId))!;
+  const updatedProject = (await getProjectById(projectId, organizationId))!;
   const missingDrafts = await detectMissingInformation(updatedProject);
   const taskDrafts = await generateSurveyTaskList(updatedProject);
 
@@ -94,7 +95,7 @@ export async function runSurveyWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId);
   }
 
   return {

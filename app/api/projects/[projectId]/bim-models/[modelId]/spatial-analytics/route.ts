@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { getProjectById } from "@/lib/db/repository";
 import { getBimModel } from "@/lib/bim/bim-model-repository";
 import { buildSpatialAnalytics } from "@/lib/bim/spatial-analytics";
 import { enrichSpatialAnalyticsWithAi } from "@/lib/bim/spatial-planning-ai";
+import { requireProjectAccess } from "@/lib/auth/authorize";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string; modelId: string }> }
 ) {
   const { projectId, modelId } = await params;
-  const project = await getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  const access = await requireProjectAccess(projectId);
+  if ("error" in access) return access.error;
+  const { project } = access;
 
   const model = await getBimModel(projectId, modelId);
   if (!model) {

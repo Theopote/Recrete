@@ -130,6 +130,7 @@ check("BackgroundJob enqueue/process", async () => {
     projectId,
     payload: {
       projectId,
+      organizationId: "org-1",
       documentId,
       createIssues: false,
       refreshBuildingMemory: false,

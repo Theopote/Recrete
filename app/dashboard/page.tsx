@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app/AppShell";
 import { TopBar } from "@/components/app/TopBar";
 import { MetricCard } from "@/components/app/MetricCard";
@@ -12,6 +13,7 @@ import { RecommendedActions } from "@/components/ai/RecommendedActions";
 import { AnalysisRunTimeline } from "@/components/ai/AnalysisRunTimeline";
 import { MissingInformationList } from "@/components/ai/MissingInformationList";
 import { CommandCenterActions } from "./CommandCenterActions";
+import { getSessionUser } from "@/lib/auth/session";
 import { getCommandCenterData } from "@/lib/db/repository";
 import {
   Sparkles,
@@ -22,7 +24,10 @@ import {
 } from "lucide-react";
 
 export default async function DashboardPage() {
-  const data = await getCommandCenterData();
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+
+  const data = await getCommandCenterData(user.organizationId);
 
   return (
     <AppShell>
