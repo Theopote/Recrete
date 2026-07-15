@@ -127,3 +127,41 @@ export async function chatJsonArray<T>(
 
   throw normalizeAIError(new Error("Failed to parse JSON array from model response"));
 }
+
+function extractJsonObject<T>(text: string): T | null {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = fenced?.[1]?.trim() ?? text.trim();
+  try {
+    const parsed = JSON.parse(candidate) as Record<string, unknown>;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as T;
+    }
+  } catch {
+    // fall through
+  }
+
+  const objectMatch = candidate.match(/\{[\s\S]*\}/);
+  if (!objectMatch) return null;
+  try {
+    return JSON.parse(objectMatch[0]) as T;
+  } catch {
+    return null;
+  }
+}
+
+export async function chatJsonObject<T>(
+  messages: ChatMessage[],
+  options: ChatOptions = {}
+): Promise<T> {
+  const content = await chatCompletion(messages, { ...options, jsonMode: true });
+  const parsed = extractJsonObject<{ memory?: T; strategy?: T } & T>(content);
+
+  if (parsed && typeof parsed === "object") {
+    const record = parsed as Record<string, unknown>;
+    if (record.memory && typeof record.memory === "object") return record.memory as T;
+    if (record.strategy && typeof record.strategy === "object") return record.strategy as T;
+    return parsed as T;
+  }
+
+  throw normalizeAIError(new Error("Failed to parse JSON object from model response"));
+}

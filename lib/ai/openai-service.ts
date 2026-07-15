@@ -7,7 +7,9 @@ import type {
   SiteIssue,
 } from "@/types";
 import type { AIMessage } from "@/types";
-import { chatCompletion, chatJsonArray } from "./openai-client";
+import type { BuildingMemory } from "@/types/ai";
+import { chatCompletion, chatJsonArray, chatJsonObject } from "./openai-client";
+import { loadRenovationContextBlock } from "./load-renovation-context";
 import {
   buildAssistantSystemPrompt,
   buildAssistantSystemPromptFromContext,
@@ -20,7 +22,8 @@ export class OpenAIService implements AIService {
   async generateDiagnosis(
     project: ProjectWithRelations
   ): Promise<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]> {
-    const prompt = buildDiagnosisPrompt(project);
+    const contextBlock = await loadRenovationContextBlock(project);
+    const prompt = buildDiagnosisPrompt(project, contextBlock);
     return chatJsonArray<
       Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">
     >(
@@ -28,7 +31,7 @@ export class OpenAIService implements AIService {
         {
           role: "system",
           content:
-            "You are a building renovation expert for existing buildings in China. Return JSON: { \"items\": [ { title, category, severity, status, description, evidence, recommendation, relatedLocation } ] }. Categories: architecture, structure, facade, mep, fire_safety, accessibility, energy, heritage, operation.",
+            "You are a building renovation expert for existing buildings in China. Ground each diagnosis item in uploaded document analysis and evidence when provided. Return JSON: { \"items\": [ { title, category, severity, status, description, evidence, recommendation, relatedLocation } ] }. Categories: architecture, structure, facade, mep, fire_safety, accessibility, energy, heritage, operation. Reference specific document findings in evidence field when available.",
         },
         { role: "user", content: prompt },
       ],
@@ -42,11 +45,11 @@ export class OpenAIService implements AIService {
   ): Promise<
     Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]
   > {
-    const prompt = buildStrategyPrompt(project, diagnosisItems.length);
-    const diagnosisContext = diagnosisItems
-      .slice(0, 12)
-      .map((d) => `- [${d.severity}] ${d.title}: ${d.description}`)
-      .join("\n");
+    const contextBlock = await loadRenovationContextBlock(project, {
+      includeDiagnosis: true,
+      includeMemory: true,
+    });
+    const prompt = buildStrategyPrompt(project, diagnosisItems, contextBlock);
 
     return chatJsonArray<
       Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">
@@ -55,15 +58,96 @@ export class OpenAIService implements AIService {
         {
           role: "system",
           content:
-            'Return JSON: { "strategies": [ { name, type, summary, designGoal, spatialStrategy, structuralStrategy, facadeStrategy, mepStrategy, costLevel, scheduleLevel, riskLevel, pros[], cons[], recommendationReason } ] }. Generate exactly 3 strategies: light, medium, deep renovation.',
+            'Return JSON: { "strategies": [ { name, type, summary, designGoal, spatialStrategy, structuralStrategy, facadeStrategy, mepStrategy, costLevel, scheduleLevel, riskLevel, pros[], cons[], recommendationReason } ] }. Generate exactly 3 strategies: light_renewal, medium_renovation or adaptive_reuse, deep_recreation. Each strategy must reference specific project evidence or diagnosis — avoid generic boilerplate. Set recommendationReason on exactly one strategy.',
         },
-        {
-          role: "user",
-          content: `${prompt}\n\nDiagnosis context:\n${diagnosisContext || "No diagnosis yet."}`,
-        },
+        { role: "user", content: prompt },
       ],
       { scenario: "reasoning", temperature: 0.5 }
     );
+  }
+
+  async refineRenovationStrategy(
+    project: ProjectWithRelations,
+    strategy: RenovationStrategy,
+    instruction: string
+  ): Promise<Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">> {
+    const contextBlock = await loadRenovationContextBlock(project, {
+      includeDiagnosis: true,
+      includeMemory: true,
+    });
+
+    const result = await chatJsonObject<
+      Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">
+    >(
+      [
+        {
+          role: "system",
+          content:
+            'You refine an existing building renovation strategy. Return JSON: { "strategy": { name, type, summary, designGoal, spatialStrategy, structuralStrategy, facadeStrategy, mepStrategy, costLevel, scheduleLevel, riskLevel, pros[], cons[], recommendationReason } }. Keep type unchanged unless instruction requires intervention depth change. Apply instruction while respecting project evidence and diagnosis.',
+        },
+        {
+          role: "user",
+          content: `## Refinement instruction\n${instruction}\n\n## Project & evidence\n${contextBlock}\n\n## Current strategy\n${JSON.stringify(
+            {
+              name: strategy.name,
+              type: strategy.type,
+              summary: strategy.summary,
+              designGoal: strategy.designGoal,
+              spatialStrategy: strategy.spatialStrategy,
+              structuralStrategy: strategy.structuralStrategy,
+              facadeStrategy: strategy.facadeStrategy,
+              mepStrategy: strategy.mepStrategy,
+              costLevel: strategy.costLevel,
+              scheduleLevel: strategy.scheduleLevel,
+              riskLevel: strategy.riskLevel,
+              pros: strategy.pros,
+              cons: strategy.cons,
+              recommendationReason: strategy.recommendationReason,
+            },
+            null,
+            2
+          )}`,
+        },
+      ],
+      { scenario: "reasoning", temperature: 0.45 }
+    );
+
+    return {
+      ...result,
+      name: result.name.includes("(refined)") ? result.name : `${result.name} (refined)`,
+    };
+  }
+
+  async synthesizeBuildingMemory(
+    project: ProjectWithRelations
+  ): Promise<Omit<BuildingMemory, "id" | "createdAt" | "updatedAt">> {
+    const contextBlock = await loadRenovationContextBlock(project, {
+      includeDiagnosis: true,
+      includeStrategies: true,
+    });
+
+    const memory = await chatJsonObject<
+      Omit<BuildingMemory, "id" | "createdAt" | "updatedAt" | "projectId" | "lastUpdatedByAI">
+    >(
+      [
+        {
+          role: "system",
+          content:
+            'Synthesize an updated Building Memory for an existing building renovation project. Return JSON: { "memory": { summary, knownFacts[], missingInformation[], keyRisks[], renovationPotential, designConstraints[], ownerRequirements[], importantDecisions[], unresolvedQuestions[] } }. Be specific to this project. knownFacts must cite document/evidence findings when available. missingInformation should list what blocks schematic design.',
+        },
+        {
+          role: "user",
+          content: `## Project\n${project.name} — ${project.targetFunction}\nGoal: ${project.renovationGoal}\n\n${contextBlock}`,
+        },
+      ],
+      { scenario: "reasoning", temperature: 0.35 }
+    );
+
+    return {
+      ...memory,
+      projectId: project.id,
+      lastUpdatedByAI: new Date(),
+    };
   }
 
   async generateReport(

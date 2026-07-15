@@ -1,24 +1,24 @@
 import type { ProjectWithRelations, ReportType } from "@/types";
 import type { ProjectAIContext } from "@/types/ai";
+import { formatProjectBasics } from "./renovation-context";
 
-export function buildDiagnosisPrompt(project: ProjectWithRelations): string {
+export function buildDiagnosisPrompt(
+  project: ProjectWithRelations,
+  renovationContextBlock?: string
+): string {
   const buildingAge = new Date().getFullYear() - project.constructionYear;
-  return `You are an expert building condition assessor specializing in existing building renovation.
+  const contextSection = renovationContextBlock
+    ? `\n\n## Project Evidence & Document Analysis (PRIORITY — ground diagnosis in these facts when available)\n${renovationContextBlock}`
+    : "";
 
-Analyze the following existing building for comprehensive renovation diagnosis:
+  return `You are an expert building condition assessor specializing in existing building renovation in China.
+
+Analyze the following existing building for comprehensive renovation diagnosis.
 
 ## Building Information
-- Project: ${project.name}
-- Location: ${project.location}
-- Building Type: ${project.buildingType}
-- Construction Year: ${project.constructionYear} (Age: ${buildingAge} years)
-- Structure: ${project.structureType}
-- Floors: ${project.floorCount}, GFA: ${project.grossFloorArea} sqm
-- Current Function: ${project.currentFunction}
-- Target Function: ${project.targetFunction}
-- Renovation Goal: ${project.renovationGoal}
-- Current Condition: ${project.building?.currentCondition ?? "To be assessed"}
-- Budget Level: ${project.budgetLevel}
+${formatProjectBasics(project)}
+- Building Age Priority: ${buildingAge > 30 ? "HIGH — over 30 years, expect age-related deterioration" : "Monitor periodically"}
+- Function Change: ${project.currentFunction !== project.targetFunction ? "YES — verify load, egress, and MEP for new occupancy" : "Same function — verify if intensifying use"}${contextSection}
 
 ## Analysis Requirements
 Generate detailed diagnosis items across ALL relevant categories:
@@ -90,17 +90,43 @@ Generate 6-12 diverse diagnosis items covering multiple categories. Be specific 
 
 export function buildStrategyPrompt(
   project: ProjectWithRelations,
-  diagnosisCount: number
+  diagnosisItems: { title: string; severity: string; category: string; description: string }[],
+  renovationContextBlock?: string
 ): string {
-  return `Generate renovation strategies for:
+  const diagnosisLines = diagnosisItems
+    .slice(0, 14)
+    .map((d) => `- [${d.severity}/${d.category}] ${d.title}: ${d.description.slice(0, 200)}`)
+    .join("\n");
 
-Project: ${project.name}
-Target Function: ${project.targetFunction}
-Renovation Goal: ${project.renovationGoal}
-Budget Level: ${project.budgetLevel}
-Risk Level: ${project.riskLevel}
+  const contextSection = renovationContextBlock
+    ? `\n\n## Evidence & Document Grounding (strategies MUST respond to these facts)\n${renovationContextBlock}`
+    : "";
 
-Based on ${diagnosisCount} identified diagnosis items, propose multiple renovation strategies with cost, schedule, and risk assessments.`;
+  return `You are a senior architect specializing in adaptive reuse and existing building renovation in China.
+
+Generate professionally credible renovation strategies grounded in project evidence — not generic templates.
+
+## Project
+${formatProjectBasics(project)}
+
+## Diagnosis Context
+${diagnosisLines || "No diagnosis items yet — infer typical risks from building age, function change, and documents."}${contextSection}
+
+## Strategy Requirements
+Propose exactly 3 strategies differentiated by intervention depth:
+1. **Light renewal** (type: light_renewal) — minimal structural change, MEP upgrade, envelope refresh
+2. **Medium renovation** (type: medium_renovation OR adaptive_reuse) — spatial reconfiguration, selective structural work
+3. **Deep recreation** (type: deep_recreation) — major structural/envelope transformation
+
+For EACH strategy provide specific, actionable content in:
+- spatialStrategy (reference actual layout/function change needs)
+- structuralStrategy (address diagnosis structural items if any)
+- facadeStrategy (envelope and identity)
+- mepStrategy (capacity for target function)
+- pros/cons tied to THIS building's constraints (budget, heritage, evidence)
+- recommendationReason on exactly ONE strategy that best balances feasibility + goal
+
+Use concrete renovation terminology (柱网, 功能置换, 消防分区, 无障碍, 节能改造) where appropriate.`;
 }
 
 export function buildReportPrompt(

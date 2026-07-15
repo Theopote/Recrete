@@ -3,7 +3,7 @@ import type { AIInsight, StrategyLabParams } from "@/types/ai";
 import { withMockDelay } from "../providers/utils";
 import { mockAIService } from "../mock-ai-service";
 import { openAIService } from "../openai-service";
-import { isOpenAIConfigured } from "../model-router";
+import { isOpenAIConfigured } from "../openai-config";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
 import { searchSimilarCasesAsync } from "../knowledge/similar-cases";
 import { runStrategyContextChain } from "../langchain/chains";
@@ -155,6 +155,11 @@ export async function refineStrategy(
   strategy: RenovationStrategy,
   instruction: string
 ): Promise<Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">> {
+  if (isOpenAIConfigured()) {
+    const { openAIService } = await import("../openai-service");
+    return openAIService.refineRenovationStrategy(project, strategy, instruction);
+  }
+
   return withMockDelay(() => {
     const lower = instruction.toLowerCase();
     const updated = { ...strategy };
