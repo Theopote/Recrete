@@ -229,3 +229,12 @@ export {
 export { resetStore } from "@/lib/db/mock-repository";
 export { mockProjects } from "@/lib/mock-data";
 export type { DashboardStats } from "@/types";
+
+export {
+  saveComplianceRun,
+  getComplianceRun,
+  listComplianceRuns,
+  applyComplianceDiagnosis,
+  persistComplianceResult,
+  resetComplianceStore,
+} from "@/lib/db/compliance-store";

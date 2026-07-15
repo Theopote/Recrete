@@ -262,6 +262,19 @@ enum HeritageLevel {
   world
 }
 
+enum ComplianceOverallStatus {
+  compliant
+  partial
+  non_compliant
+}
+
+enum ComplianceItemStatus {
+  compliant
+  non_compliant
+  requires_verification
+  not_applicable
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -349,6 +362,8 @@ model Project {
   drawingAssets   DrawingAsset[]
   backgroundJobs  BackgroundJob[]
   analysisTasks   DocumentAnalysisTaskRecord[]
+  complianceRuns  ComplianceCheckRun[]
+  complianceChecks ComplianceCheckRecord[]
 }
 
 model BuildingMemory {
@@ -726,4 +741,55 @@ model DocumentAnalysisTaskRecord {
 
   @@index([projectId])
   @@index([documentId])
+}
+
+/// Persisted compliance engine run (rule evaluation snapshot)
+model ComplianceCheckRun {
+  id                String                  @id @default(cuid())
+  projectId         String
+  engineVersion     String
+  overallCompliance ComplianceOverallStatus
+  scenarios         String[]
+  climateZone       String
+  measurements      Json?
+  summary           Json
+  criticalIssues    String[]
+  recommendations   String[]
+  diagnosisApplied  Boolean                 @default(false)
+  diagnosisCount    Int                     @default(0)
+  createdAt         DateTime                @default(now())
+
+  project Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  checks  ComplianceCheckRecord[]
+
+  @@index([projectId])
+  @@index([projectId, createdAt])
+}
+
+/// Individual rule check result within a compliance run
+model ComplianceCheckRecord {
+  id            String               @id @default(cuid())
+  runId         String
+  projectId     String
+  ruleId        String
+  category      String
+  codeRef       String
+  codeId        String
+  section       String
+  requirement   String
+  requirementZh String
+  status        ComplianceItemStatus
+  actualValue   String?
+  requiredValue String
+  note          String               @db.Text
+  noteZh        String?
+  priority      String
+  remediation   String?              @db.Text
+
+  run     ComplianceCheckRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  project Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([projectId])
+  @@index([projectId, ruleId])
 }

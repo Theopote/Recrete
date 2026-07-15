@@ -8,6 +8,7 @@ import {
   getScenariosForProject,
   type ComplianceMeasurements,
 } from "@/lib/ai/compliance";
+import { listComplianceRuns, persistComplianceResult } from "@/lib/db/compliance-store";
 
 function parseMeasurements(body: Record<string, unknown>): ComplianceMeasurements {
   return {
@@ -28,8 +29,14 @@ function parseMeasurements(body: Record<string, unknown>): ComplianceMeasurement
   };
 }
 
+function parseApplyDiagnosis(body: Record<string, unknown>) {
+  if (body.applyDiagnosis === false) return false;
+  if (body.applyDiagnosis === true) return true;
+  return true;
+}
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
@@ -38,7 +45,10 @@ export async function GET(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  return NextResponse.json({
+  const url = new URL(request.url);
+  const historyLimit = Number(url.searchParams.get("history") ?? "0");
+
+  const payload: Record<string, unknown> = {
     scenarios: getScenariosForProject(project),
     applicableCodes: getApplicableCodesForProject(project).map((c) => ({
       id: c.id,
@@ -47,7 +57,13 @@ export async function GET(
       nameZh: c.nameZh,
       category: c.category,
     })),
-  });
+  };
+
+  if (historyLimit > 0) {
+    payload.history = await listComplianceRuns(projectId, Math.min(historyLimit, 50));
+  }
+
+  return NextResponse.json(payload);
 }
 
 export async function POST(
@@ -65,18 +81,33 @@ export async function POST(
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const measurements = parseMeasurements(body);
-  const applyDiagnosis = Boolean(body.applyDiagnosis);
+  const applyDiagnosis = parseApplyDiagnosis(body);
 
   const platform = getAIPlatform();
   const report = runComplianceEngine(project, { measurements });
-  const diagnosisItems = await platform.compliance.generateComplianceDiagnosis(
+  const diagnosisDrafts = await platform.compliance.generateComplianceDiagnosis(
     project,
     measurements
   );
 
+  const persisted = await persistComplianceResult({
+    projectId,
+    report,
+    measurements,
+    diagnosisDrafts,
+    applyDiagnosis,
+  });
+
   return NextResponse.json({
     report,
-    diagnosisItems,
-    appliedDiagnosis: applyDiagnosis,
+    run: persisted.run,
+    diagnosisItems: persisted.diagnosis?.created ?? diagnosisDrafts,
+    diagnosisApplied: Boolean(persisted.diagnosis),
+    diagnosisStats: persisted.diagnosis
+      ? {
+          created: persisted.diagnosis.diagnosisCount,
+          skipped: persisted.diagnosis.skipped,
+        }
+      : null,
   });
 }

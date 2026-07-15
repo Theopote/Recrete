@@ -49,9 +49,17 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const [complianceMeta, setComplianceMeta] = useState<{
     scenarios?: string[];
     applicableCodes?: Array<{ code: string; nameZh: string; category: string }>;
+    history?: Array<{
+      id: string;
+      overallCompliance: string;
+      diagnosisCount: number;
+      diagnosisApplied: boolean;
+      createdAt: string;
+    }>;
   } | null>(null);
 
   const [complianceInput, setComplianceInput] = useState({
+    applyDiagnosis: true,
     ceilingHeight: "",
     stairWidth: "",
     fireCompartmentArea: "",
@@ -105,12 +113,25 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   };
 
   const loadComplianceMeta = async () => {
-    const res = await fetch(`/api/projects/${project.id}/compliance`);
+    const res = await fetch(`/api/projects/${project.id}/compliance?history=5`);
     if (res.ok) {
       const data = await res.json();
       setComplianceMeta({
         scenarios: data.scenarios,
         applicableCodes: data.applicableCodes,
+        history: data.history?.map((h: {
+          id: string;
+          overallCompliance: string;
+          diagnosisCount: number;
+          diagnosisApplied: boolean;
+          createdAt: string;
+        }) => ({
+          id: h.id,
+          overallCompliance: h.overallCompliance,
+          diagnosisCount: h.diagnosisCount,
+          diagnosisApplied: h.diagnosisApplied,
+          createdAt: h.createdAt,
+        })),
       });
     }
   };
@@ -136,9 +157,13 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           windowUValue: complianceInput.windowUValue
             ? Number(complianceInput.windowUValue)
             : undefined,
+          applyDiagnosis: complianceInput.applyDiagnosis,
         }),
       });
-      if (res.ok) setComplianceResult(await res.json());
+      if (res.ok) {
+        setComplianceResult(await res.json());
+        await loadComplianceMeta();
+      }
     } finally {
       setComplianceLoading(false);
     }
@@ -330,6 +355,17 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     }>;
     criticalIssues?: string[];
     recommendations?: string[];
+  } | undefined;
+
+  const diagnosisStats = complianceResult?.diagnosisStats as {
+    created?: number;
+    skipped?: number;
+  } | undefined;
+
+  const complianceRun = complianceResult?.run as {
+    id?: string;
+    diagnosisApplied?: boolean;
+    diagnosisCount?: number;
   } | undefined;
 
   const statusColor = (status: string) => {
@@ -560,6 +596,19 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     Scenarios: {complianceMeta.scenarios.join(", ")}
                   </p>
                 )}
+                {complianceMeta.history && complianceMeta.history.length > 0 && (
+                  <div className="pt-2 border-t">
+                    <p className="font-medium mb-1">Recent runs · 历史记录</p>
+                    <ul className="text-muted-foreground space-y-1">
+                      {complianceMeta.history.map((h) => (
+                        <li key={h.id}>
+                          • {new Date(h.createdAt).toLocaleString()} — {h.overallCompliance}
+                          {h.diagnosisApplied ? ` · ${h.diagnosisCount} diagnosis written` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -624,6 +673,19 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 />
                 Accessible entrance provided
               </label>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={complianceInput.applyDiagnosis}
+                  onChange={(e) =>
+                    setComplianceInput((s) => ({
+                      ...s,
+                      applyDiagnosis: e.target.checked,
+                    }))
+                  }
+                />
+                Auto-write diagnosis items to database · 自动写入诊断项
+              </label>
               <Button variant="copper" size="sm" onClick={runCompliance} disabled={complianceLoading}>
                 {complianceLoading ? (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -653,7 +715,22 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                       Engine v{report.engineVersion}
                     </Badge>
                   )}
+                  {complianceRun?.id && (
+                    <Badge variant="outline" className="text-[10px]">
+                      Run {complianceRun.id.slice(0, 8)}
+                    </Badge>
+                  )}
                 </div>
+
+                {diagnosisStats && (
+                  <p className="text-xs text-muted-foreground">
+                    Diagnosis: {diagnosisStats.created ?? 0} created
+                    {(diagnosisStats.skipped ?? 0) > 0
+                      ? `, ${diagnosisStats.skipped} skipped (duplicate)`
+                      : ""}
+                    {complianceRun?.diagnosisApplied ? " · persisted" : ""}
+                  </p>
+                )}
 
                 {report.summary && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
