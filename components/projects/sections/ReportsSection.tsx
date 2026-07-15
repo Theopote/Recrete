@@ -9,6 +9,8 @@ import { Select } from "@/components/ui/select";
 import { reportTypeLabels } from "@/lib/utils/labels";
 import type { ProjectWithRelations, Report, ReportType } from "@/types";
 import { FileText, Sparkles } from "lucide-react";
+import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
+import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { formatDate } from "@/lib/utils";
 
@@ -21,21 +23,27 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
   const [selectedReport, setSelectedReport] = useState<Report | null>(reports[0] ?? null);
   const [reportType, setReportType] = useState<ReportType>("existing_condition_report");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setAiError(null);
     try {
       const res = await fetch(`/api/projects/${initialProject.id}/reports/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reportType }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const report = await res.json();
-        const parsed = parseReport(report);
+        const parsed = parseReport(data);
         setReports((prev) => [parsed, ...prev]);
         setSelectedReport(parsed);
+      } else {
+        setAiError(parseAIErrorResponse(data));
       }
+    } catch {
+      setAiError({ message: "网络异常，请稍后重试。", retryable: true });
     } finally {
       setIsGenerating(false);
     }
@@ -73,6 +81,15 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
           </RoleGate>
         }
       />
+
+      {aiError && (
+        <AIErrorBanner
+          message={aiError.message}
+          retryable={aiError.retryable}
+          onRetry={handleGenerate}
+          onDismiss={() => setAiError(null)}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="space-y-2">

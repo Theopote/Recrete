@@ -14,6 +14,8 @@ import type { StrategyLabParams } from "@/types/ai";
 import { StrategyRankingPanel } from "@/components/strategies/StrategyRankingPanel";
 import { StrategySpatialCompareSection } from "@/components/strategies/StrategySpatialCompareSection";
 import { SimilarCasesPanel } from "@/components/ai/SimilarCasesPanel";
+import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
+import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { Lightbulb, Sparkles, GitCompare } from "lucide-react";
 
@@ -26,22 +28,28 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
   const router = useRouter();
   const [strategies, setStrategies] = useState(initialMetrics);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
   const [showComparison, setShowComparison] = useState(true);
   const [labParams, setLabParams] = useState<Partial<StrategyLabParams>>({});
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setAiError(null);
     try {
       const res = await fetch(`/api/projects/${project.id}/strategies/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ params: labParams }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
         setStrategies(data.strategies.map(parseStrategy));
         router.refresh();
+      } else {
+        setAiError(parseAIErrorResponse(data));
       }
+    } catch {
+      setAiError({ message: "网络异常，请稍后重试。", retryable: true });
     } finally {
       setIsGenerating(false);
     }
@@ -87,6 +95,15 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
           </div>
         }
       />
+
+      {aiError && (
+        <AIErrorBanner
+          message={aiError.message}
+          retryable={aiError.retryable}
+          onRetry={handleGenerate}
+          onDismiss={() => setAiError(null)}
+        />
+      )}
 
       <StrategyLabParamsForm
         onChange={setLabParams}

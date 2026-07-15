@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ASSISTANT_SUGGESTIONS } from "@/lib/ai/prompts";
+import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import { cn } from "@/lib/utils";
 import type { AIMessage } from "@/types";
 import type { KnowledgeSnippet, SourceEvidence } from "@/types/ai";
@@ -61,10 +62,11 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(typeof data.error === "string" ? data.error : "Request failed");
+        const parsed = parseAIErrorResponse(data);
+        throw new Error(parsed.message);
       }
       if (!data.response) {
-        throw new Error("Empty response from assistant");
+        throw new Error("助手未返回有效内容，请稍后重试。");
       }
       setMessages((prev) => [
         ...prev,
@@ -82,8 +84,8 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
           role: "assistant",
           content:
             error instanceof Error
-              ? `Sorry, something went wrong: ${error.message}`
-              : "Sorry, I encountered an error. Please try again.",
+              ? error.message
+              : "抱歉，请求失败，请稍后重试。",
           timestamp: new Date(),
         },
       ]);

@@ -6,6 +6,8 @@ import { DiagnosisFormDialog } from "@/components/diagnosis/DiagnosisFormDialog"
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
+import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
+import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import { diagnosisCategoryLabels } from "@/lib/utils/labels";
 import type { DiagnosisItem, ProjectWithRelations } from "@/types";
 import { Sparkles, Stethoscope, Plus } from "lucide-react";
@@ -18,21 +20,28 @@ interface DiagnosisSectionProps {
 export function DiagnosisSection({ project: initialProject }: DiagnosisSectionProps) {
   const [items, setItems] = useState(initialProject.diagnosis ?? []);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DiagnosisItem | null>(null);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setAiError(null);
     try {
       const res = await fetch(`/api/projects/${initialProject.id}/diagnosis/generate`, {
         method: "POST",
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
         const newItems = data.diagnosisItems ?? data;
         setItems((prev) => [...newItems.map(parseDiagnosis), ...prev]);
+      } else {
+        const parsed = parseAIErrorResponse(data);
+        setAiError(parsed);
       }
+    } catch {
+      setAiError({ message: "网络异常，请稍后重试。", retryable: true });
     } finally {
       setIsGenerating(false);
     }
@@ -88,6 +97,15 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
           </RoleGate>
         }
       />
+
+      {aiError && (
+        <AIErrorBanner
+          message={aiError.message}
+          retryable={aiError.retryable}
+          onRetry={handleGenerate}
+          onDismiss={() => setAiError(null)}
+        />
+      )}
 
       <div className="flex flex-wrap gap-2">
         <CategoryPill label="All" count={items.length} active={activeCategory === "all"} onClick={() => setActiveCategory("all")} />

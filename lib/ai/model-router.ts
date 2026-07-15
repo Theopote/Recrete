@@ -56,8 +56,25 @@ export function resolveVisionModel(provider: "openai" | "anthropic"): string {
   return process.env.OPENAI_VISION_MODEL ?? resolveModel("vision");
 }
 
+export function getAIServiceMode(): "mock" | "openai" {
+  if (process.env.AI_SERVICE === "mock") return "mock";
+  if (process.env.OPENAI_API_KEY) {
+    const svc = process.env.AI_SERVICE;
+    if (!svc || svc === "openai" || svc === "auto") return "openai";
+  }
+  if (process.env.AI_SERVICE === "openai" && process.env.OPENAI_API_KEY) {
+    return "openai";
+  }
+  return "mock";
+}
+
 export function isOpenAIConfigured(): boolean {
-  return process.env.AI_SERVICE === "openai" && Boolean(process.env.OPENAI_API_KEY);
+  return getAIServiceMode() === "openai";
+}
+
+/** True when real paid API calls may occur (quota applies). */
+export function isRealAIEnabled(): boolean {
+  return isOpenAIConfigured();
 }
 
 export function modelLabel(scenario: AIModelScenario, suffix?: string): string {

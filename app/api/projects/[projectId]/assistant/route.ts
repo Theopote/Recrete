@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildProjectAIContext } from "@/lib/ai";
+import { buildProjectAIContext, withAIInvocation, aiErrorResponse } from "@/lib/ai";
 import { askProjectCopilot, getCopilotRagSources } from "@/lib/ai/agents/copilot-agent";
 import {
   runStrategyIterationWorkflow,
@@ -35,60 +35,106 @@ export async function POST(
   const { messages } = (await request.json()) as { messages: AIMessage[] };
   const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
 
-  if (lastUserMessage && isStrategyIterationRequest(lastUserMessage.content)) {
+  try {
+    if (lastUserMessage && isStrategyIterationRequest(lastUserMessage.content)) {
+      const projectContext = await buildProjectAIContext(
+        projectId,
+        user.organizationId,
+        lastUserMessage.content
+      );
+      if (!projectContext) {
+        return NextResponse.json(
+          {
+            error: "NOT_FOUND",
+            code: "NOT_FOUND",
+            message: "项目不存在或无权访问。",
+            retryable: false,
+          },
+          { status: 404 }
+        );
+      }
+
+      const strategies = projectContext.project.strategies ?? [];
+      if (strategies.length === 0) {
+        const response = await withAIInvocation(
+          {
+            organizationId: user.organizationId,
+            userId: user.id,
+            operation: "copilot",
+          },
+          () => askProjectCopilot(projectContext, messages)
+        );
+        return NextResponse.json({
+          response,
+          sources: getCopilotRagSources(projectContext),
+        });
+      }
+
+      const target = findStrategyForInstruction(strategies, lastUserMessage.content);
+      if (!target) {
+        return NextResponse.json({
+          response:
+            "无法确定要调整哪个方案。请指定方案 1、2 或 3，或先在策略实验室生成方案。",
+        });
+      }
+
+      const result = await withAIInvocation(
+        {
+          organizationId: user.organizationId,
+          userId: user.id,
+          operation: "strategy_generate",
+        },
+        () =>
+          runStrategyIterationWorkflow(projectId, user.organizationId, {
+            strategyId: target.id,
+            instruction: lastUserMessage.content,
+          })
+      );
+
+      if (!result) {
+        return NextResponse.json({
+          response: "方案调整失败，请稍后重试。",
+          retryable: true,
+        });
+      }
+
+      return NextResponse.json({
+        response: `**方案已更新：${result.strategy.name}**\n\n${result.strategy.summary}\n\n**更新重点：**\n• 空间：${result.strategy.spatialStrategy.slice(0, 120)}…\n• 立面：${result.strategy.facadeStrategy.slice(0, 120)}…\n\nBuilding Memory 已同步本次迭代。`,
+        strategyUpdated: result.strategy,
+      });
+    }
+
     const projectContext = await buildProjectAIContext(
       projectId,
       user.organizationId,
-      lastUserMessage.content
+      lastUserMessage?.content
     );
     if (!projectContext) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "NOT_FOUND",
+          code: "NOT_FOUND",
+          message: "项目不存在或无权访问。",
+          retryable: false,
+        },
+        { status: 404 }
+      );
     }
 
-    const strategies = projectContext.project.strategies ?? [];
-    if (strategies.length === 0) {
-      const response = await askProjectCopilot(projectContext, messages);
-      return NextResponse.json({
-        response,
-        sources: getCopilotRagSources(projectContext),
-      });
-    }
-
-    const target = findStrategyForInstruction(strategies, lastUserMessage.content);
-    if (!target) {
-      return NextResponse.json({
-        response:
-          "I couldn't identify which strategy to refine. Please specify option 1, 2, or 3, or generate strategies in Strategy Lab first.",
-      });
-    }
-
-    const result = await runStrategyIterationWorkflow(projectId, user.organizationId, {
-      strategyId: target.id,
-      instruction: lastUserMessage.content,
-    });
-
-    if (!result) {
-      return NextResponse.json({ response: "Strategy iteration failed. Please try again." });
-    }
+    const response = await withAIInvocation(
+      {
+        organizationId: user.organizationId,
+        userId: user.id,
+        operation: "copilot",
+      },
+      () => askProjectCopilot(projectContext, messages)
+    );
 
     return NextResponse.json({
-      response: `**Strategy refined: ${result.strategy.name}**\n\n${result.strategy.summary}\n\n**Updated focus:**\n• Spatial: ${result.strategy.spatialStrategy.slice(0, 120)}…\n• Facade: ${result.strategy.facadeStrategy.slice(0, 120)}…\n\nBuilding Memory has been updated with this iteration.`,
-      strategyUpdated: result.strategy,
+      response,
+      sources: getCopilotRagSources(projectContext),
     });
+  } catch (error) {
+    return aiErrorResponse(error);
   }
-
-  const projectContext = await buildProjectAIContext(
-    projectId,
-    user.organizationId,
-    lastUserMessage?.content
-  );
-  if (!projectContext) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
-
-  const response = await askProjectCopilot(projectContext, messages);
-  return NextResponse.json({
-    response,
-    sources: getCopilotRagSources(projectContext),
-  });
 }

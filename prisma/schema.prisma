@@ -284,6 +284,7 @@ model Organization {
 
   users    User[]
   projects Project[]
+  aiUsageEvents AIUsageEvent[]
 }
 
 model User {
@@ -795,4 +796,22 @@ model ComplianceCheckRecord {
   @@index([runId])
   @@index([projectId])
   @@index([projectId, ruleId])
+}
+
+// ─── AI usage (Month 2: per-org quota) ───────────────────────────────────────
+
+model AIUsageEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  operation      String
+  provider       String   @default("mock")
+  modelName      String?
+  success        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, operation])
 }

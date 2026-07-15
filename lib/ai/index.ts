@@ -20,7 +20,13 @@ export function getAIPlatform() {
   return mockAIProvider;
 }
 
-export { isOpenAIConfigured } from "./model-router";
+export { isOpenAIConfigured, getAIServiceMode, isRealAIEnabled } from "./model-router";
+export { withAIInvocation } from "./invoke";
+export type { InvokeAIContext } from "./invoke";
+export { aiErrorResponse } from "./api-response";
+export { getAIStatus } from "./ai-status";
+export { normalizeAIError, AIServiceError, aiErrorToJson } from "./errors";
+export type { AIErrorCode } from "./errors";
 export { mockAIProvider, openAIProvider, openAIPlatform };
 export { buildProjectAIContext, buildProjectAIContextSync } from "./context-builder";
 export * as agents from "./agents";

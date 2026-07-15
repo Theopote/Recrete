@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { runStrategyWorkflow } from "@/lib/ai/workflow/strategy-workflow";
+import { withAIInvocation, aiErrorResponse } from "@/lib/ai";
 import { guardOrRespond } from "@/lib/auth/api-guard";
 import { requireProjectAccess } from "@/lib/auth/authorize";
 import type { StrategyLabParams } from "@/types/ai";
@@ -18,10 +19,33 @@ export async function POST(
   const body = await request.json().catch(() => ({}));
   const paramsInput = body.params as Partial<StrategyLabParams> | undefined;
 
-  const result = await runStrategyWorkflow(projectId, access.user.organizationId, { params: paramsInput });
-  if (!result) {
-    return NextResponse.json({ error: "Strategy workflow failed" }, { status: 500 });
-  }
+  try {
+    const result = await withAIInvocation(
+      {
+        organizationId: access.user.organizationId,
+        userId: access.user.id,
+        operation: "strategy_generate",
+      },
+      () =>
+        runStrategyWorkflow(projectId, access.user.organizationId, {
+          params: paramsInput,
+        })
+    );
 
-  return NextResponse.json(result);
+    if (!result) {
+      return NextResponse.json(
+        {
+          error: "NOT_FOUND",
+          code: "NOT_FOUND",
+          message: "项目不存在或无权访问。",
+          retryable: false,
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(result);
+  } catch (error) {
+    return aiErrorResponse(error);
+  }
 }

@@ -1,7 +1,7 @@
 import type { DiagnosisItem, ProjectWithRelations } from "@/types";
 import type { AIInsight, AITask } from "@/types/ai";
+import { getAIService } from "@/lib/ai";
 import { withMockDelay } from "../providers/utils";
-import { mockAIService } from "../mock-ai-service";
 import {
   runDiagnosisInsightsChain,
   runDiagnosisTasksChain,
@@ -10,7 +10,8 @@ import {
 export async function generateDiagnosis(
   project: ProjectWithRelations
 ): Promise<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]> {
-  return mockAIService.generateDiagnosis(project);
+  const ai = getAIService();
+  return ai.generateDiagnosis(project, project.documents);
 }
 
 export async function generateDiagnosisInsights(
