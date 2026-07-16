@@ -8,6 +8,49 @@ export interface MepAnalysisInput {
   requiredElectricalKva?: number;
 }
 
+export type MepClashType =
+  | "shaft_overcrowding"
+  | "plenum_clearance"
+  | "beam_duct_conflict"
+  | "function_change_shaft"
+  | "electrical_routing"
+  | "legacy_hvac_routing"
+  | "plumbing_riser_conflict"
+  | "low_floor_to_floor"
+  | "routing_verification";
+
+export type MepClashSeverity = "low" | "medium" | "high" | "critical";
+
+export interface MepClashInput {
+  shaftWidthMm?: number;
+  shaftDepthMm?: number;
+  floorToFloorHeightM?: number;
+  ceilingPlenumMm?: number;
+  mainBeamDepthMm?: number;
+  hvacMainDuctWidthMm?: number;
+  riserCount?: number;
+}
+
+export interface MepClashItem {
+  id: string;
+  type: MepClashType;
+  priority: MepClashSeverity;
+  disciplines: string[];
+  title: BilingualString;
+  description: BilingualString;
+  location: BilingualString;
+  remediation: BilingualString;
+  clearanceMm?: number;
+  requiredClearanceMm?: number;
+}
+
+export interface MepClashReport {
+  clashCount: number;
+  criticalCount: number;
+  clashes: MepClashItem[];
+  summary: BilingualString;
+}
+
 export interface HvacEfficiencyAssessment {
   estimatedCop: number;
   efficiencyRating: "poor" | "fair" | "good";
@@ -347,6 +390,295 @@ export class MepAgent {
         : []),
     ];
   }
+
+  detectPipelineClashes(
+    project: ProjectWithRelations,
+    input: MepClashInput & MepAnalysisInput = {}
+  ): MepClashReport {
+    const clashes: MepClashItem[] = [];
+    const functionChange = project.currentFunction !== project.targetFunction;
+    const shaftAreaMm2 =
+      input.shaftWidthMm != null && input.shaftDepthMm != null
+        ? input.shaftWidthMm * input.shaftDepthMm
+        : undefined;
+    const mmPerRiser =
+      shaftAreaMm2 != null && input.riserCount != null && input.riserCount > 0
+        ? shaftAreaMm2 / input.riserCount
+        : undefined;
+
+    const hvacAge =
+      input.hvacAgeYears ?? Math.max(0, new Date().getFullYear() - project.constructionYear - 8);
+    const requiredKva =
+      input.requiredElectricalKva ??
+      (project.targetFunction.includes("文化") ||
+      project.targetFunction.toLowerCase().includes("cultural")
+        ? 120
+        : 80);
+    const electricalInsufficient =
+      input.electricalCapacityKva != null && input.electricalCapacityKva < requiredKva * 0.9;
+    const plumbingCondition = input.plumbingCondition ?? "fair";
+
+    const pushClash = (clash: MepClashItem) => {
+      if (!clashes.some((existing) => existing.id === clash.id)) {
+        clashes.push(clash);
+      }
+    };
+
+    if (input.riserCount != null && input.riserCount >= 4) {
+      if (shaftAreaMm2 != null && shaftAreaMm2 < 1_000_000) {
+        pushClash({
+          id: "shaft-overcrowding",
+          type: "shaft_overcrowding",
+          priority: input.riserCount >= 5 ? "critical" : "high",
+          disciplines: ["HVAC", "Plumbing", "Electrical"],
+          title: bi("Vertical shaft overcrowding", "竖向管井过密"),
+          description: bi(
+            `${input.riserCount} risers share a shaft of ~${Math.round(shaftAreaMm2 / 1000) / 1000} m² — below typical clearance for combined MEP routing.`,
+            `${input.riserCount} 路立管共用约 ${Math.round(shaftAreaMm2 / 1000) / 1000} m² 管井，低于机电综合布线的常规净距要求。`
+          ),
+          location: bi("Vertical MEP shaft", "机电竖井"),
+          remediation: bi(
+            "Split risers into dedicated shafts or enlarge shaft before routing design freeze.",
+            "在路由定案前分立管井或扩大管井截面。"
+          ),
+        });
+      } else if (mmPerRiser != null && mmPerRiser < 220_000) {
+        pushClash({
+          id: "shaft-overcrowding",
+          type: "shaft_overcrowding",
+          priority: "high",
+          disciplines: ["HVAC", "Plumbing", "Electrical"],
+          title: bi("Insufficient shaft area per riser", "管井人均面积不足"),
+          description: bi(
+            `Average shaft area ~${Math.round(mmPerRiser / 1000)}k mm² per riser with ${input.riserCount} systems — likely routing conflicts during construction.`,
+            `${input.riserCount} 路系统均摊管井面积约 ${Math.round(mmPerRiser / 1000)}k mm²，施工阶段易出现管线碰撞。`
+          ),
+          location: bi("Vertical MEP shaft", "机电竖井"),
+          remediation: bi(
+            "Reallocate risers or increase shaft dimensions; run coordinated routing workshop.",
+            "重新分配立管或扩大管井，开展机电综合排布协调会。"
+          ),
+        });
+      }
+    }
+
+    if (
+      input.ceilingPlenumMm != null &&
+      input.mainBeamDepthMm != null &&
+      input.hvacMainDuctWidthMm != null
+    ) {
+      const requiredClearanceMm = input.mainBeamDepthMm + input.hvacMainDuctWidthMm + 150;
+      if (input.ceilingPlenumMm < requiredClearanceMm) {
+        pushClash({
+          id: "plenum-clearance",
+          type: "plenum_clearance",
+          priority: input.ceilingPlenumMm < requiredClearanceMm * 0.85 ? "critical" : "high",
+          disciplines: ["HVAC", "Structure"],
+          title: bi("Ceiling plenum clearance conflict", "吊顶夹层净高冲突"),
+          description: bi(
+            `Plenum ${input.ceilingPlenumMm} mm is less than required ~${requiredClearanceMm} mm (beam ${input.mainBeamDepthMm} mm + duct ${input.hvacMainDuctWidthMm} mm + 150 mm clearance).`,
+            `夹层净高 ${input.ceilingPlenumMm} mm 小于所需约 ${requiredClearanceMm} mm（梁 ${input.mainBeamDepthMm} mm + 风管 ${input.hvacMainDuctWidthMm} mm + 150 mm 余量）。`
+          ),
+          location: bi("Ceiling plenum, typical floor", "标准层吊顶夹层"),
+          remediation: bi(
+            "Lower duct routing, use flat-oval duct, or locally drop ceiling — coordinate with structure.",
+            "降低风管路由、采用扁风管或局部降板，并与结构专业协调。"
+          ),
+          clearanceMm: input.ceilingPlenumMm,
+          requiredClearanceMm,
+        });
+      }
+    }
+
+    if (
+      input.mainBeamDepthMm != null &&
+      input.hvacMainDuctWidthMm != null &&
+      input.ceilingPlenumMm == null &&
+      input.floorToFloorHeightM != null &&
+      input.floorToFloorHeightM < 3.4
+    ) {
+      const estimatedPlenumMm = Math.max(0, (input.floorToFloorHeightM - 2.7) * 1000);
+      const requiredClearanceMm = input.mainBeamDepthMm + input.hvacMainDuctWidthMm + 150;
+      if (estimatedPlenumMm < requiredClearanceMm) {
+        pushClash({
+          id: "beam-duct-conflict",
+          type: "beam_duct_conflict",
+          priority: "high",
+          disciplines: ["HVAC", "Structure"],
+          title: bi("Beam vs main duct routing conflict", "结构梁与主风管路由冲突"),
+          description: bi(
+            `Estimated plenum ~${Math.round(estimatedPlenumMm)} mm (floor-to-floor ${input.floorToFloorHeightM} m) may not fit beam depth ${input.mainBeamDepthMm} mm and duct ${input.hvacMainDuctWidthMm} mm.`,
+            `估算夹层净高约 ${Math.round(estimatedPlenumMm)} mm（层高 ${input.floorToFloorHeightM} m）可能无法容纳梁深 ${input.mainBeamDepthMm} mm 与风管 ${input.hvacMainDuctWidthMm} mm。`
+          ),
+          location: bi("Typical floor corridor / plenum zone", "标准层走道/夹层区"),
+          remediation: bi(
+            "Survey beam bottoms and reroute duct below beam soffit or through dedicated shaft.",
+            "实测梁底标高，将风管改绕梁底或经由专用竖井敷设。"
+          ),
+          clearanceMm: estimatedPlenumMm,
+          requiredClearanceMm,
+        });
+      }
+    }
+
+    if (functionChange) {
+      if (input.shaftWidthMm != null && input.shaftWidthMm < 1000) {
+        pushClash({
+          id: "function-change-shaft",
+          type: "function_change_shaft",
+          priority: "high",
+          disciplines: ["HVAC", "Plumbing", "Electrical"],
+          title: bi("Shaft undersized for occupancy change", "功能转换后管井容量不足"),
+          description: bi(
+            `Converting ${project.currentFunction} → ${project.targetFunction} with shaft width ${input.shaftWidthMm} mm — likely insufficient for added loads.`,
+            `功能由「${project.currentFunction}」转为「${project.targetFunction}」，管井宽度 ${input.shaftWidthMm} mm 可能无法满足新增负荷。`
+          ),
+          location: bi("Primary MEP shaft", "主机电竖井"),
+          remediation: bi(
+            "Evaluate shaft enlargement or new vertical routing path before design development.",
+            "方案深化前评估管井扩增或新增竖向路由。"
+          ),
+        });
+      } else if (input.shaftWidthMm == null) {
+        pushClash({
+          id: "function-change-shaft",
+          type: "routing_verification",
+          priority: "medium",
+          disciplines: ["HVAC", "Plumbing", "Electrical"],
+          title: bi("Shaft sizing verification required", "管井尺寸待核实"),
+          description: bi(
+            `Occupancy change to ${project.targetFunction} requires shaft and riser capacity review — dimensions not provided.`,
+            `使用功能转为「${project.targetFunction}」，需复核管井与立管容量，尚未提供尺寸。`
+          ),
+          location: bi("Vertical MEP shafts", "机电竖向管井"),
+          remediation: bi(
+            "Measure existing shaft sizes and document riser counts on site.",
+            "现场测量既有管井尺寸并统计立管数量。"
+          ),
+        });
+      }
+    }
+
+    if (electricalInsufficient) {
+      pushClash({
+        id: "electrical-routing",
+        type: "electrical_routing",
+        priority: "high",
+        disciplines: ["Electrical"],
+        title: bi("Electrical upgrade routing conflict risk", "电气增容路由冲突风险"),
+        description: bi(
+          `Panel capacity ${input.electricalCapacityKva} kVA below ${requiredKva} kVA target — new feeders/risers may conflict with existing routing.`,
+          `配电容量 ${input.electricalCapacityKva} kVA 低于目标 ${requiredKva} kVA，新增主干/立管可能与既有路由冲突。`
+        ),
+        location: bi("Main switch room, vertical risers", "变配电室、电气竖井"),
+        remediation: bi(
+          "Plan dedicated electrical shaft or surface raceway routes before panel upgrade.",
+          "配电增容前规划专用电气竖井或明敷桥架路径。"
+        ),
+      });
+    }
+
+    if (functionChange && hvacAge > 15) {
+      pushClash({
+        id: "legacy-hvac-routing",
+        type: "legacy_hvac_routing",
+        priority: "medium",
+        disciplines: ["HVAC"],
+        title: bi("Legacy HVAC routing vs new program", "老旧暖通路由与新功能冲突"),
+        description: bi(
+          `HVAC equipment ~${hvacAge} years old with occupancy change — replacement ducts may not fit existing plenum/shaft paths.`,
+          `暖通设备约 ${hvacAge} 年且功能变更，更换风管可能无法沿用现有夹层/管井路径。`
+        ),
+        location: bi("Mechanical rooms, ceiling plenum", "空调机房、吊顶夹层"),
+        remediation: bi(
+          "Scan existing duct routes and confirm plenum height before equipment selection.",
+          "设备选型前扫描既有风管路由并确认夹层净高。"
+        ),
+      });
+    }
+
+    if (plumbingCondition === "poor" && (input.riserCount ?? 0) >= 2) {
+      pushClash({
+        id: "plumbing-riser-conflict",
+        type: "plumbing_riser_conflict",
+        priority: "high",
+        disciplines: ["Plumbing"],
+        title: bi("Plumbing riser replacement routing conflict", "给排水立管更换路由冲突"),
+        description: bi(
+          "Poor plumbing condition with multiple shared risers — replacement routing may conflict with live HVAC/electrical services.",
+          "给排水状况较差且多路立管共用，更换路由可能与运行中的暖通/电气管线冲突。"
+        ),
+        location: bi("Plumbing risers, basement to upper floors", "给排水立管（地下至上层）"),
+        remediation: bi(
+          "Phase riser replacement floor-by-floor with temporary bypass and clash review.",
+          "分层分期更换立管，设置临时旁通并完成碰撞复核。"
+        ),
+      });
+    }
+
+    if (input.floorToFloorHeightM != null && input.floorToFloorHeightM < 3.0) {
+      pushClash({
+        id: "low-floor-to-floor",
+        type: "low_floor_to_floor",
+        priority: "high",
+        disciplines: ["HVAC", "Plumbing", "Electrical", "Structure"],
+        title: bi("Low floor-to-floor height constrains MEP routing", "层高过低限制机电路由"),
+        description: bi(
+          `Floor-to-floor height ${input.floorToFloorHeightM} m leaves limited plenum for ducts, pipes, and cable trays.`,
+          `层高 ${input.floorToFloorHeightM} m，吊顶夹层空间有限，风管、水管与桥架路由受限。`
+        ),
+        location: bi("Typical occupied floors", "标准使用楼层"),
+        remediation: bi(
+          "Use compact MEP layouts, shallow ducts, and coordinated ceiling drops.",
+          "采用紧凑型机电布置、浅风管与协同降板方案。"
+        ),
+      });
+    }
+
+    if (
+      functionChange &&
+      input.ceilingPlenumMm == null &&
+      input.floorToFloorHeightM == null &&
+      clashes.every((c) => c.id !== "function-change-shaft")
+    ) {
+      pushClash({
+        id: "routing-verification",
+        type: "routing_verification",
+        priority: "medium",
+        disciplines: ["HVAC", "Plumbing", "Electrical"],
+        title: bi("MEP routing survey recommended", "建议开展机电路由勘察"),
+        description: bi(
+          "Occupancy change without plenum or shaft dimensions — rule-based clash review is incomplete.",
+          "功能变更但未提供夹层/管井尺寸，规则型冲突检测信息不完整。"
+        ),
+        location: bi("Project-wide MEP routing", "项目机电路由"),
+        remediation: bi(
+          "Input shaft size, plenum depth, and riser count, or commission as-built MEP survey.",
+          "补充管井尺寸、夹层深度与立管数量，或委托机电现状勘察。"
+        ),
+      });
+    }
+
+    const criticalCount = clashes.filter(
+      (c) => c.priority === "critical" || c.priority === "high"
+    ).length;
+
+    return {
+      clashCount: clashes.length,
+      criticalCount,
+      clashes,
+      summary:
+        clashes.length === 0
+          ? bi(
+              "No rule-based pipeline clashes detected with current inputs.",
+              "根据当前输入，未检测到规则型管线冲突。"
+            )
+          : bi(
+              `${clashes.length} potential clash(es) detected (${criticalCount} high/critical).`,
+              `检测到 ${clashes.length} 处潜在管线冲突（${criticalCount} 处高/严重）。`
+            ),
+    };
+  }
 }
 
 export const mepAgent = new MepAgent();
@@ -357,4 +689,11 @@ export function assessMepCapacity(project: ProjectWithRelations, input?: MepAnal
 
 export function generateMepDiagnosis(project: ProjectWithRelations) {
   return mepAgent.generateMepDiagnosis(project);
+}
+
+export function detectPipelineClashes(
+  project: ProjectWithRelations,
+  input?: MepClashInput & MepAnalysisInput
+) {
+  return mepAgent.detectPipelineClashes(project, input);
 }

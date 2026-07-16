@@ -85,6 +85,14 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     hvacAgeYears: "",
     requiredElectricalKva: "",
     plumbingCondition: "fair" as "good" | "fair" | "poor",
+    shaftWidthMm: "",
+    shaftDepthMm: "",
+    floorToFloorHeightM: "",
+    ceilingPlenumMm: "",
+    mainBeamDepthMm: "",
+    hvacMainDuctWidthMm: "",
+    riserCount: "",
+    createIssues: true,
   });
 
   const [energyInput, setEnergyInput] = useState({
@@ -218,6 +226,19 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
             ? Number(mepInput.requiredElectricalKva)
             : undefined,
           plumbingCondition: mepInput.plumbingCondition,
+          shaftWidthMm: mepInput.shaftWidthMm ? Number(mepInput.shaftWidthMm) : undefined,
+          shaftDepthMm: mepInput.shaftDepthMm ? Number(mepInput.shaftDepthMm) : undefined,
+          floorToFloorHeightM: mepInput.floorToFloorHeightM
+            ? Number(mepInput.floorToFloorHeightM)
+            : undefined,
+          ceilingPlenumMm: mepInput.ceilingPlenumMm ? Number(mepInput.ceilingPlenumMm) : undefined,
+          mainBeamDepthMm: mepInput.mainBeamDepthMm ? Number(mepInput.mainBeamDepthMm) : undefined,
+          hvacMainDuctWidthMm: mepInput.hvacMainDuctWidthMm
+            ? Number(mepInput.hvacMainDuctWidthMm)
+            : undefined,
+          riserCount: mepInput.riserCount ? Number(mepInput.riserCount) : undefined,
+          createIssues: mepInput.createIssues,
+          locale,
         }),
       });
       if (res.ok) setMepResult(await res.json());
@@ -306,6 +327,29 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       findings: Array<BilingualString | string>;
       optimizations: Array<BilingualString | string>;
     };
+  } | undefined;
+
+  const mepClashReport = mepResult?.clashReport as {
+    clashCount?: number;
+    criticalCount?: number;
+    summary?: BilingualString | string;
+    clashes?: Array<{
+      id: string;
+      type: string;
+      priority: string;
+      disciplines: string[];
+      title: BilingualString | string;
+      description: BilingualString | string;
+      location: BilingualString | string;
+      remediation: BilingualString | string;
+      clearanceMm?: number;
+      requiredClearanceMm?: number;
+    }>;
+  } | undefined;
+
+  const mepIssueStats = mepResult?.issueStats as {
+    created?: number;
+    skipped?: number;
   } | undefined;
 
   const energyAnalysis = energyResult?.analysis as {
@@ -463,6 +507,14 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     if (status === "marginal") return t("Marginal", "边缘");
     if (status === "insufficient") return t("Insufficient", "不足");
     return status;
+  };
+
+  const mepClashPriorityLabel = (priority: string) => {
+    if (priority === "critical") return t("Critical", "严重");
+    if (priority === "high") return t("High", "高");
+    if (priority === "medium") return t("Medium", "中");
+    if (priority === "low") return t("Low", "低");
+    return priority;
   };
 
   const energyRatingLabel = (rating: string) => {
@@ -1111,6 +1163,49 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   </select>
                 </div>
               </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <p className="text-xs font-medium">{t("Pipeline clash inputs", "管线冲突检测参数")}</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label className="text-xs">{t("Shaft width (mm)", "管井宽度 (mm)")}</Label>
+                    <Input className="h-8 text-xs mt-1" value={mepInput.shaftWidthMm} onChange={(e) => setMepInput((s) => ({ ...s, shaftWidthMm: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("Shaft depth (mm)", "管井深度 (mm)")}</Label>
+                    <Input className="h-8 text-xs mt-1" value={mepInput.shaftDepthMm} onChange={(e) => setMepInput((s) => ({ ...s, shaftDepthMm: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("Riser count", "立管数量")}</Label>
+                    <Input className="h-8 text-xs mt-1" value={mepInput.riserCount} onChange={(e) => setMepInput((s) => ({ ...s, riserCount: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("Floor-to-floor (m)", "层高 (m)")}</Label>
+                    <Input className="h-8 text-xs mt-1" value={mepInput.floorToFloorHeightM} onChange={(e) => setMepInput((s) => ({ ...s, floorToFloorHeightM: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("Ceiling plenum (mm)", "吊顶夹层 (mm)")}</Label>
+                    <Input className="h-8 text-xs mt-1" value={mepInput.ceilingPlenumMm} onChange={(e) => setMepInput((s) => ({ ...s, ceilingPlenumMm: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("Main beam depth (mm)", "主梁深度 (mm)")}</Label>
+                    <Input className="h-8 text-xs mt-1" value={mepInput.mainBeamDepthMm} onChange={(e) => setMepInput((s) => ({ ...s, mainBeamDepthMm: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("HVAC main duct width (mm)", "主风管宽度 (mm)")}</Label>
+                    <Input className="h-8 text-xs mt-1" value={mepInput.hvacMainDuctWidthMm} onChange={(e) => setMepInput((s) => ({ ...s, hvacMainDuctWidthMm: e.target.value }))} />
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={mepInput.createIssues}
+                    onChange={(e) => setMepInput((s) => ({ ...s, createIssues: e.target.checked }))}
+                  />
+                  {t("Create mep_conflict site issues for detected clashes", "为检测到的冲突创建机电冲突现场问题")}
+                </label>
+              </div>
+
               <Button variant="copper" size="sm" onClick={runMep} disabled={mepLoading}>
                 {mepLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
                 {t("Run MEP Assessment", "运行机电评估")}
@@ -1185,6 +1280,67 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 </p>
               )}
             </CardContent></Card>
+          )}
+
+          {mepClashReport && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">{t("Pipeline clash detection", "管线冲突检测")}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={mepClashReport.clashCount ? "destructive" : "outline"}>
+                    {mepClashReport.clashCount ?? 0} {t("clash(es)", "处冲突")}
+                  </Badge>
+                  {(mepClashReport.criticalCount ?? 0) > 0 && (
+                    <Badge variant="destructive">
+                      {mepClashReport.criticalCount} {t("high/critical", "高/严重")}
+                    </Badge>
+                  )}
+                  {mepIssueStats && (mepIssueStats.created ?? 0) > 0 && (
+                    <Badge variant="secondary">
+                      {t("Issues created", "已创建问题")}: {mepIssueStats.created}
+                    </Badge>
+                  )}
+                  {mepIssueStats && (mepIssueStats.skipped ?? 0) > 0 && (
+                    <span className="text-muted-foreground">
+                      {t("Skipped (duplicate)", "跳过（重复）")}: {mepIssueStats.skipped}
+                    </span>
+                  )}
+                </div>
+                {mepClashReport.summary && (
+                  <p className="text-muted-foreground">{bt(mepClashReport.summary)}</p>
+                )}
+                {mepClashReport.clashes && mepClashReport.clashes.length > 0 ? (
+                  <div className="space-y-2">
+                    {mepClashReport.clashes.map((clash) => (
+                      <div key={clash.id} className="border rounded-md p-2 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{bt(clash.title)}</span>
+                          <Badge variant="outline">{mepClashPriorityLabel(clash.priority)}</Badge>
+                          <span className="text-muted-foreground">{clash.disciplines.join(" · ")}</span>
+                        </div>
+                        <p className="text-muted-foreground">{bt(clash.description)}</p>
+                        <p className="text-muted-foreground">
+                          {t("Location", "位置")}: {bt(clash.location)}
+                        </p>
+                        {clash.clearanceMm != null && clash.requiredClearanceMm != null && (
+                          <p className="text-muted-foreground">
+                            {t("Clearance", "净距")}: {clash.clearanceMm} mm / {t("required", "需求")}{" "}
+                            {clash.requiredClearanceMm} mm
+                          </p>
+                        )}
+                        <p className="text-muted-foreground">→ {bt(clash.remediation)}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">
+                    {t("No clashes detected with current inputs.", "当前参数未检测到冲突。")}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       )}

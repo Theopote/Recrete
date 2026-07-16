@@ -26,7 +26,7 @@ export {
   conflictsToInsights,
 } from "./conflict-agent";
 export { analyzeFireSafety, generateFireDiagnosis, fireProtectionAgent } from "./fire-agent";
-export { assessMepCapacity, generateMepDiagnosis, mepAgent } from "./mep-agent";
+export { assessMepCapacity, generateMepDiagnosis, detectPipelineClashes, mepAgent } from "./mep-agent";
 export {
   analyzeEnergyPerformance,
   simulateBuildingEnergy,

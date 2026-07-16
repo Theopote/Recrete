@@ -33,6 +33,7 @@ export class MockAIProvider implements AIService {
   mep = {
     assessMepCapacity: agents.assessMepCapacity,
     generateMepDiagnosis: agents.generateMepDiagnosis,
+    detectPipelineClashes: agents.detectPipelineClashes,
   };
   energy = {
     analyzeEnergyPerformance: agents.analyzeEnergyPerformance,

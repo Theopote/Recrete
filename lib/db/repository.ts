@@ -260,3 +260,9 @@ export {
   persistComplianceResult,
   resetComplianceStore,
 } from "@/lib/db/compliance-store";
+export {
+  persistMepClashIssues,
+  isDuplicateMepClashIssue,
+  mepClashIssueKey,
+  formatClashSummary,
+} from "@/lib/db/mep-clash-store";
