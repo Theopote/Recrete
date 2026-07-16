@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { ProjectCostRecordFormDialog } from "@/components/cost/ProjectCostRecordFormDialog";
 import type { ProjectWithRelations } from "@/types";
 import type { BenchmarkCalibrationResult, ProjectCostRecord } from "@/types/cost";
-import { strategyTypeLabels } from "@/lib/utils/labels";
+import { strategyTypeLabels, strategyTypeLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { cn } from "@/lib/utils";
 import { ClipboardCheck, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
@@ -23,7 +24,14 @@ const outcomeStyles: Record<string, string> = {
   failure: "bg-red-500/15 text-red-700 border-red-500/30",
 };
 
+const outcomeLabels: Record<string, { en: string; zh: string }> = {
+  success: { en: "Success", zh: "成功" },
+  partial: { en: "Partial", zh: "部分成功" },
+  failure: { en: "Failure", zh: "失败" },
+};
+
 export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps) {
+  const { t, label } = useLocale();
   const router = useRouter();
   const [records, setRecords] = useState<ProjectCostRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +62,10 @@ export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps)
   }, [loadRecords]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this cost record? Benchmark calibration will be recalculated.")) return;
+    if (!confirm(t(
+      "Delete this cost record? Benchmark calibration will be recalculated.",
+      "删除此造价记录？基准库校准将重新计算。"
+    ))) return;
     const res = await fetch(`/api/projects/${project.id}/cost-records/${id}`, { method: "DELETE" });
     if (res.ok) {
       const data = await res.json();
@@ -100,7 +111,7 @@ export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps)
             }}
           >
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Record Cost
+            {t("Record Cost", "录入造价")}
           </Button>
         }
       />
@@ -110,9 +121,12 @@ export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps)
           <CardContent className="p-3 text-xs text-muted-foreground flex items-start gap-2">
             <ClipboardCheck className="h-4 w-4 text-copper shrink-0 mt-0.5" />
             <span>
-              Project status: <strong className="text-foreground">{project.status}</strong>.
-              You can record costs at any phase; check &quot;Mark as completed&quot; when handover is done.
-              可在任何阶段录入；完工验收时勾选「标记为已完工」。
+              {t("Project status:", "项目状态：")}{" "}
+              <strong className="text-foreground">{project.status}</strong>.
+              {t(
+                " You can record costs at any phase; check \"Mark as completed\" when handover is done.",
+                " 可在任何阶段录入；完工验收时勾选「标记为已完工」。"
+              )}
             </span>
           </CardContent>
         </Card>
@@ -122,12 +136,12 @@ export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps)
         <Card className="border-sage/40 bg-sage/5">
           <CardContent className="p-3 text-xs">
             <p className="font-medium text-sage mb-1">
-              Benchmark calibrated · 基准库已更新 ({calibration.updatedCount} entries)
+              {t("Benchmark calibrated", "基准库已更新")} ({calibration.updatedCount} {t("entries", "条")})
             </p>
             <ul className="space-y-0.5 text-muted-foreground">
               {calibration.benchmarks.slice(0, 3).map((b) => (
                 <li key={b.id}>
-                  {b.region} · {b.buildingType} · {strategyTypeLabels[b.strategyType as keyof typeof strategyTypeLabels] ?? b.strategyType}:
+                  {b.region} · {b.buildingType} · {label(strategyTypeLabels, strategyTypeLabelsZh, b.strategyType as keyof typeof strategyTypeLabels)}:
                   ¥{b.costPerSqmMin.toLocaleString()}–{b.costPerSqmMax.toLocaleString()}/m² (n={b.sampleSize})
                 </li>
               ))}
@@ -139,12 +153,15 @@ export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps)
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading cost records…
+          {t("Loading cost records…", "加载造价记录…")}
         </div>
       ) : records.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-xs text-muted-foreground">
-            No actual cost records yet. Record final costs after construction to improve AI predictions.
+            {t(
+              "No actual cost records yet. Record final costs after construction to improve AI predictions.",
+              "暂无实际造价记录。施工完成后录入最终造价，可提升 AI 预测精度。"
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -156,11 +173,14 @@ export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps)
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <Badge variant="outline" className={cn("text-[10px]", outcomeStyles[record.outcome])}>
-                        {record.outcome}
+                        {t(
+                          outcomeLabels[record.outcome]?.en ?? record.outcome,
+                          outcomeLabels[record.outcome]?.zh ?? record.outcome
+                        )}
                       </Badge>
                       {record.strategyType && (
                         <span className="text-[10px] text-muted-foreground">
-                          {strategyTypeLabels[record.strategyType as keyof typeof strategyTypeLabels] ?? record.strategyType}
+                          {label(strategyTypeLabels, strategyTypeLabelsZh, record.strategyType as keyof typeof strategyTypeLabels)}
                         </span>
                       )}
                     </div>
@@ -173,7 +193,7 @@ export function ProjectCostRecordPanel({ project }: ProjectCostRecordPanelProps)
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {record.region}
                       {record.city ? ` · ${record.city}` : ""} · {record.buildingType}
-                      {record.durationMonths ? ` · ${record.durationMonths} months` : ""}
+                      {record.durationMonths ? ` · ${record.durationMonths} ${t("months", "个月")}` : ""}
                       {" · "}
                       {new Date(record.recordedAt).toLocaleDateString()}
                     </p>

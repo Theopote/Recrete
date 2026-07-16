@@ -15,7 +15,8 @@ import {
 } from "@/lib/validators/project-cost-record";
 import type { ProjectCostRecord, BenchmarkCalibrationResult } from "@/types/cost";
 import type { RenovationStrategy, StrategyType } from "@/types";
-import { strategyTypeLabels } from "@/lib/utils/labels";
+import { strategyTypeLabels, strategyTypeLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { X } from "lucide-react";
 
 const ALL_STRATEGY_TYPES: StrategyType[] = [
@@ -27,6 +28,12 @@ const ALL_STRATEGY_TYPES: StrategyType[] = [
   "energy_retrofit",
   "safety_upgrade",
 ];
+
+const outcomeLabels: Record<string, { en: string; zh: string }> = {
+  success: { en: "Success", zh: "成功" },
+  partial: { en: "Partial", zh: "部分成功" },
+  failure: { en: "Failure", zh: "失败" },
+};
 
 interface ProjectCostRecordFormDialogProps {
   open: boolean;
@@ -47,6 +54,7 @@ export function ProjectCostRecordFormDialog({
   strategies = [],
   item,
 }: ProjectCostRecordFormDialogProps) {
+  const { t, label } = useLocale();
   const isEdit = !!item;
 
   const {
@@ -104,9 +112,9 @@ export function ProjectCostRecordFormDialog({
 
   const strategyOptions = [
     ...strategies.map((s) => ({ value: s.type, label: s.name })),
-    ...ALL_STRATEGY_TYPES.filter((t) => !strategies.some((s) => s.type === t)).map((t) => ({
-      value: t,
-      label: strategyTypeLabels[t] ?? t,
+    ...ALL_STRATEGY_TYPES.filter((t) => !strategies.some((s) => s.type === t)).map((type) => ({
+      value: type,
+      label: label(strategyTypeLabels, strategyTypeLabelsZh, type),
     })),
   ];
 
@@ -132,7 +140,7 @@ export function ProjectCostRecordFormDialog({
       <div className="relative z-10 w-full max-w-lg rounded-lg border bg-card shadow-xl">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h3 className="text-sm font-medium">
-            {isEdit ? "Edit Actual Cost · 编辑实际造价" : "Record Actual Cost · 录入完工造价"}
+            {isEdit ? t("Edit Actual Cost", "编辑实际造价") : t("Record Actual Cost", "录入完工造价")}
           </h3>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
             <X className="h-3.5 w-3.5" />
@@ -140,7 +148,7 @@ export function ProjectCostRecordFormDialog({
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-3">
-          <Field label="Strategy Type · 策略类型" error={errors.strategyType?.message}>
+          <Field label={t("Strategy Type", "策略类型")} error={errors.strategyType?.message}>
             <Select {...register("strategyType")} className="h-8 text-xs">
               {strategyOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -151,11 +159,11 @@ export function ProjectCostRecordFormDialog({
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label={`Total Cost (¥) · 总造价`} error={errors.actualTotalCost?.message}>
+            <Field label={t("Total Cost (¥)", "总造价 (¥)")} error={errors.actualTotalCost?.message}>
               <Input type="number" step="1000" {...register("actualTotalCost")} className="h-8 text-xs" />
             </Field>
             <Field
-              label={`Unit Cost (¥/m²) · 单方造价`}
+              label={t("Unit Cost (¥/m²)", "单方造价 (¥/m²)")}
               error={errors.actualCostPerSqm?.message}
             >
               <Input type="number" step="1" {...register("actualCostPerSqm")} className="h-8 text-xs" />
@@ -163,41 +171,44 @@ export function ProjectCostRecordFormDialog({
           </div>
 
           <p className="text-[10px] text-muted-foreground -mt-1">
-            GFA {grossFloorArea.toLocaleString()} m² — total ÷ area auto-fills unit cost
+            {t(
+              `GFA ${grossFloorArea.toLocaleString()} m² — total ÷ area auto-fills unit cost`,
+              `建筑面积 ${grossFloorArea.toLocaleString()} m² — 总价 ÷ 面积自动填充单方造价`
+            )}
           </p>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Duration (months) · 工期" error={errors.durationMonths?.message}>
+            <Field label={t("Duration (months)", "工期（月）")} error={errors.durationMonths?.message}>
               <Input type="number" {...register("durationMonths")} className="h-8 text-xs" />
             </Field>
-            <Field label="Outcome · 结果" error={errors.outcome?.message}>
+            <Field label={t("Outcome", "结果")} error={errors.outcome?.message}>
               <Select {...register("outcome")} className="h-8 text-xs">
                 {COST_RECORD_OUTCOMES.map((o) => (
                   <option key={o} value={o}>
-                    {o === "success" ? "Success · 成功" : o === "partial" ? "Partial · 部分" : "Failure · 失败"}
+                    {t(outcomeLabels[o].en, outcomeLabels[o].zh)}
                   </option>
                 ))}
               </Select>
             </Field>
           </div>
 
-          <Field label="Notes · 备注" error={errors.notes?.message}>
-            <Textarea {...register("notes")} className="text-xs min-h-[64px]" placeholder="Variance reasons, scope changes…" />
+          <Field label={t("Notes", "备注")} error={errors.notes?.message}>
+            <Textarea {...register("notes")} className="text-xs min-h-[64px]" placeholder={t("Variance reasons, scope changes…", "偏差原因、范围变更…")} />
           </Field>
 
           {!isEdit && (
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <input type="checkbox" {...register("markCompleted")} className="rounded border-input" />
-              Mark project as completed · 同时将项目标记为已完工
+              {t("Mark project as completed", "同时将项目标记为已完工")}
             </label>
           )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Cancel
+              {t("Cancel", "取消")}
             </Button>
             <Button type="submit" variant="copper" size="sm" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : isEdit ? "Save" : "Record Cost"}
+              {isSubmitting ? t("Saving...", "保存中...") : isEdit ? t("Save", "保存") : t("Record Cost", "录入造价")}
             </Button>
           </div>
         </form>
