@@ -365,7 +365,9 @@ export class EnergyAgent {
         status: "identified",
         description: `Estimated EUI ${analysis.simulation.benchmarkComparison.currentEui} kWh/m²·a vs target ${analysis.simulation.benchmarkComparison.targetEui}. Annual ~${analysis.simulation.estimatedAnnualKwh.toLocaleString()} kWh.`,
         evidence: `Building age ${buildingAge} years; climate benchmark for ${project.location}`,
-        recommendation: analysis.recommendations[0] ?? "Run energy expert agent with meter data for refined simulation.",
+        recommendation:
+          analysis.recommendations[0]?.en ??
+          "Run energy expert agent with meter data for refined simulation.",
         relatedLocation: "Whole building",
       },
     ];
