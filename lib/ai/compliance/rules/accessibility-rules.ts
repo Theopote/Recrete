@@ -1,4 +1,5 @@
 import type { ComplianceRuleDefinition } from "../types";
+import { bi } from "@/lib/i18n/bilingual";
 import { isPublicTargetFunction } from "../scenario-resolver";
 
 export const accessibilityRules: ComplianceRuleDefinition[] = [
@@ -23,7 +24,10 @@ export const accessibilityRules: ComplianceRuleDefinition[] = [
         noteZh: hasAccessible ? "已设无障碍入口" : "未设无障碍入口",
         remediation: hasAccessible
           ? undefined
-          : "Install ramp or level entrance (max slope 1:12) at main entry",
+          : bi(
+              "Install ramp or level entrance (max slope 1:12) at main entry",
+              "于主入口增设坡道或平坡入口（坡度不大于 1:12）"
+            ),
       };
     },
   },
@@ -43,7 +47,10 @@ export const accessibilityRules: ComplianceRuleDefinition[] = [
       requiredValue: "Accessible toilet on each public floor",
       note: "Verify accessible toilet provision per floor",
       noteZh: "复核各层公共卫生间无障碍设施设置",
-      remediation: "Provide accessible toilet with 1.5m turning radius and grab bars",
+      remediation: bi(
+        "Provide accessible toilet with 1.5m turning radius and grab bars",
+        "设置无障碍卫生间，净宽满足 1.5m 回转半径并配置扶手"
+      ),
     }),
   },
 ];

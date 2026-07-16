@@ -1,6 +1,7 @@
 import type { ProjectWithRelations } from "@/types";
 import type { BuildingCode } from "@/lib/ai/knowledge/code-database";
 import { getCodesForScenario } from "@/lib/ai/knowledge/code-database";
+import { bi, bilingualKey, type BilingualString } from "@/lib/i18n/bilingual";
 import { resolveClimateZone } from "./climate-zones";
 import { resolveComplianceScenarios } from "./scenario-resolver";
 import {
@@ -99,33 +100,68 @@ function buildSummary(checks: ComplianceCheck[]) {
   };
 }
 
-function buildRecommendations(checks: ComplianceCheck[], ctx: ComplianceContext): string[] {
-  const recommendations = new Set<string>();
+function uniqueBilingual(items: BilingualString[]): BilingualString[] {
+  const seen = new Set<string>();
+  const out: BilingualString[] = [];
+  for (const item of items) {
+    const key = bilingualKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+function buildRecommendations(checks: ComplianceCheck[], ctx: ComplianceContext): BilingualString[] {
+  const recommendations: BilingualString[] = [];
 
   for (const check of checks) {
     if (check.remediation) {
-      recommendations.add(check.remediation);
+      recommendations.push(check.remediation);
     }
   }
 
   if (checks.some((c) => c.ruleId === "evacuation-stair-width" && c.status === "requires_verification")) {
-    recommendations.add("Measure all evacuation stairways to verify code compliance");
+    recommendations.push(
+      bi(
+        "Measure all evacuation stairways to verify code compliance",
+        "测量全部疏散楼梯以核实规范符合性"
+      )
+    );
   }
 
   if (ctx.project.constructionYear < 2010) {
-    recommendations.add("Review seismic code compliance — building predates GB 50011-2010");
+    recommendations.push(
+      bi(
+        "Review seismic code compliance — building predates GB 50011-2010",
+        "复核抗震规范符合性——建筑早于 GB 50011-2010"
+      )
+    );
   }
 
-  recommendations.add("Engage licensed professionals for final code compliance review");
-  recommendations.add("Submit design to local authorities for approval before construction");
+  recommendations.push(
+    bi(
+      "Engage licensed professionals for final code compliance review",
+      "委托注册人员进行最终规范符合性审查"
+    ),
+    bi(
+      "Submit design to local authorities for approval before construction",
+      "施工图报审通过后方可施工"
+    )
+  );
 
-  return [...recommendations];
+  return uniqueBilingual(recommendations);
 }
 
-function buildCriticalIssues(checks: ComplianceCheck[]): string[] {
+function buildCriticalIssues(checks: ComplianceCheck[]): BilingualString[] {
   return checks
     .filter((c) => c.status === "non_compliant" && (c.priority === "critical" || c.priority === "high"))
-    .map((c) => `${c.requirement}: ${c.note}`);
+    .map((c) =>
+      bi(
+        `${c.requirement}: ${c.note}`,
+        `${c.requirementZh}：${c.noteZh ?? c.note}`
+      )
+    );
 }
 
 export function runComplianceEngine(

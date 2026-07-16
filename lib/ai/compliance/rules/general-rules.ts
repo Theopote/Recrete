@@ -1,4 +1,5 @@
 import type { ComplianceRuleDefinition } from "../types";
+import { bi } from "@/lib/i18n/bilingual";
 import { minCeilingHeight } from "../climate-zones";
 import { isFunctionConversion } from "../scenario-resolver";
 
@@ -22,6 +23,10 @@ export const generalRules: ComplianceRuleDefinition[] = [
           requiredValue: `≥ ${minHeight}m`,
           note: "Ceiling height survey required for target occupancy",
           noteZh: "需测量目标功能房间净高",
+          remediation: bi(
+            "Survey ceiling heights in representative rooms for target occupancy",
+            "抽样测量目标功能房间净高"
+          ),
         };
       }
       const compliant = height >= minHeight;
@@ -33,7 +38,10 @@ export const generalRules: ComplianceRuleDefinition[] = [
         noteZh: compliant ? "满足净高要求" : "净高低于目标功能要求",
         remediation: compliant
           ? undefined
-          : "Consider raised floors, slab openings, or revise program layout",
+          : bi(
+              "Consider raised floors, slab openings, or revise program layout",
+              "考虑架空地板、楼板开洞或调整功能布局"
+            ),
       };
     },
   },
@@ -53,7 +61,10 @@ export const generalRules: ComplianceRuleDefinition[] = [
       requiredValue: "Full code review for new occupancy type",
       note: `Converting from ${ctx.project.currentFunction} to ${ctx.project.targetFunction}`,
       noteZh: `由「${ctx.project.currentFunction}」转为「${ctx.project.targetFunction}」需全面规范复核`,
-      remediation: "Submit revised program to local planning and fire authorities",
+      remediation: bi(
+        "Submit revised program to local planning and fire authorities",
+        "将修订方案报送规划与消防主管部门"
+      ),
     }),
   },
 ];

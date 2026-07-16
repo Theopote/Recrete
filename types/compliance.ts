@@ -3,6 +3,7 @@ import type {
   ComplianceMeasurements,
   OverallCompliance,
 } from "@/lib/ai/compliance/types";
+import type { BilingualString } from "@/lib/i18n/bilingual";
 import type { DiagnosisItem } from "@/types";
 
 export interface ComplianceCheckRecordDto {
@@ -22,7 +23,7 @@ export interface ComplianceCheckRecordDto {
   note: string;
   noteZh?: string | null;
   priority: string;
-  remediation?: string | null;
+  remediation?: BilingualString | string | null;
 }
 
 export interface ComplianceCheckRunDto {
@@ -34,8 +35,8 @@ export interface ComplianceCheckRunDto {
   climateZone: string;
   measurements?: ComplianceMeasurements | null;
   summary: ComplianceEngineReport["summary"];
-  criticalIssues: string[];
-  recommendations: string[];
+  criticalIssues: Array<BilingualString | string>;
+  recommendations: Array<BilingualString | string>;
   diagnosisApplied: boolean;
   diagnosisCount: number;
   createdAt: Date;

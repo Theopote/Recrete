@@ -109,9 +109,43 @@ describe("compliance engine", () => {
     expect(report.scenarios).toContain("heritage_renovation");
   });
 
-  it("requires seismic review for pre-2010 buildings", () => {
+  it("returns bilingual remediation for requires_verification checks", () => {
     const report = runComplianceEngine(demoProject());
-    const seismic = report.checks.find((c) => c.ruleId === "seismic-retrofit-review");
-    expect(seismic?.status).toBe("requires_verification");
+
+    const verificationChecks = report.checks.filter((c) => c.status === "requires_verification");
+    expect(verificationChecks.length).toBeGreaterThan(0);
+    for (const check of verificationChecks) {
+      expect(check.remediation).toMatchObject({
+        en: expect.any(String),
+        zh: expect.any(String),
+      });
+    }
+
+    const ceiling = report.checks.find((c) => c.ruleId === "ceiling-height");
+    expect(ceiling?.remediation).toMatchObject({
+      en: expect.stringContaining("Survey ceiling"),
+      zh: expect.stringContaining("净高"),
+    });
+  });
+
+  it("returns bilingual remediation and recommendations", () => {
+    const report = runComplianceEngine(demoProject(), {
+      measurements: {
+        stairWidth: 1.0,
+        fireCompartmentArea: 3200,
+        ceilingHeight: 2.9,
+        hasAccessibleEntrance: false,
+      },
+    });
+
+    const stair = report.checks.find((c) => c.ruleId === "evacuation-stair-width");
+    expect(stair?.remediation).toMatchObject({
+      en: expect.stringContaining("Widen stairs"),
+      zh: expect.stringContaining("加宽楼梯"),
+    });
+    expect(report.recommendations.some((r) => typeof r === "object" && "zh" in r)).toBe(true);
+    expect(report.criticalIssues.every((i) => typeof i === "object" && "en" in i && "zh" in i)).toBe(
+      true
+    );
   });
 });

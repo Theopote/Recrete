@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@prisma/client";
+import {
+  parseFromStorage,
+  parseListFromStorage,
+  serializeForStorage,
+  serializeListForStorage,
+} from "@/lib/i18n/bilingual";
 import type {
   ComplianceCheckRunDto,
   ComplianceCheckRecordDto,
@@ -43,7 +49,7 @@ function mapCheck(row: {
     note: row.note,
     noteZh: row.noteZh,
     priority: row.priority,
-    remediation: row.remediation,
+    remediation: parseFromStorage(row.remediation) ?? null,
   };
 }
 
@@ -74,8 +80,8 @@ function mapRun(
     climateZone: row.climateZone,
     measurements: (row.measurements as SaveComplianceRunInput["measurements"]) ?? null,
     summary: row.summary as ComplianceEngineReport["summary"],
-    criticalIssues: row.criticalIssues,
-    recommendations: row.recommendations,
+    criticalIssues: parseListFromStorage(row.criticalIssues),
+    recommendations: parseListFromStorage(row.recommendations),
     diagnosisApplied: row.diagnosisApplied,
     diagnosisCount: row.diagnosisCount,
     createdAt: row.createdAt,
@@ -97,8 +103,8 @@ export async function createDbComplianceRun(
       climateZone: report.climateZone,
       measurements: measurements ? (measurements as Prisma.InputJsonValue) : undefined,
       summary: report.summary as Prisma.InputJsonValue,
-      criticalIssues: report.criticalIssues,
-      recommendations: report.recommendations,
+      criticalIssues: serializeListForStorage(report.criticalIssues),
+      recommendations: serializeListForStorage(report.recommendations),
       checks: {
         create: report.checks.map((check) => ({
           projectId,
@@ -115,7 +121,7 @@ export async function createDbComplianceRun(
           note: check.note,
           noteZh: check.noteZh ?? null,
           priority: check.priority,
-          remediation: check.remediation ?? null,
+          remediation: serializeForStorage(check.remediation),
         })),
       },
     },

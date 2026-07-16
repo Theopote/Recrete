@@ -1,4 +1,5 @@
 import type { ComplianceRuleDefinition } from "../types";
+import { bi } from "@/lib/i18n/bilingual";
 import { maxWindowUValue } from "../climate-zones";
 import { isPublicTargetFunction } from "../scenario-resolver";
 
@@ -26,6 +27,10 @@ export const energyRules: ComplianceRuleDefinition[] = [
           requiredValue: `≤ ${maxU} W/(m²·K) (${ctx.climateZone})`,
           note: "Window thermal performance survey required",
           noteZh: "需检测或核算外窗传热系数",
+          remediation: bi(
+            "Test or calculate window U-value per climate zone",
+            "按气候区检测或核算外窗传热系数"
+          ),
         };
       }
       const compliant = uValue <= maxU;
@@ -35,7 +40,9 @@ export const energyRules: ComplianceRuleDefinition[] = [
         requiredValue: `≤ ${maxU} W/(m²·K)`,
         note: compliant ? "Meets energy efficiency requirement" : "Exceeds maximum U-value",
         noteZh: compliant ? "满足节能限值" : "超出传热系数限值",
-        remediation: compliant ? undefined : "Replace windows with double or triple glazing",
+        remediation: compliant
+          ? undefined
+          : bi("Replace windows with double or triple glazing", "更换为双层或三层玻璃外窗"),
       };
     },
   },

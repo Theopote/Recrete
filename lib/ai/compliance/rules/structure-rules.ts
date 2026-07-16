@@ -1,4 +1,5 @@
 import type { ComplianceRuleDefinition } from "../types";
+import { bi } from "@/lib/i18n/bilingual";
 import { isFunctionConversion } from "../scenario-resolver";
 
 function targetLiveLoadKN(targetFunction: string): number {
@@ -30,6 +31,10 @@ export const structureRules: ComplianceRuleDefinition[] = [
           requiredValue: "Carbonation/cover ratio < 0.8 for Class B",
           note: "Field carbonation test required for existing concrete",
           noteZh: "需现场检测碳化深度与保护层厚度",
+          remediation: bi(
+            "Perform carbonation depth and cover thickness testing on site",
+            "现场检测碳化深度与保护层厚度"
+          ),
         };
       }
       const ratio = depth / cover;
@@ -42,7 +47,12 @@ export const structureRules: ComplianceRuleDefinition[] = [
           ? "Carbonation within acceptable range"
           : "Carbonation depth indicates reinforcement corrosion risk",
         noteZh: compliant ? "碳化深度在可接受范围" : "碳化深度提示钢筋锈蚀风险",
-        remediation: compliant ? undefined : "Repair cover, treat corrosion, or strengthen affected members",
+        remediation: compliant
+          ? undefined
+          : bi(
+              "Repair cover, treat corrosion, or strengthen affected members",
+              "修复保护层、处理锈蚀或加固受损构件"
+            ),
       };
     },
   },
@@ -67,6 +77,10 @@ export const structureRules: ComplianceRuleDefinition[] = [
           requiredValue: `≥ ${required} kN/m² for ${ctx.project.targetFunction}`,
           note: "Structural load survey required for occupancy change",
           noteZh: "功能转换需结构荷载复核",
+          remediation: bi(
+            "Commission structural load assessment for new occupancy",
+            "委托结构荷载复核"
+          ),
         };
       }
       const compliant = existing >= required;
@@ -76,7 +90,12 @@ export const structureRules: ComplianceRuleDefinition[] = [
         requiredValue: `≥ ${required} kN/m²`,
         note: compliant ? "Existing capacity meets target load" : "Existing floor may be under-capacity",
         noteZh: compliant ? "现有承载力满足目标荷载" : "现有楼面承载力可能不足",
-        remediation: compliant ? undefined : "Structural strengthening or load redistribution required",
+        remediation: compliant
+          ? undefined
+          : bi(
+              "Structural strengthening or load redistribution required",
+              "需结构加固或荷载重分布"
+            ),
       };
     },
   },
@@ -96,7 +115,10 @@ export const structureRules: ComplianceRuleDefinition[] = [
       requiredValue: "Seismic appraisal per current GB 50011",
       note: `Building constructed ${ctx.project.constructionYear} — predates current seismic code`,
       noteZh: `建筑建于 ${ctx.project.constructionYear} 年，需按现行抗震规范鉴定`,
-      remediation: "Commission seismic appraisal before major structural intervention",
+      remediation: bi(
+        "Commission seismic appraisal before major structural intervention",
+        "重大结构改造前应委托抗震鉴定"
+      ),
     }),
   },
 ];

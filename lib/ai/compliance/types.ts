@@ -1,5 +1,6 @@
 import type { ProjectWithRelations } from "@/types";
 import type { BuildingCode } from "@/lib/ai/knowledge/code-database";
+import type { BilingualString } from "@/lib/i18n/bilingual";
 
 export type ComplianceCategory =
   | "fire"
@@ -62,7 +63,7 @@ export interface ComplianceCheckResult {
   requiredValue: string;
   note: string;
   noteZh?: string;
-  remediation?: string;
+  remediation?: BilingualString;
 }
 
 export interface ComplianceCheck {
@@ -79,7 +80,7 @@ export interface ComplianceCheck {
   note: string;
   noteZh?: string;
   priority: CompliancePriority;
-  remediation?: string;
+  remediation?: BilingualString;
 }
 
 export interface ComplianceEngineReport {
@@ -90,8 +91,8 @@ export interface ComplianceEngineReport {
   climateZone: string;
   applicableCodes: BuildingCode[];
   checks: ComplianceCheck[];
-  criticalIssues: string[];
-  recommendations: string[];
+  criticalIssues: BilingualString[];
+  recommendations: BilingualString[];
   summary: {
     total: number;
     compliant: number;

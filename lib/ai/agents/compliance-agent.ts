@@ -1,4 +1,6 @@
-import type { ProjectWithRelations, DiagnosisItem, DiagnosisCategory } from "@/types";
+import type { DiagnosisItem, DiagnosisCategory, ProjectWithRelations } from "@/types";
+import { bilingualKey, pickBilingual, type BilingualString } from "@/lib/i18n/bilingual";
+import type { AppLocale } from "@/lib/i18n/locale";
 import {
   searchCodes,
   type BuildingCode,
@@ -26,14 +28,15 @@ export class ComplianceAgent {
 
   async generateComplianceDiagnosis(
     project: ProjectWithRelations,
-    context?: ComplianceMeasurements
+    context?: ComplianceMeasurements,
+    locale: AppLocale = "zh"
   ): Promise<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]> {
     const result = await this.performComplianceCheck(project, context);
 
     return result.checks
       .filter((check) => check.status !== "compliant" && check.status !== "not_applicable")
       .map((check) => ({
-        title: check.requirement,
+        title: locale === "zh" ? check.requirementZh : check.requirement,
         category: mapComplianceCategory(check.category),
         severity:
           check.priority === "critical"
@@ -44,17 +47,21 @@ export class ComplianceAgent {
                 ? "medium"
                 : "low",
         status: "identified" as const,
-        description: check.noteZh ?? check.note,
+        description: locale === "zh" ? check.noteZh : check.note,
         evidence: `${check.code} §${check.section} — required: ${check.requiredValue}${
           check.actualValue ? `, actual: ${check.actualValue}` : ""
         }`,
         recommendation:
-          check.remediation ??
-          result.recommendations.find((r) =>
-            r.toLowerCase().includes(check.category)
-          ) ??
-          "Verify on site and engage licensed professional for confirmation.",
-        relatedLocation: check.category === "fire" ? "Egress and fire compartments" : undefined,
+          pickRemediationText(check.remediation, result.recommendations, check.category, locale) ??
+          (locale === "zh"
+            ? "现场核实并委托注册专业人员进行确认。"
+            : "Verify on site and engage licensed professional for confirmation."),
+        relatedLocation:
+          check.category === "fire"
+            ? locale === "zh"
+              ? "疏散通道与防火分区"
+              : "Egress and fire compartments"
+            : undefined,
         requiresEngineerReview: check.category === "fire" || check.category === "structure",
       }));
   }
@@ -75,6 +82,20 @@ export class ComplianceAgent {
   getComplianceChecklist(area: ComplianceCategory): string[] {
     return getComplianceChecklist(area);
   }
+}
+
+function pickRemediationText(
+  remediation: BilingualString | string | undefined,
+  recommendations: Array<BilingualString | string>,
+  category: ComplianceCategory,
+  locale: AppLocale
+): string | undefined {
+  if (remediation) return pickBilingual(locale, remediation);
+  const match = recommendations.find((r) =>
+    bilingualKey(r).toLowerCase().includes(category)
+  );
+  if (!match) return undefined;
+  return pickBilingual(locale, match);
 }
 
 function mapComplianceCategory(category: ComplianceCategory): DiagnosisCategory {
@@ -105,9 +126,10 @@ export async function performComplianceCheck(
 
 export async function generateComplianceDiagnosis(
   project: ProjectWithRelations,
-  context?: ComplianceMeasurements
+  context?: ComplianceMeasurements,
+  locale?: AppLocale
 ) {
-  return complianceAgent.generateComplianceDiagnosis(project, context);
+  return complianceAgent.generateComplianceDiagnosis(project, context, locale);
 }
 
 export function searchCodeRequirements(keyword: string) {

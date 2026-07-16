@@ -340,10 +340,11 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     confidence?: number;
     benchmark?: { region: string; sampleSize: number; updatedAt: string };
     referenceCases?: Array<{ title: string; costPerSqm?: number; outcome?: string }>;
-    breakdown?: Array<{ item: string; sharePercent: number }>;
+    breakdown?: Array<{ item: string; itemZh?: string; sharePercent: number }>;
     wbsItems?: Array<{
       code: string;
       name: string;
+      nameZh?: string;
       unit: string;
       quantity: number;
       unitCost: number;
@@ -513,12 +514,12 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       priority: string;
       note: string;
       noteZh?: string;
-      remediation?: string;
+      remediation?: BilingualString | string;
       requiredValue?: string;
       actualValue?: string;
     }>;
-    criticalIssues?: string[];
-    recommendations?: string[];
+    criticalIssues?: Array<BilingualString | string>;
+    recommendations?: Array<BilingualString | string>;
   } | undefined;
 
   const diagnosisStats = complianceResult?.diagnosisStats as {
@@ -982,8 +983,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                       {t("Critical issues", "严重问题")}
                     </p>
                     <ul className="text-xs text-muted-foreground space-y-1">
-                      {report.criticalIssues.map((i) => (
-                        <li key={i}>• {i}</li>
+                      {report.criticalIssues.map((i, idx) => (
+                        <li key={idx}>• {bt(i)}</li>
                       ))}
                     </ul>
                   </div>
@@ -992,8 +993,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <div>
                     <p className="text-xs font-medium mb-1">{t("Recommendations", "建议")}</p>
                     <ul className="text-xs text-muted-foreground space-y-1">
-                      {report.recommendations.slice(0, 5).map((i) => (
-                        <li key={i}>• {i}</li>
+                      {report.recommendations.slice(0, 5).map((i, idx) => (
+                        <li key={idx}>• {bt(i)}</li>
                       ))}
                     </ul>
                   </div>
@@ -1379,7 +1380,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <p className="font-medium text-foreground">{t("WBS cost breakdown", "WBS 分项估算")}</p>
                   {costEstimate.wbsItems.map((row) => (
                     <div key={row.code} className="flex justify-between gap-2 text-muted-foreground">
-                      <span>{row.code} {row.name} ({row.sharePercent}%)</span>
+                      <span>{row.code} {t(row.name, row.nameZh)} ({row.sharePercent}%)</span>
                       <span className="tabular-nums shrink-0">¥{row.totalCost.toLocaleString()}</span>
                     </div>
                   ))}

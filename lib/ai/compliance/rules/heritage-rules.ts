@@ -1,4 +1,5 @@
 import type { ComplianceRuleDefinition } from "../types";
+import { bi } from "@/lib/i18n/bilingual";
 import { hasHeritageConstraints } from "../scenario-resolver";
 
 export const heritageRules: ComplianceRuleDefinition[] = [
@@ -20,7 +21,10 @@ export const heritageRules: ComplianceRuleDefinition[] = [
         requiredValue: "Approval from cultural relics authority",
         note: `Heritage level "${level}" — renovation plan must be submitted for approval`,
         noteZh: `保护等级「${level}」— 修缮方案须报文物主管部门审批`,
-        remediation: "Prepare heritage impact assessment and engage qualified heritage design team",
+        remediation: bi(
+          "Prepare heritage impact assessment and engage qualified heritage design team",
+          "编制修缮影响说明并配备合格文保设计团队"
+        ),
       };
     },
   },
@@ -40,7 +44,10 @@ export const heritageRules: ComplianceRuleDefinition[] = [
       requiredValue: "Repair over replacement; preserve authentic fabric",
       note: "Heritage projects must document existing conditions before intervention",
       noteZh: "历史建筑修缮应优先修缮、保留原有构件与材料",
-      remediation: "Document as-built conditions and prefer reversible interventions",
+      remediation: bi(
+        "Document as-built conditions and prefer reversible interventions",
+        "完整记录现状并优先采用可逆干预措施"
+      ),
     }),
   },
   {
@@ -59,7 +66,10 @@ export const heritageRules: ComplianceRuleDefinition[] = [
       requiredValue: "No unauthorized demolition or major alteration",
       note: "Verify scope does not affect protected heritage fabric or streetscape",
       noteZh: "核实改造范围不涉及擅自拆除或破坏历史风貌",
-      remediation: "Obtain heritage authority clearance for any facade or structural changes",
+      remediation: bi(
+        "Obtain heritage authority clearance for any facade or structural changes",
+        "立面或结构改动须取得文物主管部门许可"
+      ),
     }),
   },
 ];
