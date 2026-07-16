@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLocale } from "@/lib/i18n/use-locale";
+import { APP_NAV_LABELS, navLabel, type AppNavHref } from "@/lib/i18n/nav";
 import {
   Sparkles,
   FolderKanban,
@@ -11,7 +13,6 @@ import {
   ClipboardList,
   Stethoscope,
   FlaskConical,
-  Scale,
   AlertTriangle,
   FileText,
   BookOpen,
@@ -19,21 +20,22 @@ import {
   Building2,
 } from "lucide-react";
 
-const navItems = [
-  { href: "/dashboard", label: "AI Command Center", icon: Sparkles },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/survey", label: "Survey Intelligence", icon: ClipboardList },
-  { href: "/diagnosis", label: "Diagnosis", icon: Stethoscope },
-  { href: "/strategies", label: "Strategy Lab", icon: FlaskConical },
-  { href: "/issues", label: "Issues", icon: AlertTriangle },
-  { href: "/reports", label: "Reports", icon: FileText },
-  { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
-  { href: "/settings", label: "Settings", icon: Settings },
+const navItems: { href: AppNavHref; icon: typeof Sparkles }[] = [
+  { href: "/dashboard", icon: Sparkles },
+  { href: "/projects", icon: FolderKanban },
+  { href: "/survey", icon: ClipboardList },
+  { href: "/diagnosis", icon: Stethoscope },
+  { href: "/strategies", icon: FlaskConical },
+  { href: "/issues", icon: AlertTriangle },
+  { href: "/reports", icon: FileText },
+  { href: "/knowledge", icon: BookOpen },
+  { href: "/settings", icon: Settings },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { canAccessRoute } = usePermissions();
+  const { locale, t } = useLocale();
 
   const visibleItems = navItems.filter((item) => canAccessRoute(item.href));
 
@@ -69,7 +71,7 @@ export function SidebarNav() {
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              {navLabel(locale, APP_NAV_LABELS[item.href])}
             </Link>
           );
         })}
@@ -78,12 +80,27 @@ export function SidebarNav() {
       <div className="border-t p-4">
         <div className="mb-2 flex items-center gap-1.5">
           <Brain className="h-3 w-3 text-copper" />
-          <p className="text-[10px] font-medium text-copper">AI Copilot for Existing Building Renovation</p>
+          <p className="text-[10px] font-medium text-copper">
+            {t(
+              "AI Copilot for Existing Building Renovation",
+              "面向既有建筑更新的 AI 设计助手"
+            )}
+          </p>
         </div>
         <p className="text-[10px] text-muted-foreground leading-relaxed">
-          面向既有建筑更新的 AI 设计助手
-          <br />
-          <span className="text-muted-foreground/70">Reimagine. Renew. Recreate. · 重构想象，焕新再造</span>
+          {locale === "zh" ? (
+            <>
+              重构想象，焕新再造
+              <br />
+              <span className="text-muted-foreground/70">Reimagine. Renew. Recreate.</span>
+            </>
+          ) : (
+            <>
+              Reimagine. Renew. Recreate.
+              <br />
+              <span className="text-muted-foreground/70">重构想象，焕新再造</span>
+            </>
+          )}
         </p>
       </div>
     </aside>

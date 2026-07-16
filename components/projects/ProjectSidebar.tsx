@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLocale } from "@/lib/i18n/use-locale";
+import { navLabel, PROJECT_SECTION_LABELS } from "@/lib/i18n/nav";
 import {
   LayoutDashboard,
   Brain,
@@ -21,20 +23,19 @@ import type { ProjectSection } from "@/types";
 
 const sections: {
   id: ProjectSection;
-  label: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "building-memory", label: "Building Memory", icon: Brain },
-  { id: "survey-intelligence", label: "Survey Intelligence", icon: ClipboardList },
-  { id: "bim-viewer", label: "BIM Viewer", icon: Box },
-  { id: "diagnosis", label: "Diagnosis", icon: Stethoscope },
-  { id: "expert-agents", label: "Expert Agents", icon: Bot },
-  { id: "strategy-lab", label: "Strategy Lab", icon: FlaskConical },
-  { id: "collaboration", label: "Collaboration", icon: Users },
-  { id: "cost-risk", label: "Cost & Risk", icon: Scale },
-  { id: "issues", label: "Issues", icon: AlertTriangle },
-  { id: "reports", label: "Reports", icon: FileBarChart },
+  { id: "overview", icon: LayoutDashboard },
+  { id: "building-memory", icon: Brain },
+  { id: "survey-intelligence", icon: ClipboardList },
+  { id: "bim-viewer", icon: Box },
+  { id: "diagnosis", icon: Stethoscope },
+  { id: "expert-agents", icon: Bot },
+  { id: "strategy-lab", icon: FlaskConical },
+  { id: "collaboration", icon: Users },
+  { id: "cost-risk", icon: Scale },
+  { id: "issues", icon: AlertTriangle },
+  { id: "reports", icon: FileBarChart },
 ];
 
 interface ProjectSidebarProps {
@@ -43,6 +44,7 @@ interface ProjectSidebarProps {
 
 export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
   const { canAccessSection } = usePermissions();
+  const { locale } = useLocale();
   const visibleSections = sections.filter((s) => canAccessSection(s.id));
   const searchParams = useSearchParams();
   const rawSection = searchParams.get("section") as ProjectSection | null;
@@ -76,7 +78,7 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
               )}
             >
               <section.icon className="h-3.5 w-3.5" />
-              {section.label}
+              {navLabel(locale, PROJECT_SECTION_LABELS[section.id])}
             </Link>
           );
         })}

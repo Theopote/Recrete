@@ -67,7 +67,7 @@ export function TopBar({
           <Button variant="copper" size="sm" className="gap-1.5" asChild>
             <Link href="/projects/new">
               <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New Project</span>
+              <span className="hidden sm:inline">{pickLocaleText(locale, "New Project", "新建项目")}</span>
             </Link>
           </Button>
         )}
@@ -84,7 +84,7 @@ export function TopBar({
             size="icon"
             className="h-8 w-8 hidden sm:flex"
             onClick={() => signOut({ callbackUrl: "/login" })}
-            title="Sign out"
+            title={pickLocaleText(locale, "Sign out", "退出登录")}
           >
             <LogOut className="h-3.5 w-3.5" />
           </Button>

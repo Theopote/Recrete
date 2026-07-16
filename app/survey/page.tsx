@@ -25,12 +25,19 @@ export default async function SurveyPage() {
 
   return (
     <AppShell>
-      <TopBar title="Survey" subtitle="Document archive and field survey overview" />
+      <TopBar
+        title="Survey"
+        titleZh="勘察"
+        subtitle="Document archive and field survey overview"
+        subtitleZh="文档归档与现场勘察概览"
+      />
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-7xl space-y-8">
           <SectionHeader
             title="Survey & Documentation"
+            titleZh="勘察与资料"
             description="Cross-project document archive and survey status"
+            descriptionZh="跨项目文档归档与勘察状态"
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
