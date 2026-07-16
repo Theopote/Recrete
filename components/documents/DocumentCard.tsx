@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatFileSize, formatDate } from "@/lib/utils";
-import { documentCategoryLabels } from "@/lib/utils/labels";
+import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { isPdf } from "@/lib/storage/file-utils";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
 import { parseAIErrorResponse } from "@/lib/ai/client-messages";
@@ -36,6 +37,7 @@ export function DocumentCard({
   onToggleSelect,
 }: DocumentCardProps) {
   const router = useRouter();
+  const { label } = useLocale();
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [analyzeNotice, setAnalyzeNotice] = useState<string | null>(null);
@@ -148,7 +150,11 @@ export function DocumentCard({
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="text-[10px]">
-                {documentCategoryLabels[document.category]}
+                {label(
+                  documentCategoryLabels,
+                  documentCategoryLabelsZh,
+                  document.category
+                )}
               </Badge>
               <span className="text-[10px] text-muted-foreground uppercase">
                 {document.type}

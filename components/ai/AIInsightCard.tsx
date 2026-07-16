@@ -1,8 +1,11 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { RiskBadge } from "@/components/app/RiskBadge";
 import type { AIInsight } from "@/types/ai";
-import { insightTypeLabels } from "@/lib/utils/labels";
+import { insightTypeLabels, insightTypeLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { cn } from "@/lib/utils";
 
 interface AIInsightCardProps {
@@ -23,13 +26,15 @@ const typeColors: Record<string, string> = {
 };
 
 export function AIInsightCard({ insight, compact }: AIInsightCardProps) {
+  const { t, label } = useLocale();
+
   return (
     <Card className={cn("border-l-4", typeColors[insight.type] ?? "border-l-muted")}>
       <CardContent className={cn("p-4", compact && "p-3")}>
         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {insightTypeLabels[insight.type] ?? insight.type}
+              {label(insightTypeLabels, insightTypeLabelsZh, insight.type) ?? insight.type}
             </p>
             <h4 className="text-sm font-semibold leading-tight">{insight.title}</h4>
           </div>
@@ -43,13 +48,13 @@ export function AIInsightCard({ insight, compact }: AIInsightCardProps) {
         </p>
         {!compact && insight.recommendation && (
           <p className="mt-2 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Recommendation:</span>{" "}
+            <span className="font-medium text-foreground">{t("Recommendation", "建议")}:</span>{" "}
             {insight.recommendation}
           </p>
         )}
         {!compact && insight.evidence && (
           <p className="mt-1.5 text-[10px] font-mono text-muted-foreground/80">
-            Evidence: {insight.evidence}
+            {t("Evidence", "依据")}: {insight.evidence}
           </p>
         )}
       </CardContent>

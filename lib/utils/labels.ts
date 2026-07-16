@@ -27,11 +27,29 @@ export const projectStatusLabels: LabelMap<ProjectStatus> = {
   archived: "Archived",
 };
 
+export const projectStatusLabelsZh: LabelMap<ProjectStatus> = {
+  draft: "草稿",
+  survey: "勘察",
+  diagnosis: "诊断",
+  strategy: "策略",
+  design: "设计",
+  construction: "施工",
+  completed: "已完成",
+  archived: "已归档",
+};
+
 export const riskLevelLabels: LabelMap<RiskLevel> = {
   low: "Low",
   medium: "Medium",
   high: "High",
   critical: "Critical",
+};
+
+export const riskLevelLabelsZh: LabelMap<RiskLevel> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+  critical: "严重",
 };
 
 export const budgetLevelLabels: LabelMap<BudgetLevel> = {
@@ -46,6 +64,13 @@ export const severityLabels: LabelMap<SeverityLevel> = {
   medium: "Medium",
   high: "High",
   critical: "Critical",
+};
+
+export const severityLabelsZh: LabelMap<SeverityLevel> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+  critical: "严重",
 };
 
 export const diagnosisCategoryLabels: LabelMap<DiagnosisCategory> = {
@@ -79,6 +104,13 @@ export const diagnosisStatusLabels: LabelMap<DiagnosisStatus> = {
   resolved: "Resolved",
 };
 
+export const diagnosisStatusLabelsZh: LabelMap<DiagnosisStatus> = {
+  identified: "已识别",
+  under_review: "审核中",
+  confirmed: "已确认",
+  resolved: "已解决",
+};
+
 export const documentCategoryLabels: LabelMap<DocumentCategory> = {
   old_drawings: "Old Drawings",
   survey_photos: "Survey Photos",
@@ -91,6 +123,18 @@ export const documentCategoryLabels: LabelMap<DocumentCategory> = {
   others: "Others",
 };
 
+export const documentCategoryLabelsZh: LabelMap<DocumentCategory> = {
+  old_drawings: "旧图纸",
+  survey_photos: "勘察照片",
+  structure_documents: "结构资料",
+  mep_documents: "机电资料",
+  historical_documents: "历史资料",
+  cost_documents: "造价资料",
+  meeting_records: "会议记录",
+  reports: "报告",
+  others: "其他",
+};
+
 export const strategyTypeLabels: LabelMap<StrategyType> = {
   light_renewal: "Light Renewal",
   medium_renovation: "Medium Renovation",
@@ -99,6 +143,16 @@ export const strategyTypeLabels: LabelMap<StrategyType> = {
   facade_upgrade: "Facade Upgrade",
   energy_retrofit: "Energy Retrofit",
   safety_upgrade: "Safety Upgrade",
+};
+
+export const strategyTypeLabelsZh: LabelMap<StrategyType> = {
+  light_renewal: "轻介入更新",
+  medium_renovation: "中度改造",
+  deep_recreation: "深度再造",
+  adaptive_reuse: "适应性再利用",
+  facade_upgrade: "立面升级",
+  energy_retrofit: "节能改造",
+  safety_upgrade: "安全加固",
 };
 
 export const issueCategoryLabels: LabelMap<IssueCategory> = {
@@ -115,11 +169,32 @@ export const issueCategoryLabels: LabelMap<IssueCategory> = {
   other: "Other",
 };
 
+export const issueCategoryLabelsZh: LabelMap<IssueCategory> = {
+  crack: "裂缝",
+  leakage: "渗漏",
+  spalling: "剥落",
+  corrosion: "锈蚀",
+  structure_exposure: "结构外露",
+  mep_conflict: "机电冲突",
+  facade_damage: "立面损伤",
+  fire_safety: "消防",
+  accessibility: "无障碍",
+  drawing_mismatch: "图纸不符",
+  other: "其他",
+};
+
 export const issuePriorityLabels: LabelMap<IssuePriority> = {
   low: "Low",
   medium: "Medium",
   high: "High",
   urgent: "Urgent",
+};
+
+export const issuePriorityLabelsZh: LabelMap<IssuePriority> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+  urgent: "紧急",
 };
 
 export const issueStatusLabels: LabelMap<IssueStatus> = {
@@ -169,6 +244,19 @@ export const insightTypeLabels: Record<AIInsightType, string> = {
   data_conflict: "Data Conflict",
 };
 
+export const insightTypeLabelsZh: Record<AIInsightType, string> = {
+  missing_info: "缺失信息",
+  risk: "风险",
+  opportunity: "机会",
+  design_strategy: "设计策略",
+  cost_warning: "成本预警",
+  schedule_warning: "进度预警",
+  compliance_warning: "合规",
+  site_issue: "现场问题",
+  report_suggestion: "报告建议",
+  data_conflict: "数据冲突",
+};
+
 export const analysisTypeLabels: Record<AIAnalysisType, string> = {
   building_memory_update: "Building Memory Update",
   document_analysis: "Document Analysis",
@@ -179,6 +267,18 @@ export const analysisTypeLabels: Record<AIAnalysisType, string> = {
   report_generation: "Report Generation",
   copilot_chat: "Copilot Chat",
   conflict_detection: "Conflict Detection",
+};
+
+export const analysisTypeLabelsZh: Record<AIAnalysisType, string> = {
+  building_memory_update: "建筑记忆更新",
+  document_analysis: "文档分析",
+  missing_info_detection: "缺失信息检测",
+  diagnosis_generation: "诊断生成",
+  strategy_generation: "方案生成",
+  cost_risk_estimation: "成本与风险估算",
+  report_generation: "报告生成",
+  copilot_chat: "Copilot 对话",
+  conflict_detection: "冲突检测",
 };
 
 export function getProjectStatusColor(status: ProjectStatus): string {

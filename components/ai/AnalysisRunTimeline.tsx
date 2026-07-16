@@ -1,6 +1,9 @@
+"use client";
+
 import type { AIAnalysisRun } from "@/types/ai";
 import { formatDate } from "@/lib/utils";
-import { analysisTypeLabels } from "@/lib/utils/labels";
+import { analysisTypeLabels, analysisTypeLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { Bot } from "lucide-react";
 
@@ -10,10 +13,17 @@ interface AnalysisRunTimelineProps {
 }
 
 export function AnalysisRunTimeline({ runs, limit = 8 }: AnalysisRunTimelineProps) {
-  const sorted = [...runs].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+  const { t, label } = useLocale();
+  const sorted = [...runs]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, limit);
 
   if (sorted.length === 0) {
-    return <p className="text-xs text-muted-foreground">No AI analysis runs yet.</p>;
+    return (
+      <p className="text-xs text-muted-foreground">
+        {t("No AI analysis runs yet.", "暂无 AI 分析记录。")}
+      </p>
+    );
   }
 
   return (
@@ -29,7 +39,8 @@ export function AnalysisRunTimeline({ runs, limit = 8 }: AnalysisRunTimelineProp
           <div className="min-w-0 flex-1 pt-0.5">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-semibold">
-                {analysisTypeLabels[run.analysisType] ?? run.analysisType}
+                {label(analysisTypeLabels, analysisTypeLabelsZh, run.analysisType) ??
+                  run.analysisType}
               </p>
               <ConfidenceBadge confidence={run.confidence} />
             </div>
@@ -38,7 +49,8 @@ export function AnalysisRunTimeline({ runs, limit = 8 }: AnalysisRunTimelineProp
             </p>
             <p className="mt-1 text-[10px] font-mono text-muted-foreground/70">
               {formatDate(run.createdAt)} · {run.modelName}
-              {run.generatedItemCount > 0 && ` · ${run.generatedItemCount} items`}
+              {run.generatedItemCount > 0 &&
+                ` · ${run.generatedItemCount} ${t("items", "项")}`}
             </p>
           </div>
         </div>

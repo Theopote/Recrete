@@ -1,7 +1,19 @@
+"use client";
+
 import { cn } from "@/lib/utils";
-import { getProjectStatusColor, projectStatusLabels } from "@/lib/utils/labels";
+import {
+  getProjectStatusColor,
+  projectStatusLabels,
+  projectStatusLabelsZh,
+  diagnosisStatusLabels,
+  diagnosisStatusLabelsZh,
+  issueStatusLabels,
+  issueStatusLabelsZh,
+  getDiagnosisStatusColor,
+  getIssueStatusColor,
+} from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { ProjectStatus, DiagnosisStatus, IssueStatus } from "@/types";
-import { getDiagnosisStatusColor, getIssueStatusColor } from "@/lib/utils/labels";
 
 interface StatusBadgeProps {
   status: ProjectStatus | DiagnosisStatus | IssueStatus | string;
@@ -10,6 +22,8 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, type = "project", className }: StatusBadgeProps) {
+  const { label } = useLocale();
+
   const colorFn =
     type === "diagnosis"
       ? getDiagnosisStatusColor
@@ -17,10 +31,17 @@ export function StatusBadge({ status, type = "project", className }: StatusBadge
         ? getIssueStatusColor
         : getProjectStatusColor;
 
-  const label =
+  const displayLabel =
     type === "project"
-      ? projectStatusLabels[status as ProjectStatus] ?? status
-      : status.replace(/_/g, " ");
+      ? label(projectStatusLabels, projectStatusLabelsZh, status as ProjectStatus) ??
+        String(status).replace(/_/g, " ")
+      : type === "diagnosis"
+        ? label(diagnosisStatusLabels, diagnosisStatusLabelsZh, status as DiagnosisStatus) ??
+          String(status).replace(/_/g, " ")
+        : type === "issue"
+          ? label(issueStatusLabels, issueStatusLabelsZh, status as IssueStatus) ??
+            String(status).replace(/_/g, " ")
+          : String(status).replace(/_/g, " ");
 
   return (
     <span
@@ -30,7 +51,7 @@ export function StatusBadge({ status, type = "project", className }: StatusBadge
         className
       )}
     >
-      {label}
+      {displayLabel}
     </span>
   );
 }

@@ -9,11 +9,10 @@ import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { documentCategoryLabels } from "@/lib/utils/labels";
+import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
 import { inferDocumentCategory } from "@/lib/storage/category-detect";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
-import { pickLocaleText } from "@/lib/i18n/locale";
-import { useUIStore } from "@/lib/stores/ui-store";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { DocumentAsset, DocumentCategory, ProjectWithRelations } from "@/types";
 import { FileText, Trash2 } from "lucide-react";
 
@@ -23,7 +22,7 @@ interface DocumentsSectionProps {
 
 export function DocumentsSection({ project: initialProject }: DocumentsSectionProps) {
   const router = useRouter();
-  const locale = useUIStore((s) => s.locale);
+  const { t, label } = useLocale();
   const [documents, setDocuments] = useState(initialProject.documents ?? []);
   const [filter, setFilter] = useState<string>("all");
   const [uploadCategory, setUploadCategory] = useState<DocumentCategory | "auto">("auto");
@@ -62,14 +61,13 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
 
         if (doc.autoAnalysisQueued && doc.analysisTaskId) {
           setAnalysisNotice(
-            pickLocaleText(locale, `Analyzing ${doc.name}…`, `正在分析 ${doc.name}…`)
+            t(`Analyzing ${doc.name}…`, `正在分析 ${doc.name}…`)
           );
           void pollAnalysisTask(initialProject.id, doc.analysisTaskId, setAnalysisNotice).then(
             (outcome) => {
               if (outcome.result === "completed") {
                 setAnalysisNotice(
-                  pickLocaleText(
-                    locale,
+                  t(
                     "AI analysis complete. Building Memory updated.",
                     "AI 分析完成，Building Memory 已更新。"
                   )
@@ -77,20 +75,19 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
                 router.refresh();
               } else if (outcome.result === "timeout") {
                 setAnalysisNotice(
-                  pickLocaleText(
-                    locale,
+                  t(
                     "Analysis is taking longer. Split large files or refresh later.",
                     "分析耗时较长，大文件建议拆分上传，或稍后刷新页面。"
                   )
                 );
               } else if (outcome.result === "failed") {
-                setAnalysisNotice(outcome.error ?? pickLocaleText(locale, "Analysis failed.", "分析失败，请重试。"));
+                setAnalysisNotice(outcome.error ?? t("Analysis failed.", "分析失败，请重试。"));
               }
             }
           );
         } else if (doc.autoAnalysisQueued) {
           setAnalysisNotice(
-            pickLocaleText(locale, "Document queued for analysis.", "文档已加入分析队列。")
+            t("Document queued for analysis.", "文档已加入分析队列。")
           );
         }
       }
@@ -119,8 +116,7 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    const confirmMsg = pickLocaleText(
-      locale,
+    const confirmMsg = t(
       `Delete ${selectedIds.size} selected document(s)?`,
       `删除已选的 ${selectedIds.size} 个文档？`
     );
@@ -168,7 +164,7 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs text-muted-foreground">
-          {pickLocaleText(locale, "Upload category", "上传类别")}
+          {t("Upload category", "上传类别")}
         </label>
         <Select
           value={uploadCategory}
@@ -176,10 +172,16 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
           className="w-52 h-8 text-xs"
         >
           <option value="auto">
-            {pickLocaleText(locale, "Auto detect", "自动识别")}
+            {t("Auto detect", "自动识别")}
           </option>
-          {Object.entries(documentCategoryLabels).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
+          {Object.keys(documentCategoryLabels).map((key) => (
+            <option key={key} value={key}>
+              {label(
+                documentCategoryLabels,
+                documentCategoryLabelsZh,
+                key as keyof typeof documentCategoryLabels
+              )}
+            </option>
           ))}
         </Select>
       </div>
@@ -191,7 +193,7 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
       />
       {uploading && (
         <p className="text-xs text-muted-foreground">
-          {pickLocaleText(locale, "Uploading…", "正在上传…")}
+          {t("Uploading…", "正在上传…")}
         </p>
       )}
       {analysisNotice && !uploading && (
@@ -201,24 +203,30 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
       <div className="flex flex-wrap items-center gap-3">
         <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-48 h-8 text-xs">
           <option value="all">
-            {pickLocaleText(locale, "All Categories", "全部分类")}
+            {t("All Categories", "全部分类")}
           </option>
-          {Object.entries(documentCategoryLabels).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
+          {Object.keys(documentCategoryLabels).map((key) => (
+            <option key={key} value={key}>
+              {label(
+                documentCategoryLabels,
+                documentCategoryLabelsZh,
+                key as keyof typeof documentCategoryLabels
+              )}
+            </option>
           ))}
         </Select>
         <span className="text-xs text-muted-foreground">
-          {filtered.length} {pickLocaleText(locale, "documents", "个文档")}
+          {filtered.length} {t("documents", "个文档")}
         </span>
         <Button variant="outline" size="sm" className="h-8 text-xs" onClick={toggleBatchMode}>
           {batchMode
-            ? pickLocaleText(locale, "Cancel selection", "取消选择")
-            : pickLocaleText(locale, "Batch select", "批量选择")}
+            ? t("Cancel selection", "取消选择")
+            : t("Batch select", "批量选择")}
         </Button>
         {batchMode && filtered.length > 0 && (
           <>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={selectAllFiltered}>
-              {pickLocaleText(locale, "Select all", "全选")}
+              {t("Select all", "全选")}
             </Button>
             <Button
               variant="destructive"
@@ -229,8 +237,8 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
             >
               <Trash2 className="h-3 w-3 mr-1" />
               {bulkDeleting
-                ? pickLocaleText(locale, "Deleting…", "删除中…")
-                : pickLocaleText(locale, `Delete (${selectedIds.size})`, `删除 (${selectedIds.size})`)}
+                ? t("Deleting…", "删除中…")
+                : t(`Delete (${selectedIds.size})`, `删除 (${selectedIds.size})`)}
             </Button>
           </>
         )}
@@ -259,9 +267,8 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
       ) : (
         <EmptyState
           icon={FileText}
-          title={pickLocaleText(locale, "No documents yet", "暂无文档")}
-          description={pickLocaleText(
-            locale,
+          title={t("No documents yet", "暂无文档")}
+          description={t(
             "Upload old drawings, survey photos, and project records to build your document archive.",
             "上传旧图纸、勘察照片与项目资料，建立文档归档。"
           )}

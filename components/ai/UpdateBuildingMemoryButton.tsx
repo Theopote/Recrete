@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface UpdateBuildingMemoryButtonProps {
   projectId: string;
@@ -11,6 +12,7 @@ interface UpdateBuildingMemoryButtonProps {
 
 export function UpdateBuildingMemoryButton({ projectId }: UpdateBuildingMemoryButtonProps) {
   const router = useRouter();
+  const { t } = useLocale();
   const [loading, setLoading] = useState(false);
 
   const handleUpdate = async () => {
@@ -30,7 +32,7 @@ export function UpdateBuildingMemoryButton({ projectId }: UpdateBuildingMemoryBu
       ) : (
         <Sparkles className="mr-1.5 h-3.5 w-3.5" />
       )}
-      Update Building Memory
+      {t("Update Building Memory", "更新建筑记忆")}
     </Button>
   );
 }

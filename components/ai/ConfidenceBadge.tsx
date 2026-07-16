@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface ConfidenceBadgeProps {
   confidence: number;
@@ -6,6 +9,7 @@ interface ConfidenceBadgeProps {
 }
 
 export function ConfidenceBadge({ confidence, className }: ConfidenceBadgeProps) {
+  const { t } = useLocale();
   const pct = Math.round(confidence * 100);
   const level = pct >= 85 ? "high" : pct >= 70 ? "medium" : "low";
 
@@ -19,7 +23,7 @@ export function ConfidenceBadge({ confidence, className }: ConfidenceBadgeProps)
         className
       )}
     >
-      {pct}% conf.
+      {pct}% {t("conf.", "置信")}
     </span>
   );
 }

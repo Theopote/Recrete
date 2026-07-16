@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
-import { getRiskColor, riskLevelLabels } from "@/lib/utils/labels";
+import { getRiskColor, riskLevelLabels, riskLevelLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { RiskLevel } from "@/types";
 
 interface RiskBadgeProps {
@@ -8,6 +11,8 @@ interface RiskBadgeProps {
 }
 
 export function RiskBadge({ level, className }: RiskBadgeProps) {
+  const { label, t } = useLocale();
+
   return (
     <span
       className={cn(
@@ -16,7 +21,7 @@ export function RiskBadge({ level, className }: RiskBadgeProps) {
         className
       )}
     >
-      {riskLevelLabels[level]} Risk
+      {label(riskLevelLabels, riskLevelLabelsZh, level)} {t("Risk", "风险")}
     </span>
   );
 }

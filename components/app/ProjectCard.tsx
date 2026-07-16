@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { RiskBadge } from "./RiskBadge";
@@ -7,6 +9,7 @@ import { AIReadinessScore } from "@/components/ai/AIReadinessScore";
 import { DataCompletenessScore } from "@/components/ai/DataCompletenessScore";
 import { formatArea } from "@/lib/utils";
 import { getProjectNextAction, getProjectTopRisk } from "@/lib/mock-data/ai-native";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { Project } from "@/types";
 import { MapPin, Building2, ArrowUpRight, AlertTriangle } from "lucide-react";
 
@@ -15,6 +18,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const { t } = useLocale();
   const topRisk = getProjectTopRisk(project.id);
   const nextAction = getProjectNextAction(project.id);
 
@@ -41,12 +45,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
               <Building2 className="h-3 w-3" />
               {project.buildingType} · {project.constructionYear} · {formatArea(project.grossFloorArea)}
             </div>
-            <p className="text-foreground/70">Target: {project.targetFunction}</p>
+            <p className="text-foreground/70">
+              {t("Target", "目标")}: {project.targetFunction}
+            </p>
           </div>
 
           <div className="mb-4 flex items-center gap-3 flex-wrap">
-            <ScoreRing score={project.healthScore} label="Health" size={48} />
-            <ScoreRing score={project.potentialScore} label="Potential" size={48} />
+            <ScoreRing score={project.healthScore} label={t("Health", "健康度")} size={48} />
+            <ScoreRing score={project.potentialScore} label={t("Potential", "潜力")} size={48} />
             <AIReadinessScore score={project.aiReadinessScore} size={48} />
           </div>
 
@@ -62,7 +68,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           )}
 
           <p className="mb-4 text-[10px] text-muted-foreground line-clamp-2">
-            <span className="font-medium text-foreground">Next:</span> {nextAction}
+            <span className="font-medium text-foreground">{t("Next", "下一步")}:</span> {nextAction}
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
