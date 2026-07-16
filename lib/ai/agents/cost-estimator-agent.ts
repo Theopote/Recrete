@@ -1,4 +1,5 @@
 import type { ProjectWithRelations, RenovationStrategy } from "@/types";
+import type { ProjectCostRecord } from "@/types/cost";
 import { allRenovationCases } from "../knowledge/case-library";
 import {
   findCostBenchmark,
@@ -6,12 +7,30 @@ import {
   getMaterialPricesForRegion,
   type CostBenchmark,
 } from "../knowledge/cost-benchmarks";
+import type { CostKnowledgeSnapshot } from "../knowledge/cost-knowledge-sync";
+import {
+  buildCostDataSourceNote,
+  prepareCostEstimateContext,
+} from "../knowledge/cost-knowledge-sync";
 import { inferRegion } from "../knowledge/prompt-context";
 
 export interface CostEstimateInput {
   strategyType?: string;
   preservationLevel?: "low" | "medium" | "high";
   contingencyPercent?: number;
+  projectCostRecords?: ProjectCostRecord[];
+  costKnowledge?: CostKnowledgeSnapshot;
+}
+
+export interface CostEstimateProvenance {
+  materialPriceCount: number;
+  materialPriceSource: "database" | "seed";
+  regionalMaterialTrendPercent: number;
+  benchmarkSource: "calibrated" | "seed";
+  benchmarkSampleSize?: number;
+  projectActualRecordCount: number;
+  baselineSources: string[];
+  dataSourceNote: string;
 }
 
 export interface CostBreakdownItem {
@@ -34,6 +53,7 @@ export interface CostEstimateResult {
   breakdown: CostBreakdownItem[];
   wbsItems: WbsCostItem[];
   assumptions: string[];
+  provenance: CostEstimateProvenance;
 }
 
 export interface WbsCostItem {
@@ -192,6 +212,76 @@ function findReferenceCases(project: ProjectWithRelations, strategyType?: string
     .slice(0, 3);
 }
 
+function filterProjectActuals(
+  records: ProjectCostRecord[],
+  strategyType: string
+): ProjectCostRecord[] {
+  return records.filter(
+    (record) =>
+      record.outcome !== "failure" &&
+      record.actualCostPerSqm > 0 &&
+      (!record.strategyType || record.strategyType === strategyType)
+  );
+}
+
+function resolveBaselineCost(params: {
+  references: ReturnType<typeof findReferenceCases>;
+  benchmark: CostBenchmark | null;
+  strategyType: string;
+  projectRecords: ProjectCostRecord[];
+}): { baseline: number; sources: string[] } {
+  const { references, benchmark, strategyType, projectRecords } = params;
+  const projectActuals = filterProjectActuals(projectRecords, strategyType);
+  const defaultFallback =
+    strategyType === "light_renewal" ? 1200 : strategyType === "deep_recreation" ? 4200 : 2600;
+
+  const caseBaseline =
+    references.length > 0
+      ? references.reduce((sum, item) => sum + (item.costPerSqm ?? 2500), 0) / references.length
+      : null;
+
+  const weights: Array<{ value: number; weight: number; label: string }> = [];
+
+  if (projectActuals.length > 0) {
+    const avg = Math.round(
+      projectActuals.reduce((sum, record) => sum + record.actualCostPerSqm, 0) /
+        projectActuals.length
+    );
+    weights.push({
+      value: avg,
+      weight: 0.5,
+      label: `${projectActuals.length} project actual(s)`,
+    });
+  }
+
+  if (benchmark) {
+    weights.push({
+      value: benchmark.costPerSqmAvg,
+      weight: projectActuals.length > 0 ? 0.3 : 0.55,
+      label: `benchmark ${benchmark.region}`,
+    });
+  }
+
+  if (caseBaseline !== null) {
+    weights.push({
+      value: caseBaseline,
+      weight: projectActuals.length > 0 ? 0.2 : benchmark ? 0.25 : 0.45,
+      label: `${references.length} comparable case(s)`,
+    });
+  }
+
+  if (weights.length === 0) {
+    return { baseline: defaultFallback, sources: ["regional default"] };
+  }
+
+  const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
+  const baseline = Math.round(
+    weights.reduce((sum, item) => sum + item.value * (item.weight / totalWeight), 0)
+  );
+
+  return { baseline, sources: weights.map((item) => item.label) };
+}
+
 export class CostEstimatorAgent {
   estimateProjectCost(
     project: ProjectWithRelations,
@@ -202,13 +292,20 @@ export class CostEstimatorAgent {
     const references = findReferenceCases(project, strategyType);
     const region = inferRegion(project.location);
     const benchmark = findCostBenchmark(project.location, project.buildingType, strategyType);
+    const materialPrices = getMaterialPricesForRegion(region);
     const materialMultiplier = computeMaterialPriceMultiplier(region);
-
-    const baselineFromCases =
-      references.length > 0
-        ? references.reduce((s, c) => s + (c.costPerSqm ?? 2500), 0) / references.length
-        : benchmark?.costPerSqmAvg ??
-          (strategyType === "light_renewal" ? 1200 : strategyType === "deep_recreation" ? 4200 : 2600);
+    const regionalMaterialTrendPercent =
+      materialPrices.length > 0
+        ? materialPrices.reduce((sum, item) => sum + item.trendPercent, 0) / materialPrices.length
+        : 0;
+    const projectRecords = input.projectCostRecords ?? [];
+    const projectActuals = filterProjectActuals(projectRecords, strategyType);
+    const { baseline: baselineFromCases, sources: baselineSources } = resolveBaselineCost({
+      references,
+      benchmark,
+      strategyType,
+      projectRecords,
+    });
 
     const preservationMultiplier =
       input.preservationLevel === "high" ? 1.12 : input.preservationLevel === "low" ? 0.92 : 1;
@@ -245,13 +342,44 @@ export class CostEstimatorAgent {
     const costLevel: CostEstimateResult["costLevel"] =
       estimatedCostPerSqm < 1800 ? "low" : estimatedCostPerSqm < 3200 ? "medium" : "high";
 
-    const materialNote = getMaterialPricesForRegion(region)
+    const materialNote = materialPrices
       .slice(0, 2)
       .map((m) => `${m.materialZh} ¥${m.pricePerUnit}/${m.unit}`)
       .join("; ");
 
     const confidenceBase = references.length > 0 ? 0.78 : 0.62;
-    const confidence = benchmark ? Math.min(0.92, confidenceBase + 0.08) : confidenceBase;
+    let confidence = benchmark ? Math.min(0.92, confidenceBase + 0.08) : confidenceBase;
+    if (projectActuals.length > 0) {
+      confidence = Math.min(0.95, confidence + 0.1);
+    }
+    if (input.costKnowledge?.materialPriceSource === "database") {
+      confidence = Math.min(0.95, confidence + 0.03);
+    }
+    if (input.costKnowledge && input.costKnowledge.calibratedRecordCount > 0) {
+      confidence = Math.min(0.95, confidence + 0.04);
+    }
+
+    const costKnowledge = input.costKnowledge ?? {
+      materialPriceCount: materialPrices.length,
+      materialPriceSource: "seed" as const,
+      costRecordCount: projectRecords.length,
+      calibratedRecordCount: 0,
+      benchmarkCount: benchmark ? 1 : 0,
+    };
+    const provenance: CostEstimateProvenance = {
+      materialPriceCount: costKnowledge.materialPriceCount,
+      materialPriceSource: costKnowledge.materialPriceSource,
+      regionalMaterialTrendPercent: Math.round(regionalMaterialTrendPercent * 10) / 10,
+      benchmarkSource: costKnowledge.calibratedRecordCount > 0 ? "calibrated" : "seed",
+      benchmarkSampleSize: benchmark?.sampleSize,
+      projectActualRecordCount: projectActuals.length,
+      baselineSources,
+      dataSourceNote: buildCostDataSourceNote(costKnowledge, {
+        projectActualRecordCount: projectActuals.length,
+        hasBenchmark: Boolean(benchmark),
+        baselineSources,
+      }),
+    };
 
     const breakdown = buildCostBreakdown(strategyType);
     const wbsItems = buildWbsItems(project, estimatedTotalCost, breakdown);
@@ -282,16 +410,27 @@ export class CostEstimatorAgent {
       breakdown,
       wbsItems,
       assumptions: [
+        provenance.dataSourceNote,
+        `Baseline blended from ${baselineSources.join(", ")}`,
         benchmark
-          ? `Calibrated against regional benchmark (${benchmark.region}, n=${benchmark.sampleSize}, ${benchmark.updatedAt})`
-          : `Based on ${references.length} comparable cases from historical database`,
+          ? `Regional benchmark (${benchmark.region}, n=${benchmark.sampleSize}, ${benchmark.updatedAt})`
+          : `Comparable cases: ${references.length}`,
+        projectActuals.length > 0
+          ? `Project actuals: ${projectActuals.length} record(s), avg ¥${Math.round(
+              projectActuals.reduce((sum, record) => sum + record.actualCostPerSqm, 0) /
+                projectActuals.length
+            ).toLocaleString()}/m²`
+          : "No project actual cost records for this strategy",
         `Cost range: ¥${estimatedCostPerSqmMin.toLocaleString()}–${estimatedCostPerSqmMax.toLocaleString()}/m²`,
-        materialNote ? `Material index (${region}): ${materialNote}` : `Material price index applied (${region})`,
+        materialNote
+          ? `Material prices (${region}, ${provenance.materialPriceSource}): ${materialNote}; trend ${provenance.regionalMaterialTrendPercent >= 0 ? "+" : ""}${provenance.regionalMaterialTrendPercent}%`
+          : `Material price index applied (${region})`,
         `${contingency}% contingency for existing building unknowns`,
         `GFA ${project.grossFloorArea.toLocaleString()} sqm`,
         `WBS breakdown: ${wbsItems.length} line items allocated by strategy type ${strategyType}`,
         strategy ? `Strategy: ${strategy.name}` : `Strategy type: ${strategyType}`,
       ],
+      provenance,
     };
   }
 }
@@ -304,4 +443,17 @@ export function estimateProjectCost(
   input?: CostEstimateInput
 ) {
   return costEstimatorAgent.estimateProjectCost(project, strategy, input);
+}
+
+export async function prepareAndEstimateProjectCost(
+  project: ProjectWithRelations,
+  strategy?: RenovationStrategy | null,
+  input: CostEstimateInput = {}
+) {
+  const { snapshot, projectRecords } = await prepareCostEstimateContext(project.id);
+  return costEstimatorAgent.estimateProjectCost(project, strategy, {
+    ...input,
+    projectCostRecords: input.projectCostRecords ?? projectRecords,
+    costKnowledge: input.costKnowledge ?? snapshot,
+  });
 }

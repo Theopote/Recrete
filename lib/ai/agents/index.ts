@@ -35,7 +35,11 @@ export {
   appendEnergySectionToReport,
   energyAgent,
 } from "./energy-agent";
-export { estimateProjectCost, costEstimatorAgent } from "./cost-estimator-agent";
+export {
+  estimateProjectCost,
+  prepareAndEstimateProjectCost,
+  costEstimatorAgent,
+} from "./cost-estimator-agent";
 export {
   assessHeritageProject,
   generateHeritageDiagnosis,

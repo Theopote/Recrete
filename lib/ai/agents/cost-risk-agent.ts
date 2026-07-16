@@ -4,7 +4,8 @@ import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { runComplianceEngine } from "@/lib/ai/compliance";
 import { resolveProjectMeasurements } from "@/lib/db/site-measurements-store";
 import { analyzeEnergyPerformance } from "./energy-agent";
-import { estimateProjectCost, type CostEstimateResult } from "./cost-estimator-agent";
+import { estimateProjectCost, prepareAndEstimateProjectCost, type CostEstimateResult } from "./cost-estimator-agent";
+import { prepareCostEstimateContext } from "../knowledge/cost-knowledge-sync";
 import {
   buildPhasingFromEstimate,
   complianceRiskFromReport,
@@ -66,8 +67,12 @@ function buildCostInsight(
   estimate: CostEstimateResult
 ): Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt"> {
   const evidenceParts = [
+    estimate.provenance.dataSourceNote,
     estimate.benchmark
       ? `Benchmark ${estimate.benchmark.region} (n=${estimate.benchmark.sampleSize}, ${estimate.benchmark.updatedAt})`
+      : null,
+    estimate.provenance.projectActualRecordCount > 0
+      ? `${estimate.provenance.projectActualRecordCount} project actual cost record(s)`
       : null,
     estimate.referenceCases.length > 0
       ? `Cases: ${estimate.referenceCases.map((item) => item.title).join("; ")}`
@@ -218,7 +223,7 @@ export async function estimateCostAndRisk(
   estimate: CostEstimateResult;
   insights: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
 }> {
-  const estimate = estimateProjectCost(project, strategy);
+  const estimate = await prepareAndEstimateProjectCost(project, strategy);
   const energyRoi = buildEnergyRoiSummary(project, [strategy]);
   const energyInsights =
     strategy.type === "energy_retrofit"
@@ -252,12 +257,15 @@ export async function generateRiskMatrix(
     hasMeasurementData
   );
 
+  const { snapshot, projectRecords } = await prepareCostEstimateContext(project.id);
+  const costContext = { costKnowledge: snapshot, projectCostRecords: projectRecords };
+
   const strategyEstimates: StrategyCostEstimate[] = [];
   const costWarnings: CostRiskMatrix["costWarnings"] = [];
   const scheduleWarnings: CostRiskMatrix["scheduleWarnings"] = [];
 
   const rows = strategies.map((strategy) => {
-    const estimate = estimateProjectCost(project, strategy);
+    const estimate = estimateProjectCost(project, strategy, costContext);
     strategyEstimates.push(toStrategyCostEstimate(strategy, estimate));
     costWarnings.push(buildCostInsight(strategy, estimate));
     scheduleWarnings.push(
@@ -284,16 +292,17 @@ export async function generateRiskMatrix(
 
   const leadStrategy = strategies[0];
   const leadEstimate = leadStrategy
-    ? estimateProjectCost(project, leadStrategy)
+    ? estimateProjectCost(project, leadStrategy, costContext)
     : null;
   const phasingPlan = leadStrategy && leadEstimate
     ? buildPhasingWithEnergy(buildPhasingFromEstimate(leadStrategy, leadEstimate), energyRoi, strategies)
     : [];
 
-  const hasBenchmark = strategyEstimates.some((item) => item.hasBenchmark);
-  const dataSourceNote = hasBenchmark
-    ? "Cost risks derived from regional benchmarks and comparable renovation cases."
-    : "Cost risks derived from seed case library — validate with local QS before decisions.";
+  const dataSourceNote =
+    leadEstimate?.provenance.dataSourceNote ??
+    (strategyEstimates.some((item) => item.hasBenchmark)
+      ? "Cost risks derived from regional benchmarks and comparable renovation cases."
+      : "Cost risks derived from seed case library — validate with local QS before decisions.");
 
   return {
     strategies: rows,
@@ -312,7 +321,7 @@ export async function suggestPhasingPlan(
   strategy: RenovationStrategy
 ): Promise<string[]> {
   const energyRoi = buildEnergyRoiSummary(project, [strategy]);
-  const estimate = estimateProjectCost(project, strategy);
+  const estimate = await prepareAndEstimateProjectCost(project, strategy);
   return buildPhasingWithEnergy(
     buildPhasingFromEstimate(strategy, estimate),
     energyRoi,

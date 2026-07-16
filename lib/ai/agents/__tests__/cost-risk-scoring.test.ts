@@ -23,6 +23,15 @@ function sampleEstimate(overrides: Partial<CostEstimateResult> = {}): CostEstima
     breakdown: [],
     wbsItems: [],
     assumptions: ["Based on benchmark"],
+    provenance: {
+      materialPriceCount: 6,
+      materialPriceSource: "seed",
+      regionalMaterialTrendPercent: 1.2,
+      benchmarkSource: "seed",
+      projectActualRecordCount: 0,
+      baselineSources: ["benchmark 西北"],
+      dataSourceNote: "seed material price indices",
+    },
     ...overrides,
   };
 }

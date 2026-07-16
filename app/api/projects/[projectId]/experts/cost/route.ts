@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireProjectAccess } from "@/lib/auth/authorize";
-import { getAIPlatform } from "@/lib/ai";
+import { prepareAndEstimateProjectCost } from "@/lib/ai/agents/cost-estimator-agent";
 
 export async function POST(
   request: Request,
@@ -12,13 +12,12 @@ export async function POST(
   const { project } = access;
 
   const body = await request.json().catch(() => ({}));
-  const platform = getAIPlatform();
   const strategy =
     (project.strategies ?? []).find((s) => s.id === body.strategyId) ??
     project.strategies?.[0] ??
     null;
 
-  const estimate = platform.costEstimator.estimateProjectCost(project, strategy, {
+  const estimate = await prepareAndEstimateProjectCost(project, strategy, {
     strategyType: body.strategyType,
     preservationLevel: body.preservationLevel,
     contingencyPercent: body.contingencyPercent,

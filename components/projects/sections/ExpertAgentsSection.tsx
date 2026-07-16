@@ -489,6 +489,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       totalCost: number;
       sharePercent: number;
     }>;
+    provenance?: { dataSourceNote?: string; projectActualRecordCount?: number };
   } | undefined;
 
   const heritageAssessment = heritageResult?.assessment as {
@@ -1674,6 +1675,11 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 {" "}· {costLevelLabel(costEstimate.costLevel ?? "")} · {t("confidence", "置信度")}{" "}
                 {(costEstimate.confidence ?? 0) * 100}%
               </p>
+              {costEstimate.provenance?.dataSourceNote && (
+                <p className="text-[10px] text-muted-foreground">
+                  {costEstimate.provenance.dataSourceNote}
+                </p>
+              )}
               {costEstimate.benchmark && (
                 <p className="text-muted-foreground">
                   {t("Benchmark", "基准")}: {costEstimate.benchmark.region} (n={costEstimate.benchmark.sampleSize}, {costEstimate.benchmark.updatedAt})

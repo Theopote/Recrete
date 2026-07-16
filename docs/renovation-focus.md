@@ -41,7 +41,7 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 | AI Command Center 装饰 | `app/dashboard` | 不提升方案质量 |
 | 全局列表页 | `app/survey`, `app/strategies` 等 | 工作在项目内完成 |
 | 知识库文章 CMS | `app/knowledge` | 弱耦合生成 |
-| 材料价/成本记录后台 | `app/knowledge/cost-*` | P1 再接入估算 |
+| 材料价/成本记录后台 | `app/knowledge/cost-*` | ✅ 估算前同步材料价 + 成本记录校准基准 |
 | BIM Viewer 深度 | `BimViewerSection` | 持久化与 MEP 碰撞已有；与方案内容深度关联待 P1 |
 | 协作/评审流程扩展 | `CollaborationSection` | 轻量留言够用 |
 | 正式 RBAC / 邀请流 | 阶段四 | 用户量 &lt; 3 家不需要 |
