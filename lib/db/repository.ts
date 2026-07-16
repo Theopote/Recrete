@@ -266,3 +266,9 @@ export {
   mepClashIssueKey,
   formatClashSummary,
 } from "@/lib/db/mep-clash-store";
+export {
+  getProjectSiteMeasurements,
+  updateProjectSiteMeasurements,
+  resolveProjectMeasurements,
+  resetSiteMeasurementsStore,
+} from "@/lib/db/site-measurements-store";

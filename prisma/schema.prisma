@@ -372,6 +372,29 @@ model Project {
   complianceRuns  ComplianceCheckRun[]
   complianceChecks ComplianceCheckRecord[]
   buildingMemoryHistory BuildingMemoryHistory[]
+  siteMeasurements    ProjectSiteMeasurements?
+}
+
+/// Project-level site measurements for compliance and expert agents
+model ProjectSiteMeasurements {
+  id                    String   @id @default(cuid())
+  projectId             String   @unique
+  ceilingHeight         Float?
+  stairWidth            Float?
+  fireCompartmentArea   Float?
+  hasAccessibleEntrance Boolean?
+  windowUValue          Float?
+  carbonationDepth      Float?
+  coverThickness        Float?
+  existingLoadKN        Float?
+  targetLoadKN          Float?
+  travelDistance        Float?
+  hasSprinkler          Boolean?
+  notes                 String?  @db.Text
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model BuildingMemory {

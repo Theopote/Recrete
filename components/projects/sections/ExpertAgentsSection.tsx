@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectWithRelations } from "@/types";
+import type { ProjectSiteMeasurementsDto } from "@/types/site-measurements";
 import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Landmark } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { BilingualString } from "@/lib/i18n/bilingual";
@@ -69,11 +70,12 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
 
   const [complianceInput, setComplianceInput] = useState({
     applyDiagnosis: true,
-    ceilingHeight: "",
-    stairWidth: "",
-    fireCompartmentArea: "",
-    hasAccessibleEntrance: false,
-    windowUValue: "",
+  });
+
+  const [siteMeasurementCompleteness, setSiteMeasurementCompleteness] = useState({
+    filled: 0,
+    total: 11,
+    ratio: 0,
   });
 
   const [fireInput, setFireInput] = useState({
@@ -115,6 +117,35 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       | "partial_interior"
       | "full_adaptive_reuse",
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await fetch(`/api/projects/${project.id}/site-measurements`);
+      if (!res.ok || cancelled) return;
+      const data = (await res.json()) as ProjectSiteMeasurementsDto;
+      const m = data.measurements;
+      setSiteMeasurementCompleteness(data.completeness);
+      setStructuralInput({
+        carbonationDepth: m.carbonationDepth?.toString() ?? "",
+        existingLoad: m.existingLoadKN?.toString() ?? "",
+        targetLoad: m.targetLoadKN?.toString() ?? "",
+      });
+      setFireInput((prev) => ({
+        ...prev,
+        stairWidth: m.stairWidth?.toString() ?? "",
+        travelDistance: m.travelDistance?.toString() ?? "",
+        hasSprinkler: m.hasSprinkler ?? false,
+      }));
+      setEnergyInput((prev) => ({
+        ...prev,
+        windowUValue: m.windowUValue?.toString() ?? "",
+      }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [project.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,19 +226,6 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ceilingHeight: complianceInput.ceilingHeight
-            ? Number(complianceInput.ceilingHeight)
-            : undefined,
-          stairWidth: complianceInput.stairWidth
-            ? Number(complianceInput.stairWidth)
-            : undefined,
-          fireCompartmentArea: complianceInput.fireCompartmentArea
-            ? Number(complianceInput.fireCompartmentArea)
-            : undefined,
-          hasAccessibleEntrance: complianceInput.hasAccessibleEntrance,
-          windowUValue: complianceInput.windowUValue
-            ? Number(complianceInput.windowUValue)
-            : undefined,
           applyDiagnosis: complianceInput.applyDiagnosis,
         }),
       });
@@ -886,63 +904,25 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">{t("Ceiling height (m)", "净高 (m)")}</Label>
-                  <Input
-                    className="h-8 text-xs mt-1"
-                    value={complianceInput.ceilingHeight}
-                    onChange={(e) =>
-                      setComplianceInput((s) => ({ ...s, ceilingHeight: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">{t("Stair width (m)", "楼梯宽度 (m)")}</Label>
-                  <Input
-                    className="h-8 text-xs mt-1"
-                    value={complianceInput.stairWidth}
-                    onChange={(e) =>
-                      setComplianceInput((s) => ({ ...s, stairWidth: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">
-                    {t("Fire compartment area (m²)", "防火分区面积 (m²)")}
-                  </Label>
-                  <Input
-                    className="h-8 text-xs mt-1"
-                    value={complianceInput.fireCompartmentArea}
-                    onChange={(e) =>
-                      setComplianceInput((s) => ({ ...s, fireCompartmentArea: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">{t("Window U-value", "窗传热系数")}</Label>
-                  <Input
-                    className="h-8 text-xs mt-1"
-                    value={complianceInput.windowUValue}
-                    onChange={(e) =>
-                      setComplianceInput((s) => ({ ...s, windowUValue: e.target.value }))
-                    }
-                  />
-                </div>
+              <div className="rounded-md border border-copper/30 bg-copper/5 p-3 text-xs space-y-2">
+                <p className="font-medium">
+                  {t(
+                    `Project measurements: ${siteMeasurementCompleteness.filled}/${siteMeasurementCompleteness.total} fields`,
+                    `项目测量数据：已填 ${siteMeasurementCompleteness.filled}/${siteMeasurementCompleteness.total} 项`
+                  )}
+                </p>
+                <p className="text-muted-foreground">
+                  {t(
+                    "Compliance checks use saved site measurements from Building Condition. Fill missing values there for definitive rule results.",
+                    "合规检查使用「建筑现状」中保存的现场测量数据。请在彼处补全缺失项以获得明确判定。"
+                  )}
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`/projects/${project.id}?section=building-condition`}>
+                    {t("Edit Site Measurements", "编辑现场测量数据")}
+                  </a>
+                </Button>
               </div>
-              <label className="flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={complianceInput.hasAccessibleEntrance}
-                  onChange={(e) =>
-                    setComplianceInput((s) => ({
-                      ...s,
-                      hasAccessibleEntrance: e.target.checked,
-                    }))
-                  }
-                />
-                {t("Accessible entrance provided", "设有无障碍入口")}
-              </label>
               <label className="flex items-center gap-2 text-xs">
                 <input
                   type="checkbox"

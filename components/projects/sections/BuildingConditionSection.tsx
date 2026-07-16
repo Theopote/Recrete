@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
 import { DrawingAnalysisOverlayViewer } from "@/components/building-condition/DrawingAnalysisOverlayViewer";
+import { SiteMeasurementsForm } from "@/components/building-condition/SiteMeasurementsForm";
 import {
   DRAWING_DISCIPLINE_TABS,
   DRAWING_TYPE_LABELS,
@@ -145,6 +146,8 @@ export function BuildingConditionSection({ project }: BuildingConditionSectionPr
           </div>
         </CardContent>
       </Card>
+
+      <SiteMeasurementsForm projectId={project.id} />
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-pulse">

@@ -6,28 +6,10 @@ import {
   runComplianceEngine,
   getApplicableCodesForProject,
   getScenariosForProject,
-  type ComplianceMeasurements,
 } from "@/lib/ai/compliance";
+import { parseMeasurementsFromBody } from "@/lib/ai/compliance/measurements";
 import { listComplianceRuns, persistComplianceResult } from "@/lib/db/compliance-store";
-
-function parseMeasurements(body: Record<string, unknown>): ComplianceMeasurements {
-  return {
-    ceilingHeight: body.ceilingHeight != null ? Number(body.ceilingHeight) : undefined,
-    stairWidth: body.stairWidth != null ? Number(body.stairWidth) : undefined,
-    fireCompartmentArea:
-      body.fireCompartmentArea != null ? Number(body.fireCompartmentArea) : undefined,
-    hasAccessibleEntrance:
-      body.hasAccessibleEntrance != null ? Boolean(body.hasAccessibleEntrance) : undefined,
-    windowUValue: body.windowUValue != null ? Number(body.windowUValue) : undefined,
-    carbonationDepth:
-      body.carbonationDepth != null ? Number(body.carbonationDepth) : undefined,
-    coverThickness: body.coverThickness != null ? Number(body.coverThickness) : undefined,
-    existingLoadKN: body.existingLoadKN != null ? Number(body.existingLoadKN) : undefined,
-    targetLoadKN: body.targetLoadKN != null ? Number(body.targetLoadKN) : undefined,
-    travelDistance: body.travelDistance != null ? Number(body.travelDistance) : undefined,
-    hasSprinkler: body.hasSprinkler != null ? Boolean(body.hasSprinkler) : undefined,
-  };
-}
+import { resolveProjectMeasurements } from "@/lib/db/site-measurements-store";
 
 function parseApplyDiagnosis(body: Record<string, unknown>) {
   if (body.applyDiagnosis === false) return false;
@@ -78,7 +60,8 @@ export async function POST(
   if (denied) return denied;
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const measurements = parseMeasurements(body);
+  const overrides = parseMeasurementsFromBody(body);
+  const measurements = await resolveProjectMeasurements(projectId, overrides);
   const applyDiagnosis = parseApplyDiagnosis(body);
 
   const platform = getAIPlatform();

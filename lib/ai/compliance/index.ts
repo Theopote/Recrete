@@ -23,3 +23,11 @@ export type {
 export { resolveComplianceScenarios, isPublicTargetFunction, hasHeritageConstraints } from "./scenario-resolver";
 export { resolveClimateZone, maxWindowUValue, minCeilingHeight } from "./climate-zones";
 export { allComplianceRules, getRulesForScenarios, getRulesByCategory } from "./rules";
+export {
+  COMPLIANCE_MEASUREMENT_KEYS,
+  parseMeasurementsFromBody,
+  mergeMeasurements,
+  countMeasurementCompleteness,
+  stripEmptyMeasurements,
+} from "./measurements";
+export type { ComplianceMeasurementKey, MeasurementCompleteness } from "./measurements";

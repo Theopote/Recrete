@@ -2,25 +2,10 @@ import { NextResponse } from "next/server";
 import { getAIPlatform } from "@/lib/ai";
 import { guardOrRespond } from "@/lib/auth/api-guard";
 import { requireProjectAccess } from "@/lib/auth/authorize";
-import { runComplianceEngine, type ComplianceMeasurements } from "@/lib/ai/compliance";
+import { runComplianceEngine } from "@/lib/ai/compliance";
+import { parseMeasurementsFromBody } from "@/lib/ai/compliance/measurements";
 import { persistComplianceResult } from "@/lib/db/compliance-store";
-
-function parseMeasurements(body: Record<string, unknown>): ComplianceMeasurements {
-  return {
-    ceilingHeight: body.ceilingHeight != null ? Number(body.ceilingHeight) : undefined,
-    stairWidth: body.stairWidth != null ? Number(body.stairWidth) : undefined,
-    fireCompartmentArea:
-      body.fireCompartmentArea != null ? Number(body.fireCompartmentArea) : undefined,
-    hasAccessibleEntrance:
-      body.hasAccessibleEntrance != null ? Boolean(body.hasAccessibleEntrance) : undefined,
-    windowUValue: body.windowUValue != null ? Number(body.windowUValue) : undefined,
-    carbonationDepth:
-      body.carbonationDepth != null ? Number(body.carbonationDepth) : undefined,
-    existingLoadKN: body.existingLoadKN != null ? Number(body.existingLoadKN) : undefined,
-    travelDistance: body.travelDistance != null ? Number(body.travelDistance) : undefined,
-    hasSprinkler: body.hasSprinkler != null ? Boolean(body.hasSprinkler) : undefined,
-  };
-}
+import { resolveProjectMeasurements } from "@/lib/db/site-measurements-store";
 
 export async function POST(
   request: Request,
@@ -35,7 +20,8 @@ export async function POST(
   if (denied) return denied;
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const measurements = parseMeasurements(body);
+  const overrides = parseMeasurementsFromBody(body);
+  const measurements = await resolveProjectMeasurements(projectId, overrides);
   const applyDiagnosis = body.applyDiagnosis !== false;
 
   const platform = getAIPlatform();
