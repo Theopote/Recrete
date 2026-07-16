@@ -32,6 +32,7 @@ export const APP_NAV_LABELS: Record<AppNavHref, NavLabelPair> = {
 export const PROJECT_SECTION_LABELS: Record<ProjectSection, NavLabelPair> = {
   overview: { en: "Overview", zh: "概览" },
   "building-memory": { en: "Building Memory", zh: "建筑记忆" },
+  "building-condition": { en: "Building Condition", zh: "建筑现状" },
   "survey-intelligence": { en: "Survey Intelligence", zh: "勘察智能" },
   "bim-viewer": { en: "BIM Viewer", zh: "BIM 查看器" },
   diagnosis: { en: "Diagnosis", zh: "诊断" },

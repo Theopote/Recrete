@@ -6,6 +6,10 @@ import { saveUploadedFile } from "@/lib/storage/upload";
 import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
 import { enqueueDocumentIngestJob } from "@/lib/jobs/enqueue";
 import { guardOrRespond } from "@/lib/auth/api-guard";
+import {
+  shouldOpenBuildingCondition,
+  syncDocumentCadToBimModel,
+} from "@/lib/building-condition/unified-cad-sync";
 
 export async function POST(
   request: Request,
@@ -59,7 +63,19 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze, analysisTaskId });
+    const bimLink = await syncDocumentCadToBimModel({
+      projectId,
+      document: doc,
+      uploadedById: userId ?? "user-1",
+    });
+
+    return NextResponse.json({
+      ...doc,
+      autoAnalysisQueued: autoAnalyze,
+      analysisTaskId,
+      bimModelId: bimLink?.modelId,
+      openBuildingCondition: shouldOpenBuildingCondition(doc.name, doc.category),
+    });
   }
 
   const body = await request.json();
@@ -91,5 +107,17 @@ export async function POST(
     });
   }
 
-  return NextResponse.json({ ...doc, autoAnalysisQueued: autoAnalyze, analysisTaskId });
+  const bimLink = await syncDocumentCadToBimModel({
+    projectId,
+    document: doc,
+    uploadedById: userId ?? "user-1",
+  });
+
+  return NextResponse.json({
+    ...doc,
+    autoAnalysisQueued: autoAnalyze,
+    analysisTaskId,
+    bimModelId: bimLink?.modelId,
+    openBuildingCondition: shouldOpenBuildingCondition(doc.name, doc.category),
+  });
 }

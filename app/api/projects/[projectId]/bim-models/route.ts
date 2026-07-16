@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getCurrentUserId } from "@/lib/auth/session";
 import { listBimModels } from "@/lib/bim/bim-model-repository";
 import { createBimModelFromUpload } from "@/lib/bim/process-model-upload";
+import {
+  isCadDrawingFile,
+  syncBimCadToDocument,
+} from "@/lib/building-condition/unified-cad-sync";
 import { guardOrRespond } from "@/lib/auth/api-guard";
 import { requireProjectAccess } from "@/lib/auth/authorize";
 
@@ -42,7 +46,22 @@ export async function POST(
       file,
       uploadedById: userId ?? "user-1",
     });
-    return NextResponse.json(model);
+
+    const docLink = isCadDrawingFile(file.name)
+      ? await syncBimCadToDocument({
+          projectId,
+          organizationId: access.user.organizationId,
+          model,
+          uploadedById: userId ?? "user-1",
+        })
+      : null;
+
+    return NextResponse.json({
+      ...model,
+      documentId: docLink?.documentId,
+      analysisTaskId: docLink?.analysisTaskId,
+      openBuildingCondition: isCadDrawingFile(file.name),
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload failed" },

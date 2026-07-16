@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/select";
 import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
 import { inferDocumentCategory } from "@/lib/storage/category-detect";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
+import { openBuildingConditionAfterIngest } from "@/lib/building-condition/client-navigation";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { DocumentAsset, DocumentCategory, ProjectWithRelations } from "@/types";
 import { FileText, Trash2, Tags } from "lucide-react";
@@ -66,8 +67,19 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
             t(`Analyzing ${doc.name}…`, `正在分析 ${doc.name}…`)
           );
           void pollAnalysisTask(initialProject.id, doc.analysisTaskId, setAnalysisNotice).then(
-            (outcome) => {
+            async (outcome) => {
               if (outcome.result === "completed") {
+                if (doc.openBuildingCondition) {
+                  setAnalysisNotice(
+                    t("Analysis complete. Opening Building Condition…", "分析完成，正在打开建筑现状…")
+                  );
+                  await openBuildingConditionAfterIngest({
+                    projectId: initialProject.id,
+                    bimModelId: doc.bimModelId,
+                    onUpdate: setAnalysisNotice,
+                  });
+                  return;
+                }
                 setAnalysisNotice(
                   t(
                     "AI analysis complete. Building Memory updated.",

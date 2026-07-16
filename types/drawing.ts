@@ -30,3 +30,12 @@ export type UpsertDrawingAssetInput = {
   modelName: string;
   confidence: number;
 };
+
+export interface DrawingAssetWithDocument extends DrawingAssetRecord {
+  documentName: string;
+  documentFileUrl: string;
+  documentMimeType: string;
+  documentCategory: string;
+  bimPreviewUrl?: string | null;
+  bimModelId?: string | null;
+}

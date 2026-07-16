@@ -7,16 +7,24 @@ import { BIM_ACCEPT } from "@/lib/bim/formats";
 import type { BimModel } from "@/types/bim";
 import { Loader2, Upload } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
+import { openBuildingConditionAfterIngest } from "@/lib/building-condition/client-navigation";
+
+export type BimModelUploadResponse = BimModel & {
+  documentId?: string;
+  analysisTaskId?: string;
+  openBuildingCondition?: boolean;
+};
 
 interface BimModelUploadProps {
   projectId: string;
-  onUploaded: (model: BimModel) => void;
+  onUploaded: (model: BimModelUploadResponse) => void;
 }
 
 export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
   const { t } = useLocale();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirectNotice, setRedirectNotice] = useState<string | null>(null);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -29,15 +37,26 @@ export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
           method: "POST",
           body: formData,
         });
-        const data = await res.json();
+        const data = (await res.json()) as BimModelUploadResponse & { error?: string };
         if (!res.ok) {
           throw new Error(data.error ?? t("Upload failed", "上传失败"));
         }
-        onUploaded({
+        const model: BimModelUploadResponse = {
           ...data,
           createdAt: new Date(data.createdAt),
           updatedAt: new Date(data.updatedAt),
-        });
+        };
+        onUploaded(model);
+
+        if (model.openBuildingCondition) {
+          setRedirectNotice(t("Analyzing CAD drawing…", "正在分析 CAD 图纸…"));
+          void openBuildingConditionAfterIngest({
+            projectId,
+            analysisTaskId: model.analysisTaskId,
+            bimModelId: model.id,
+            onUpdate: setRedirectNotice,
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : t("Upload failed", "上传失败"));
       } finally {
@@ -67,6 +86,9 @@ export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
         </p>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
+      {redirectNotice && (
+        <p className="text-xs text-muted-foreground">{redirectNotice}</p>
+      )}
       <p className="text-[10px] text-muted-foreground">
         {t(
           "Supported: IFC (GLB lightweight + room areas), DWG, DXF (SVG preview + room areas). Revit (.rvt) — export to IFC first.",
@@ -79,12 +101,13 @@ export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
 
 interface BimModelUploadButtonProps {
   projectId: string;
-  onUploaded: (model: BimModel) => void;
+  onUploaded: (model: BimModelUploadResponse) => void;
 }
 
 export function BimModelUploadButton({ projectId, onUploaded }: BimModelUploadButtonProps) {
   const { t } = useLocale();
   const [uploading, setUploading] = useState(false);
+  const [redirectNotice, setRedirectNotice] = useState<string | null>(null);
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,13 +120,23 @@ export function BimModelUploadButton({ projectId, onUploaded }: BimModelUploadBu
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+      const data = (await res.json()) as BimModelUploadResponse;
       if (res.ok) {
-        onUploaded({
+        const model: BimModelUploadResponse = {
           ...data,
           createdAt: new Date(data.createdAt),
           updatedAt: new Date(data.updatedAt),
-        });
+        };
+        onUploaded(model);
+        if (model.openBuildingCondition) {
+          setRedirectNotice(t("Opening Building Condition…", "正在打开建筑现状…"));
+          void openBuildingConditionAfterIngest({
+            projectId,
+            analysisTaskId: model.analysisTaskId,
+            bimModelId: model.id,
+            onUpdate: setRedirectNotice,
+          });
+        }
       }
     } finally {
       setUploading(false);
@@ -130,6 +163,9 @@ export function BimModelUploadButton({ projectId, onUploaded }: BimModelUploadBu
           {t("Upload Model", "上传模型")}
         </span>
       </Button>
+      {redirectNotice && (
+        <span className="sr-only">{redirectNotice}</span>
+      )}
     </label>
   );
 }

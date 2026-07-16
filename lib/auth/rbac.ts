@@ -93,6 +93,7 @@ export function getVisibleProjectSections(role: UserRole): ProjectSection[] {
   const allSections: ProjectSection[] = [
     "overview",
     "building-memory",
+    "building-condition",
     "survey-intelligence",
     "bim-viewer",
     "diagnosis",

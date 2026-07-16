@@ -315,6 +315,7 @@ export interface CreateProjectInput {
 export type ProjectSection =
   | "overview"
   | "building-memory"
+  | "building-condition"
   | "survey-intelligence"
   | "bim-viewer"
   | "diagnosis"

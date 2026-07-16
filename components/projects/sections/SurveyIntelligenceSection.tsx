@@ -10,8 +10,10 @@ import { RecommendedActions } from "@/components/ai/RecommendedActions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { pollAnalysisTasks } from "@/lib/documents/poll-analysis-task";
+import { navigateToBuildingCondition } from "@/lib/building-condition/client-navigation";
+import { shouldOpenBuildingCondition } from "@/lib/building-condition/cad-file-utils";
 import type { ProjectWithRelations } from "@/types";
-import { Sparkles, Loader2, FileSearch } from "lucide-react";
+import { Sparkles, Loader2, FileSearch, Building2 } from "lucide-react";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
 import { useLocale } from "@/lib/i18n/use-locale";
 
@@ -64,6 +66,13 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
               "文档已分析，但缺失信息检测失败，请重试。"
             )
           );
+        } else if (
+          poll.completed > 0 &&
+          documents.some((d) => shouldOpenBuildingCondition(d.name, d.category))
+        ) {
+          setNotice(t("Opening Building Condition…", "正在打开建筑现状…"));
+          navigateToBuildingCondition(project.id);
+          return;
         }
       } else {
         setNotice(queued.message ?? t("No documents pending analysis", "没有待分析的文档"));
@@ -101,6 +110,33 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
 
       {notice && (
         <p className="text-xs text-muted-foreground">{notice}</p>
+      )}
+
+      {documents.some((d) => d.aiSummary) && (
+        <Card className="border-copper/20 bg-copper/5">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <Building2 className="h-4 w-4 text-copper shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium">
+                  {t("Drawings digitized for Building Condition", "图纸已数字化至建筑现状")}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {t(
+                    "View AI-extracted rooms, structure, and annotations on plan overlays.",
+                    "在建筑现状视图中查看 AI 抽取的空间、结构与标注叠加层。"
+                  )}
+                </p>
+              </div>
+            </div>
+            <a
+              href={`/projects/${project.id}?section=building-condition`}
+              className="inline-flex items-center justify-center rounded-md border border-copper/40 bg-background px-3 py-1.5 text-xs font-medium text-copper hover:bg-copper/10 transition-colors no-underline shrink-0"
+            >
+              {t("Open Building Condition", "打开建筑现状")}
+            </a>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

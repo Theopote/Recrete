@@ -8,6 +8,7 @@ import { navLabel, PROJECT_SECTION_LABELS } from "@/lib/i18n/nav";
 import {
   LayoutDashboard,
   Brain,
+  Building2,
   ClipboardList,
   Stethoscope,
   FlaskConical,
@@ -26,6 +27,7 @@ const sections: {
 }[] = [
   { id: "overview", icon: LayoutDashboard },
   { id: "building-memory", icon: Brain },
+  { id: "building-condition", icon: Building2 },
   { id: "survey-intelligence", icon: ClipboardList },
   { id: "bim-viewer", icon: Box },
   { id: "diagnosis", icon: Stethoscope },

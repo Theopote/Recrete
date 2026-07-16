@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { SectionHeader } from "@/components/app/SectionHeader";
-import { BimModelUpload, BimModelUploadButton } from "@/components/bim/BimModelUpload";
+import { BimModelUpload, BimModelUploadButton, type BimModelUploadResponse } from "@/components/bim/BimModelUpload";
 import { DwgSvgViewer } from "@/components/bim/DwgSvgViewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -162,7 +162,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
       ? null
       : models.find((m) => m.id === selectedId) ?? null;
 
-  const handleUploaded = (model: BimModel) => {
+  const handleUploaded = (model: BimModelUploadResponse) => {
     setModels((prev) => [model, ...prev]);
     setSelectedId(model.id);
   };

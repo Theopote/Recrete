@@ -8,6 +8,7 @@ import {
 } from "@/lib/bim/bim-model-repository";
 import { enqueueBimCadConversionJob } from "@/lib/jobs/enqueue";
 import { convertCadBufferToSvg } from "@/lib/bim/dwg-converter";
+import { syncDrawingAssetFromBimCad } from "@/lib/building-condition/unified-cad-sync";
 import type { BimModel, BimModelFormat } from "@/types/bim";
 
 function generateModelId() {
@@ -39,6 +40,7 @@ export async function processCadConversion(
       metadata: buildMetadata(result.metadata),
       errorMessage: null,
     });
+    await syncDrawingAssetFromBimCad(projectId, modelId);
   } catch (error) {
     await updateBimModel(projectId, modelId, {
       status: "failed",

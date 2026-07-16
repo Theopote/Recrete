@@ -2,6 +2,7 @@ import type { ProjectSection, ProjectWithRelations, StrategyWithMetrics } from "
 import { ExpertAgentsSection } from "./sections/ExpertAgentsSection";
 import { OverviewSection } from "./sections/OverviewSection";
 import { BuildingMemorySection } from "./sections/BuildingMemorySection";
+import { BuildingConditionSection } from "./sections/BuildingConditionSection";
 import { SurveyIntelligenceSection } from "./sections/SurveyIntelligenceSection";
 import { BuildingSection } from "./sections/BuildingSection";
 import { DocumentsSection } from "./sections/DocumentsSection";
@@ -37,6 +38,8 @@ export function ProjectWorkspace({
   switch (resolved) {
     case "building-memory":
       return <BuildingMemorySection project={project} />;
+    case "building-condition":
+      return <BuildingConditionSection project={project} />;
     case "survey-intelligence":
       return <SurveyIntelligenceSection project={project} />;
     case "bim-viewer":
