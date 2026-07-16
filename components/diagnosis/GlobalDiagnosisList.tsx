@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { DiagnosisCard } from "@/components/diagnosis/DiagnosisCard";
-import { SectionHeader } from "@/components/app/SectionHeader";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { DiagnosisWithProject } from "@/types";
-import { diagnosisCategoryLabels, severityLabels } from "@/lib/utils/labels";
 import { ExternalLink } from "lucide-react";
 
 interface GlobalDiagnosisListProps {
@@ -12,14 +11,17 @@ interface GlobalDiagnosisListProps {
 }
 
 export function GlobalDiagnosisList({ items }: GlobalDiagnosisListProps) {
-  const criticalCount = items.filter((i) => i.severity === "critical" || i.severity === "high").length;
+  const { t } = useLocale();
+  const criticalCount = items.filter(
+    (i) => i.severity === "critical" || i.severity === "high"
+  ).length;
 
   return (
     <div className="space-y-6">
       <div className="flex gap-4 text-xs">
-        <Stat label="Total Items" value={items.length} />
-        <Stat label="Critical / High" value={criticalCount} highlight />
-        <Stat label="Categories" value={new Set(items.map((i) => i.category)).size} />
+        <Stat label={t("Total Items", "总条目")} value={items.length} />
+        <Stat label={t("Critical / High", "严重 / 高")} value={criticalCount} highlight />
+        <Stat label={t("Categories", "专业数")} value={new Set(items.map((i) => i.category)).size} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -43,7 +45,9 @@ function Stat({ label, value, highlight }: { label: string; value: number; highl
   return (
     <div className="rounded-md border px-4 py-3">
       <p className="text-muted-foreground">{label}</p>
-      <p className={`text-lg font-semibold tabular-nums ${highlight ? "text-destructive" : ""}`}>{value}</p>
+      <p className={`text-lg font-semibold tabular-nums ${highlight ? "text-destructive" : ""}`}>
+        {value}
+      </p>
     </div>
   );
 }

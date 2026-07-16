@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/app/RiskBadge";
@@ -5,9 +7,10 @@ import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDial
 import { StrategyReviewThread } from "@/components/strategies/StrategyReviewThread";
 import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
 import { StrategyLinkedSources } from "@/components/strategies/StrategyLinkedSources";
-import { strategyTypeLabels } from "@/lib/utils/labels";
+import { strategyTypeLabels, strategyTypeLabelsZh, riskLevelLabels, riskLevelLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { cn, levelToPercent } from "@/lib/utils";
-import type { DiagnosisItem, RenovationStrategy, StrategyWithMetrics } from "@/types";
+import type { DiagnosisItem, RenovationStrategy, RiskLevel, StrategyWithMetrics } from "@/types";
 import type { SourceEvidence } from "@/types/ai";
 import { Check, X, Star } from "lucide-react";
 
@@ -32,6 +35,8 @@ export function StrategyCard({
   documentNames = {},
   onRefined,
 }: StrategyCardProps) {
+  const { t, label } = useLocale();
+
   return (
     <Card className={cn(isRecommended && "border-copper ring-1 ring-copper/20")}>
       <CardContent className="p-5 space-y-4">
@@ -42,17 +47,18 @@ export function StrategyCard({
               {strategy.rank != null && strategy.rank <= 3 && (
                 <Badge variant="outline" className="text-[10px]">
                   #{strategy.rank}
-                  {strategy.compositeScore != null && ` · ${strategy.compositeScore}分`}
+                  {strategy.compositeScore != null &&
+                    ` · ${strategy.compositeScore}${t(" pts", "分")}`}
                 </Badge>
               )}
               {isRecommended && (
                 <Badge className="bg-copper text-copper-foreground text-[10px] gap-1">
-                  <Star className="h-3 w-3" /> Recommended
+                  <Star className="h-3 w-3" /> {t("Recommended", "推荐")}
                 </Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {strategyTypeLabels[strategy.type]}
+              {label(strategyTypeLabels, strategyTypeLabelsZh, strategy.type)}
             </p>
             {projectId && onRefined && (
               <StrategyRefineDialog
@@ -68,40 +74,42 @@ export function StrategyCard({
         <p className="text-xs leading-relaxed">{strategy.summary}</p>
 
         <div className="grid grid-cols-2 gap-3 text-xs">
-          <StrategyField label="Design Goal" value={strategy.designGoal} />
-          <StrategyField label="Spatial" value={strategy.spatialStrategy} />
-          <StrategyField label="Structural" value={strategy.structuralStrategy} />
-          <StrategyField label="Facade" value={strategy.facadeStrategy} />
-          <StrategyField label="MEP" value={strategy.mepStrategy} className="col-span-2" />
+          <StrategyField label={t("Design Goal", "设计目标")} value={strategy.designGoal} />
+          <StrategyField label={t("Spatial", "空间策略")} value={strategy.spatialStrategy} />
+          <StrategyField label={t("Structural", "结构策略")} value={strategy.structuralStrategy} />
+          <StrategyField label={t("Facade", "立面策略")} value={strategy.facadeStrategy} />
+          <StrategyField label={t("MEP", "机电策略")} value={strategy.mepStrategy} className="col-span-2" />
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <LevelBar label="Cost" level={strategy.costLevel} />
-          <LevelBar label="Schedule" level={strategy.scheduleLevel} />
-          <LevelBar label="Risk" level={strategy.riskLevel} />
+          <LevelBar label={t("Cost", "成本")} level={strategy.costLevel} />
+          <LevelBar label={t("Schedule", "工期")} level={strategy.scheduleLevel} />
+          <LevelBar label={t("Risk", "风险")} level={strategy.riskLevel} />
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-xs">
           <div>
             <p className="font-medium text-sage mb-1.5 flex items-center gap-1">
-              <Check className="h-3 w-3" /> Pros
+              <Check className="h-3 w-3" /> {t("Pros", "优势")}
             </p>
             <ul className="space-y-1 text-muted-foreground">
               {strategy.pros.map((p) => (
                 <li key={p} className="flex items-start gap-1.5">
-                  <span className="text-sage mt-1">•</span>{p}
+                  <span className="text-sage mt-1">•</span>
+                  {p}
                 </li>
               ))}
             </ul>
           </div>
           <div>
             <p className="font-medium text-destructive mb-1.5 flex items-center gap-1">
-              <X className="h-3 w-3" /> Cons
+              <X className="h-3 w-3" /> {t("Cons", "劣势")}
             </p>
             <ul className="space-y-1 text-muted-foreground">
               {strategy.cons.map((c) => (
                 <li key={c} className="flex items-start gap-1.5">
-                  <span className="text-destructive mt-1">•</span>{c}
+                  <span className="text-destructive mt-1">•</span>
+                  {c}
                 </li>
               ))}
             </ul>
@@ -111,7 +119,7 @@ export function StrategyCard({
         {strategy.recommendationReason && (
           <div className="rounded-md bg-copper/5 border border-copper/20 p-3">
             <p className="text-[10px] font-medium uppercase tracking-wider text-copper mb-1">
-              Why Recommended
+              {t("Why Recommended", "推荐理由")}
             </p>
             <p className="text-xs">{strategy.recommendationReason}</p>
           </div>
@@ -141,22 +149,36 @@ export function StrategyCard({
   );
 }
 
-function StrategyField({ label, value, className }: { label: string; value: string; className?: string }) {
+function StrategyField({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
   return (
     <div className={className}>
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-0.5">{label}</p>
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-0.5">
+        {label}
+      </p>
       <p className="text-xs leading-relaxed">{value}</p>
     </div>
   );
 }
 
 function LevelBar({ label, level }: { label: string; level: string }) {
+  const { label: labelFn } = useLocale();
   const percent = levelToPercent(level);
+  const levelText =
+    labelFn(riskLevelLabels, riskLevelLabelsZh, level as RiskLevel) ?? level;
+
   return (
     <div>
       <div className="flex justify-between text-[10px] mb-1">
         <span className="text-muted-foreground">{label}</span>
-        <span className="capitalize font-medium">{level}</span>
+        <span className="font-medium">{levelText}</span>
       </div>
       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
         <div

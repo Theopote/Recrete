@@ -1,12 +1,17 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import {
   issueCategoryLabels,
+  issueCategoryLabelsZh,
   issuePriorityLabels,
+  issuePriorityLabelsZh,
   getIssuePriorityColor,
 } from "@/lib/utils/labels";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { formatDate } from "@/lib/utils";
 import { getUserById } from "@/lib/mock-data";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { SiteIssue } from "@/types";
 import { MapPin, Calendar, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,8 +23,13 @@ interface IssueCardProps {
 }
 
 export function IssueCard({ issue, compact, onStatusChange }: IssueCardProps) {
+  const { t, label } = useLocale();
   const assignee = issue.assignedToId ? getUserById(issue.assignedToId) : null;
-  const isOverdue = issue.dueDate && issue.dueDate < new Date() && issue.status !== "resolved" && issue.status !== "closed";
+  const isOverdue =
+    issue.dueDate &&
+    issue.dueDate < new Date() &&
+    issue.status !== "resolved" &&
+    issue.status !== "closed";
 
   return (
     <Card className={cn("hover:border-copper/20 transition-colors", isOverdue && "border-destructive/30")}>
@@ -30,11 +40,16 @@ export function IssueCard({ issue, compact, onStatusChange }: IssueCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-2">
-          <span className={cn("inline-flex rounded px-2 py-0.5 text-[10px] font-medium", getIssuePriorityColor(issue.priority))}>
-            {issuePriorityLabels[issue.priority]}
+          <span
+            className={cn(
+              "inline-flex rounded px-2 py-0.5 text-[10px] font-medium",
+              getIssuePriorityColor(issue.priority)
+            )}
+          >
+            {label(issuePriorityLabels, issuePriorityLabelsZh, issue.priority)}
           </span>
           <span className="inline-flex rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {issueCategoryLabels[issue.category]}
+            {label(issueCategoryLabels, issueCategoryLabelsZh, issue.category)}
           </span>
         </div>
 
@@ -67,7 +82,7 @@ export function IssueCard({ issue, compact, onStatusChange }: IssueCardProps) {
                 onClick={() => onStatusChange("in_progress")}
                 className="text-[10px] px-2 py-1 rounded bg-muted hover:bg-muted/80 font-medium"
               >
-                Start
+                {t("Start", "开始处理")}
               </button>
             )}
             {(issue.status === "open" || issue.status === "in_progress") && (
@@ -75,7 +90,7 @@ export function IssueCard({ issue, compact, onStatusChange }: IssueCardProps) {
                 onClick={() => onStatusChange("resolved")}
                 className="text-[10px] px-2 py-1 rounded bg-sage/10 text-sage hover:bg-sage/20 font-medium"
               >
-                Resolve
+                {t("Resolve", "标记解决")}
               </button>
             )}
           </div>

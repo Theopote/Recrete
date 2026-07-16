@@ -4,11 +4,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   diagnosisCategoryLabels,
+  diagnosisCategoryLabelsZh,
   diagnosisStatusLabels,
+  diagnosisStatusLabelsZh,
   severityLabels,
+  severityLabelsZh,
   getSeverityColor,
   getDiagnosisStatusColor,
 } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { cn } from "@/lib/utils";
 import { EvidenceTrail, EngineerReviewBadge } from "@/components/diagnosis/EvidenceTrail";
 import type { DiagnosisItem } from "@/types";
@@ -22,6 +26,8 @@ interface DiagnosisCardProps {
 }
 
 export function DiagnosisCard({ item, relatedEvidence = [], onEdit }: DiagnosisCardProps) {
+  const { t, label } = useLocale();
+
   return (
     <Card className="hover:border-copper/20 transition-colors group">
       <CardContent className="p-4 space-y-3">
@@ -29,15 +35,25 @@ export function DiagnosisCard({ item, relatedEvidence = [], onEdit }: DiagnosisC
           <div className="min-w-0 flex-1">
             <h4 className="text-sm font-medium">{item.title}</h4>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {diagnosisCategoryLabels[item.category]}
+              {label(diagnosisCategoryLabels, diagnosisCategoryLabelsZh, item.category)}
             </p>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className={cn("inline-flex rounded border px-2 py-0.5 text-[10px] font-medium", getSeverityColor(item.severity))}>
-              {severityLabels[item.severity]}
+            <span
+              className={cn(
+                "inline-flex rounded border px-2 py-0.5 text-[10px] font-medium",
+                getSeverityColor(item.severity)
+              )}
+            >
+              {label(severityLabels, severityLabelsZh, item.severity)}
             </span>
-            <span className={cn("inline-flex rounded px-2 py-0.5 text-[10px] font-medium", getDiagnosisStatusColor(item.status))}>
-              {diagnosisStatusLabels[item.status]}
+            <span
+              className={cn(
+                "inline-flex rounded px-2 py-0.5 text-[10px] font-medium",
+                getDiagnosisStatusColor(item.status)
+              )}
+            >
+              {label(diagnosisStatusLabels, diagnosisStatusLabelsZh, item.status)}
             </span>
             {item.requiresEngineerReview && <EngineerReviewBadge />}
             {onEdit && (
@@ -61,14 +77,18 @@ export function DiagnosisCard({ item, relatedEvidence = [], onEdit }: DiagnosisC
 
         {item.evidence && (
           <div className="rounded bg-muted/50 px-3 py-2">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Evidence</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
+              {t("Evidence", "依据")}
+            </p>
             <p className="text-xs">{item.evidence}</p>
           </div>
         )}
 
         {item.recommendation && (
           <div className="border-l-2 border-sage/40 pl-3">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Recommendation</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
+              {t("Recommendation", "建议")}
+            </p>
             <p className="text-xs">{item.recommendation}</p>
           </div>
         )}
