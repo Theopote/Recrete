@@ -17,6 +17,7 @@ export function StrategySpatialCompareSection({
   projectId,
   strategies,
 }: StrategySpatialCompareSectionProps) {
+  const { t } = useLocale();
   const [models, setModels] = useState<BimModel[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,8 +66,10 @@ export function StrategySpatialCompareSection({
     return (
       <Card>
         <CardContent className="p-4 text-xs text-muted-foreground">
-          Upload a BIM/CAD model with detected rooms in BIM Viewer to enable strategy before/after
-          3D comparison and spatial cost heatmaps.
+          {t(
+            "Upload a BIM/CAD model with detected rooms in BIM Viewer to enable strategy before/after 3D comparison and spatial cost heatmaps.",
+            "在 BIM 查看器中上传包含已识别房间的 BIM/CAD 模型，以启用方案前后三维对比与空间成本热力图。"
+          )}
         </CardContent>
       </Card>
     );
@@ -76,10 +79,13 @@ export function StrategySpatialCompareSection({
     <div className="space-y-3">
       <div>
         <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Spatial Strategy Compare
+          {t("Spatial Strategy Compare", "空间方案对比")}
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Before/after 3D preview, circulation paths, and per-room cost heatmap using{" "}
+          {t(
+            "Before/after 3D preview, circulation paths, and per-room cost heatmap using",
+            "基于以下模型的前后三维预览、动线路径与分房间成本热力图："
+          )}{" "}
           <span className="font-medium text-foreground">{readyModel.name}</span>
         </p>
       </div>

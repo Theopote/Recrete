@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from "react";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/use-locale";
+import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
 import type { DocumentAsset } from "@/types";
 
 interface PdfViewerProps {
@@ -14,6 +16,7 @@ interface PdfViewerProps {
 type ReactPdfModule = typeof import("react-pdf");
 
 function PdfViewer({ fileUrl, className }: PdfViewerProps) {
+  const { t } = useLocale();
   const [reactPdf, setReactPdf] = useState<ReactPdfModule | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
@@ -39,7 +42,7 @@ function PdfViewer({ fileUrl, className }: PdfViewerProps) {
   if (!reactPdf) {
     return (
       <div className={cn("flex items-center justify-center min-h-[400px]", className)}>
-        <p className="text-xs text-muted-foreground p-8">Loading PDF viewer...</p>
+        <p className="text-xs text-muted-foreground p-8">{t("Loading PDF viewer...", "加载 PDF 查看器...")}</p>
       </div>
     );
   }
@@ -89,9 +92,9 @@ function PdfViewer({ fileUrl, className }: PdfViewerProps) {
       </div>
       <div className="flex-1 overflow-auto bg-concrete-light/30 flex justify-center p-4 min-h-[400px]">
         <Document file={fileUrl} onLoadSuccess={onLoadSuccess} loading={
-          <p className="text-xs text-muted-foreground p-8">Loading PDF...</p>
+          <p className="text-xs text-muted-foreground p-8">{t("Loading PDF...", "加载 PDF...")}</p>
         } error={
-          <p className="text-xs text-destructive p-8">Failed to load PDF preview.</p>
+          <p className="text-xs text-destructive p-8">{t("Failed to load PDF preview.", "PDF 预览加载失败。")}</p>
         }>
           <Page pageNumber={page} scale={scale} renderTextLayer={false} renderAnnotationLayer={false} />
         </Document>
@@ -106,6 +109,7 @@ interface DocumentPreviewDialogProps {
 }
 
 export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDialogProps) {
+  const { t, label } = useLocale();
   if (!document) return null;
 
   const isPdf = document.mimeType === "application/pdf" || document.name.toLowerCase().endsWith(".pdf");
@@ -118,7 +122,13 @@ export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDial
         <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
           <div className="min-w-0">
             <h3 className="text-sm font-medium truncate">{document.name}</h3>
-            <p className="text-[10px] text-muted-foreground">{document.category.replace(/_/g, " ")}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {label(
+                documentCategoryLabels,
+                documentCategoryLabelsZh,
+                document.category as keyof typeof documentCategoryLabels
+              )}
+            </p>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -134,9 +144,9 @@ export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDial
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-            <p className="text-sm text-muted-foreground mb-4">Preview not available for this file type.</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("Preview not available for this file type.", "此文件类型不支持预览。")}</p>
             <a href={document.fileUrl} download target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">Download File</Button>
+              <Button variant="outline" size="sm">{t("Download File", "下载文件")}</Button>
             </a>
           </div>
         )}

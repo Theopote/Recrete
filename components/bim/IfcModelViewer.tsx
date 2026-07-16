@@ -14,6 +14,7 @@ interface IfcModelViewerProps {
 }
 
 export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
         setLoading(false);
       } catch (err) {
         if (!disposed) {
-          setError(err instanceof Error ? err.message : "Failed to load IFC model");
+          setError(err instanceof Error ? err.message : t("Failed to load IFC model", "IFC 模型加载失败"));
           setLoading(false);
         }
       }
@@ -109,7 +110,7 @@ export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
       renderer.dispose();
       container.innerHTML = "";
     };
-  }, [modelUrl]);
+  }, [modelUrl, t]);
 
   return (
     <div className={cn("relative h-full min-h-[420px] w-full rounded-md border bg-muted/20", className)}>

@@ -9,6 +9,8 @@ interface DwgSvgViewerProps {
 }
 
 export function DwgSvgViewer({ previewUrl, className }: DwgSvgViewerProps) {
+  const { t } = useLocale();
+
   return (
     <div
       className={cn(
@@ -19,7 +21,7 @@ export function DwgSvgViewer({ previewUrl, className }: DwgSvgViewerProps) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={previewUrl}
-        alt="DWG preview"
+        alt={t("DWG preview", "DWG 预览")}
         className="h-full w-full object-contain"
       />
     </div>

@@ -14,6 +14,7 @@ interface OpenBimViewerProps {
  * That Open Components (@thatopen/components) IFC viewer — openbim-components v2 lineage.
  */
 export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +56,11 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
           : `${window.location.origin}${modelUrl}`;
 
         const response = await fetch(absoluteUrl);
-        if (!response.ok) throw new Error(`Failed to fetch IFC (${response.status})`);
+        if (!response.ok) {
+          throw new Error(
+            t(`Failed to fetch IFC (${response.status})`, `获取 IFC 失败 (${response.status})`)
+          );
+        }
         const buffer = await response.arrayBuffer();
 
         const model = await ifcLoader.load(new Uint8Array(buffer));
@@ -80,7 +85,9 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
       } catch (err) {
         console.error("OpenBIM viewer error:", err);
         if (!disposed) {
-          setError(err instanceof Error ? err.message : "Failed to load OpenBIM viewer");
+          setError(
+            err instanceof Error ? err.message : t("Failed to load OpenBIM viewer", "OpenBIM 查看器加载失败")
+          );
           setLoading(false);
         }
       }
@@ -92,7 +99,7 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
       disposed = true;
       components?.dispose();
     };
-  }, [modelUrl]);
+  }, [modelUrl, t]);
 
   return (
     <div className={cn("relative min-h-[420px] overflow-hidden rounded-md border bg-muted/20", className)}>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Save, Eye, Edit3, FileDown, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { exportReportToPdf, downloadMarkdown } from "@/lib/reports/export-pdf";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface ReportEditorProps {
   content: string;
@@ -26,6 +27,7 @@ export function ReportEditor({
   onSave,
   readOnly,
 }: ReportEditorProps) {
+  const { t } = useLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
   const [saving, setSaving] = useState(false);
@@ -64,7 +66,7 @@ export function ReportEditor({
             size="sm"
             onClick={() => exportReportToPdf(title, editedContent, projectName)}
           >
-            <FileDown className="h-3.5 w-3.5 mr-1" /> Export PDF
+            <FileDown className="h-3.5 w-3.5 mr-1" /> {t("Export PDF", "导出 PDF")}
           </Button>
           <Button
             variant="outline"
@@ -77,15 +79,15 @@ export function ReportEditor({
             isEditing ? (
               <>
                 <Button variant="ghost" size="sm" onClick={() => { setIsEditing(false); setEditedContent(content); }}>
-                  <Eye className="h-3.5 w-3.5 mr-1" /> Preview
+                  <Eye className="h-3.5 w-3.5 mr-1" /> {t("Preview", "预览")}
                 </Button>
                 <Button variant="copper" size="sm" onClick={handleSave} disabled={saving}>
-                  <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Saving..." : "Save"}
+                  <Save className="h-3.5 w-3.5 mr-1" /> {saving ? t("Saving...", "保存中...") : t("Save", "保存")}
                 </Button>
               </>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                <Edit3 className="h-3.5 w-3.5 mr-1" /> Edit
+                <Edit3 className="h-3.5 w-3.5 mr-1" /> {t("Edit", "编辑")}
               </Button>
             )
           )}

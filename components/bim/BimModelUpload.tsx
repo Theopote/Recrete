@@ -14,6 +14,7 @@ interface BimModelUploadProps {
 }
 
 export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
+  const { t } = useLocale();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +31,7 @@ export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
         });
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error ?? "Upload failed");
+          throw new Error(data.error ?? t("Upload failed", "上传失败"));
         }
         onUploaded({
           ...data,
@@ -38,12 +39,12 @@ export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
           updatedAt: new Date(data.updatedAt),
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed");
+        setError(err instanceof Error ? err.message : t("Upload failed", "上传失败"));
       } finally {
         setUploading(false);
       }
     },
-    [projectId, onUploaded]
+    [projectId, onUploaded, t]
   );
 
   const handleUpload = async (files: File[]) => {
@@ -62,12 +63,15 @@ export function BimModelUpload({ projectId, onUploaded }: BimModelUploadProps) {
       {uploading && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Uploading and processing model…
+          {t("Uploading and processing model…", "正在上传并处理模型…")}
         </p>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <p className="text-[10px] text-muted-foreground">
-        Supported: IFC (GLB lightweight + room areas), DWG, DXF (SVG preview + room areas). Revit (.rvt) — export to IFC first.
+        {t(
+          "Supported: IFC (GLB lightweight + room areas), DWG, DXF (SVG preview + room areas). Revit (.rvt) — export to IFC first.",
+          "支持：IFC（GLB 轻量预览 + 房间面积）、DWG、DXF（SVG 预览 + 房间面积）。Revit (.rvt) 请先导出为 IFC。"
+        )}
       </p>
     </div>
   );
@@ -79,6 +83,7 @@ interface BimModelUploadButtonProps {
 }
 
 export function BimModelUploadButton({ projectId, onUploaded }: BimModelUploadButtonProps) {
+  const { t } = useLocale();
   const [uploading, setUploading] = useState(false);
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,7 +127,7 @@ export function BimModelUploadButton({ projectId, onUploaded }: BimModelUploadBu
           ) : (
             <Upload className="mr-1.5 h-3.5 w-3.5" />
           )}
-          Upload Model
+          {t("Upload Model", "上传模型")}
         </span>
       </Button>
     </label>

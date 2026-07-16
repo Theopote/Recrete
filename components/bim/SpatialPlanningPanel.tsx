@@ -2,6 +2,7 @@
 
 import type { BimFurniturePlanning, BimLayoutOptimization, BimFlowSimulation } from "@/types/bim";
 import { Badge } from "@/components/ui/badge";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { LayoutGrid, Users, Armchair } from "lucide-react";
 
 interface SpatialPlanningTabsProps {
@@ -11,6 +12,20 @@ interface SpatialPlanningTabsProps {
   planningAdvice?: string;
   activeTab: "layout" | "flow" | "furniture";
 }
+
+const DENSITY_LABELS_EN: Record<string, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
+};
+
+const DENSITY_LABELS_ZH: Record<string, string> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+  critical: "严重",
+};
 
 const DENSITY_COLORS: Record<string, string> = {
   low: "bg-sage/20 text-sage",
@@ -26,6 +41,8 @@ export function SpatialPlanningPanel({
   planningAdvice,
   activeTab,
 }: SpatialPlanningTabsProps) {
+  const { t, label } = useLocale();
+
   if (activeTab === "layout" && layout) {
     return (
       <div className="space-y-3 text-xs">
@@ -85,7 +102,11 @@ export function SpatialPlanningPanel({
                 </p>
               </div>
               <Badge className={DENSITY_COLORS[node.densityLevel]}>
-                {node.densityLevel}
+                {label(
+                  DENSITY_LABELS_EN as Record<string, string>,
+                  DENSITY_LABELS_ZH,
+                  node.densityLevel
+                )}
               </Badge>
             </div>
           ))}
@@ -149,11 +170,12 @@ export function SpatialPlanningPanel({
 }
 
 function AiAdviceBlock({ advice }: { advice?: string }) {
+  const { t } = useLocale();
   if (!advice) return null;
   return (
     <div className="rounded-md border border-copper/30 bg-copper/5 p-2.5">
       <p className="text-[10px] font-medium uppercase tracking-wide text-copper mb-1">
-        LangChain · AI 建议
+        {t("LangChain · AI advice", "LangChain · AI 建议")}
       </p>
       <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{advice}</p>
     </div>

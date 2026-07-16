@@ -56,7 +56,7 @@ function CreateProjectContent() {
     } finally {
       setIsGenerating(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const param = searchParams.get("brief");

@@ -71,6 +71,7 @@ export function FloorPlanOverlayViewer({
   annotations = [],
   layoutAssignments = {},
 }: FloorPlanOverlayViewerProps) {
+  const { t } = useLocale();
   const [svgMarkup, setSvgMarkup] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,7 +125,9 @@ export function FloorPlanOverlayViewer({
           className
         )}
       >
-        {label ? `${label} — no 2D preview available` : "No floor plan preview available"}
+        {label
+          ? `${label} — ${t("no 2D preview available", "无 2D 预览")}`
+          : t("No floor plan preview available", "无平面图预览")}
       </div>
     );
   }

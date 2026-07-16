@@ -57,16 +57,16 @@ interface BimViewerSectionProps {
   project: ProjectWithRelations;
 }
 
-function statusLabel(status: BimModel["status"]) {
+function statusLabel(status: BimModel["status"], t: (en: string, zh?: string) => string) {
   switch (status) {
     case "ready":
-      return "Ready";
+      return t("Ready", "就绪");
     case "processing":
-      return "Converting…";
+      return t("Converting…", "转换中…");
     case "failed":
-      return "Failed";
+      return t("Failed", "失败");
     case "unsupported":
-      return "Unsupported";
+      return t("Unsupported", "不支持");
     default:
       return status;
   }
@@ -77,16 +77,17 @@ function isCadFormat(format: BimModel["format"]) {
 }
 
 function RoomTable({ model }: { model: BimModel }) {
+  const { t } = useLocale();
   const rooms = model.metadata?.rooms ?? [];
   if (rooms.length === 0) return null;
 
   return (
     <div className="space-y-2">
       <p className="font-medium text-foreground">
-        Rooms / areas
+        {t("Rooms / areas", "房间 / 面积")}
         {model.metadata?.totalArea != null && (
           <span className="ml-2 font-normal text-muted-foreground">
-            Total {model.metadata.totalArea.toFixed(2)} m²
+            {t("Total", "合计")} {model.metadata.totalArea.toFixed(2)} m²
           </span>
         )}
       </p>
@@ -94,9 +95,9 @@ function RoomTable({ model }: { model: BimModel }) {
         <table className="w-full text-left">
           <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-3 py-2">Room</th>
-              <th className="px-3 py-2">Area (m²)</th>
-              <th className="px-3 py-2">Source</th>
+              <th className="px-3 py-2">{t("Room", "房间")}</th>
+              <th className="px-3 py-2">{t("Area (m²)", "面积 (m²)")}</th>
+              <th className="px-3 py-2">{t("Source", "来源")}</th>
             </tr>
           </thead>
           <tbody>
@@ -111,7 +112,9 @@ function RoomTable({ model }: { model: BimModel }) {
         </table>
       </div>
       {rooms.length > 12 && (
-        <p className="text-[10px] text-muted-foreground">Showing 12 of {rooms.length} rooms.</p>
+        <p className="text-[10px] text-muted-foreground">
+          {t(`Showing 12 of ${rooms.length} rooms.`, `显示 ${rooms.length} 个房间中的 12 个。`)}
+        </p>
       )}
     </div>
   );
@@ -169,10 +172,16 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
 
   const conversionMessage =
     selected?.format === "ifc"
-      ? "Generating lightweight GLB preview and extracting IFC spaces…"
+      ? t(
+          "Generating lightweight GLB preview and extracting IFC spaces…",
+          "正在生成轻量 GLB 预览并提取 IFC 空间…"
+        )
       : selected && isCadFormat(selected.format)
-        ? `Converting ${selected.format.toUpperCase()} to SVG preview and detecting room areas…`
-        : "Converting model…";
+        ? t(
+            `Converting ${selected.format.toUpperCase()} to SVG preview and detecting room areas…`,
+            `正在将 ${selected.format.toUpperCase()} 转换为 SVG 预览并检测房间面积…`
+          )
+        : t("Converting model…", "正在转换模型…");
 
   return (
     <div className="space-y-6">
@@ -212,7 +221,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
             >
               <span className="flex items-center gap-1.5">
                 <Box className="h-3.5 w-3.5 shrink-0" />
-                Sample IFC (demo)
+                {t("Sample IFC (demo)", "示例 IFC（演示）")}
               </span>
             </button>
             {models.map((model) => (
@@ -231,12 +240,14 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
                   <Badge variant="outline" className="text-[9px] uppercase">
                     {model.format}
                   </Badge>
-                  <span className="text-[10px] opacity-80">{statusLabel(model.status)}</span>
+                  <span className="text-[10px] opacity-80">{statusLabel(model.status, t)}</span>
                 </div>
               </button>
             ))}
             {models.length === 0 && !loading && (
-              <p className="text-[10px] text-muted-foreground px-1">No models uploaded yet.</p>
+              <p className="text-[10px] text-muted-foreground px-1">
+                {t("No models uploaded yet.", "尚未上传模型。")}
+              </p>
             )}
           </CardContent>
         </Card>
@@ -248,14 +259,14 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
               variant={viewerEngine === "web-ifc" ? "default" : "outline"}
               onClick={() => setViewerEngine("web-ifc")}
             >
-              web-ifc Viewer
+              {t("web-ifc Viewer", "web-ifc 查看器")}
             </Button>
             <Button
               size="sm"
               variant={viewerEngine === "openbim" ? "default" : "outline"}
               onClick={() => setViewerEngine("openbim")}
             >
-              OpenBIM Components
+              {t("OpenBIM Components", "OpenBIM 组件")}
             </Button>
           </div>
 
@@ -308,7 +319,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
           {(selected?.status === "failed" || selected?.status === "unsupported") && (
             <div className="flex min-h-[420px] items-center justify-center rounded-md border bg-destructive/5 p-6 text-center">
               <p className="text-xs text-destructive">
-                {selected.errorMessage ?? "Model processing failed"}
+                {selected.errorMessage ?? t("Model processing failed", "模型处理失败")}
               </p>
             </div>
           )}
@@ -318,14 +329,14 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
               <CardContent className="p-4 text-xs text-muted-foreground space-y-3">
                 {selectedId === "sample" && (
                   <>
-                    <p>Demo model loaded from That Open sample library.</p>
+                    <p>{t("Demo model loaded from That Open sample library.", "演示模型来自 That Open 示例库。")}</p>
                     <a
                       href={SAMPLE_IFC_URL}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-primary hover:underline"
                     >
-                      Open source file <ExternalLink className="h-3 w-3" />
+                      {t("Open source file", "打开源文件")} <ExternalLink className="h-3 w-3" />
                     </a>
                   </>
                 )}
@@ -338,19 +349,27 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
                     </p>
                     {selected.metadata?.entityCount !== undefined && (
                       <p>
-                        Entities: {selected.metadata.entityCount}
+                        {t("Entities:", "实体：")} {selected.metadata.entityCount}
                         {selected.metadata.layerCount !== undefined &&
-                          ` · Layers: ${selected.metadata.layerCount}`}
+                          ` · ${t("Layers:", "图层：")} ${selected.metadata.layerCount}`}
                         {selected.metadata.meshCount !== undefined &&
-                          ` · Meshes: ${selected.metadata.meshCount}`}
+                          ` · ${t("Meshes:", "网格：")} ${selected.metadata.meshCount}`}
                       </p>
                     )}
                     {selected.format === "ifc" && selected.gltfUrl && (
-                      <p>Lightweight GLB preview generated from IFC geometry.</p>
+                      <p>
+                        {t(
+                          "Lightweight GLB preview generated from IFC geometry.",
+                          "已从 IFC 几何生成轻量 GLB 预览。"
+                        )}
+                      </p>
                     )}
                     {selected && isCadFormat(selected.format) && selected.previewUrl && (
                       <p>
-                        2D SVG preview generated via LibreDWG ({selected.format.toUpperCase()}).
+                        {t(
+                          `2D SVG preview generated via LibreDWG (${selected.format.toUpperCase()}).`,
+                          `通过 LibreDWG 生成 2D SVG 预览（${selected.format.toUpperCase()}）。`
+                        )}
                       </p>
                     )}
                     <RoomTable model={selected} />

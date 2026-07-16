@@ -14,6 +14,7 @@ interface GltfModelViewerProps {
 }
 
 export function GltfModelViewer({ modelUrl, className }: GltfModelViewerProps) {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export function GltfModelViewer({ modelUrl, className }: GltfModelViewerProps) {
       (loadError) => {
         if (!disposed) {
           setError(
-            loadError instanceof Error ? loadError.message : "Failed to load GLB model"
+            loadError instanceof Error ? loadError.message : t("Failed to load GLB model", "GLB 模型加载失败")
           );
           setLoading(false);
         }
@@ -106,7 +107,7 @@ export function GltfModelViewer({ modelUrl, className }: GltfModelViewerProps) {
       renderer.dispose();
       container.innerHTML = "";
     };
-  }, [modelUrl]);
+  }, [modelUrl, t]);
 
   return (
     <div className={cn("relative h-full min-h-[420px] w-full rounded-md border bg-muted/20", className)}>

@@ -60,6 +60,7 @@ export function SchematicRoomPlan({
   annotations = [],
   layoutAssignments = {},
 }: SchematicRoomPlanProps) {
+  const { t } = useLocale();
   const locatedRooms = rooms.filter((room) => room.centroid);
   const activePath =
     paths.find((path) => path.id === activePathId) ?? paths[0] ?? null;
@@ -91,7 +92,7 @@ export function SchematicRoomPlan({
           className
         )}
       >
-        No room geometry available for schematic plan
+        {t("No room geometry available for schematic plan", "示意图缺少房间几何数据")}
       </div>
     );
   }
@@ -204,6 +205,7 @@ export function SpatialPlanViewer(props: {
   annotations?: BimSpatialAnnotation[];
   layoutAssignments?: Record<string, number>;
 }) {
+  const { t } = useLocale();
   const {
     previewUrl, rooms, bounds, analytics, mode, activePathId, label, className,
     selectedRoomId, onRoomClick, annotations, layoutAssignments,
@@ -236,7 +238,7 @@ export function SpatialPlanViewer(props: {
       activePathId={activePathId}
       roomCosts={analytics?.roomCosts}
       mode={mode}
-      label={label ?? "Schematic plan (IFC centroids)"}
+      label={label ?? t("Schematic plan (IFC centroids)", "示意图（IFC 质心）")}
       className={className}
       selectedRoomId={selectedRoomId}
       onRoomClick={onRoomClick}

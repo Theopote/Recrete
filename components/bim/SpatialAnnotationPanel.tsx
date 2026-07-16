@@ -49,6 +49,7 @@ export function SpatialAnnotationPanel({
   selectedRoomId,
   onRoomSelect,
 }: SpatialAnnotationPanelProps) {
+  const { t, label } = useLocale();
   const [annotations, setAnnotations] = useState<BimSpatialAnnotation[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -113,19 +114,20 @@ export function SpatialAnnotationPanel({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Tag className="h-4 w-4 text-copper" />
-          <span className="font-medium">空间标注</span>
+          <span className="font-medium">{t("Spatial Annotations", "空间标注")}</span>
           <Badge variant="outline">{annotations.length}</Badge>
         </div>
         <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowForm(!showForm)}>
           <Plus className="h-3 w-3 mr-1" />
-          Add
+          {t("Add", "添加")}
         </Button>
       </div>
 
       {selectedRoom && (
         <p className="text-muted-foreground">
-          选中房间：<span className="text-foreground font-medium">{selectedRoom.label}</span>
-          <span className="ml-1">· 点击平面图切换房间</span>
+          {t("Selected room:", "选中房间：")}
+          <span className="text-foreground font-medium">{selectedRoom.label}</span>
+          <span className="ml-1">{t("· Click plan to switch room", "· 点击平面图切换房间")}</span>
         </p>
       )}
 
@@ -136,35 +138,45 @@ export function SpatialAnnotationPanel({
             value={category}
             onChange={(e) => setCategory(e.target.value as BimAnnotationCategory)}
           >
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+            {Object.entries(CATEGORY_LABELS_EN).map(([key]) => (
+              <option key={key} value={key}>
+                {label(CATEGORY_LABELS_EN, CATEGORY_LABELS_ZH, key as BimAnnotationCategory)}
+              </option>
             ))}
           </select>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="标注标题"
+            placeholder={t("Annotation title", "标注标题")}
             className="w-full rounded-md border bg-background px-2 py-1.5"
           />
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="专业批注内容（结构/文保/机电/功能…）"
+            placeholder={t(
+              "Professional note (structure/heritage/MEP/program…)",
+              "专业批注内容（结构/文保/机电/功能…）"
+            )}
             rows={3}
             className="w-full rounded-md border bg-background px-2 py-1.5 resize-none"
           />
           <Button size="sm" onClick={handleCreate} disabled={!title.trim() || !content.trim()}>
-            保存标注
+            {t("Save annotation", "保存标注")}
           </Button>
         </div>
       )}
 
-      {loading && <p className="text-muted-foreground">Loading annotations…</p>}
+      {loading && <p className="text-muted-foreground">{t("Loading annotations…", "加载标注中…")}</p>}
 
       <div className="max-h-[280px] overflow-y-auto space-y-2">
         {roomAnnotations.length === 0 && loaded && (
-          <p className="text-muted-foreground">暂无标注。在平面图上点击房间后添加专业批注。</p>
+          <p className="text-muted-foreground">
+            {t(
+              "No annotations yet. Click a room on the plan to add professional notes.",
+              "暂无标注。在平面图上点击房间后添加专业批注。"
+            )}
+          </p>
         )}
         {roomAnnotations.map((ann) => (
           <button
@@ -174,7 +186,9 @@ export function SpatialAnnotationPanel({
             onClick={() => ann.roomId && onRoomSelect?.(ann.roomId)}
           >
             <div className="flex items-center gap-2 mb-1">
-              <Badge className={CATEGORY_COLORS[ann.category]}>{CATEGORY_LABELS[ann.category]}</Badge>
+              <Badge className={CATEGORY_COLORS[ann.category]}>
+                {label(CATEGORY_LABELS_EN, CATEGORY_LABELS_ZH, ann.category)}
+              </Badge>
               <span className="font-medium truncate">{ann.title}</span>
             </div>
             <p className="text-muted-foreground line-clamp-2">{ann.content}</p>

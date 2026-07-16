@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/lib/i18n/use-locale";
+import { riskLevelLabels, riskLevelLabelsZh } from "@/lib/utils/labels";
 import type { ProjectWithRelations } from "@/types";
 import type { AIInsight } from "@/types/ai";
 import { AlertTriangle, Loader2, ScanSearch } from "lucide-react";
@@ -65,11 +66,14 @@ export function DataConflictPanel({ project }: DataConflictPanelProps) {
 }
 
 function ConflictItem({ insight }: { insight: AIInsight }) {
+  const { label } = useLocale();
   return (
     <li className="text-xs border rounded-md p-2 space-y-1">
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium">{insight.title}</span>
-        <Badge variant="outline" className="text-[10px]">{insight.priority}</Badge>
+        <Badge variant="outline" className="text-[10px]">
+          {label(riskLevelLabels, riskLevelLabelsZh, insight.priority)}
+        </Badge>
       </div>
       <p className="text-muted-foreground">{insight.summary}</p>
       {insight.recommendation && (

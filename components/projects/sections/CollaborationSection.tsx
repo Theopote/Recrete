@@ -25,7 +25,17 @@ import { RoleGate } from "@/components/auth/RoleGate";
 import { useLocale } from "@/lib/i18n/use-locale";
 
 const PARTY_LABELS: Record<StakeholderParty, string> = {
-  owner: "甲方 / Owner",
+  owner: "Owner",
+  design_team: "Design Team",
+  structure_consultant: "Structure Consultant",
+  mep_consultant: "MEP Consultant",
+  heritage_authority: "Heritage Authority",
+  contractor: "Contractor",
+  government: "Government",
+};
+
+const PARTY_LABELS_ZH: Record<StakeholderParty, string> = {
+  owner: "甲方",
   design_team: "设计团队",
   structure_consultant: "结构顾问",
   mep_consultant: "机电顾问",
@@ -35,11 +45,11 @@ const PARTY_LABELS: Record<StakeholderParty, string> = {
 };
 
 const STATUS_CONFIG = {
-  pending: { label: "待启动", color: "bg-muted text-muted-foreground", icon: Clock },
-  in_review: { label: "评审中", color: "bg-blue-500/15 text-blue-400", icon: MessageSquare },
-  negotiating: { label: "协商中", color: "bg-amber-500/15 text-amber-400", icon: Handshake },
-  approved: { label: "已通过", color: "bg-emerald-500/15 text-emerald-400", icon: CheckCircle2 },
-  rejected: { label: "已驳回", color: "bg-red-500/15 text-red-400", icon: AlertCircle },
+  pending: { en: "Pending", zh: "待启动", color: "bg-muted text-muted-foreground", icon: Clock },
+  in_review: { en: "In Review", zh: "评审中", color: "bg-blue-500/15 text-blue-400", icon: MessageSquare },
+  negotiating: { en: "Negotiating", zh: "协商中", color: "bg-amber-500/15 text-amber-400", icon: Handshake },
+  approved: { en: "Approved", zh: "已通过", color: "bg-emerald-500/15 text-emerald-400", icon: CheckCircle2 },
+  rejected: { en: "Rejected", zh: "已驳回", color: "bg-red-500/15 text-red-400", icon: AlertCircle },
 };
 
 interface CollaborationSectionProps {
@@ -124,17 +134,17 @@ export function CollaborationSection({ project, initialSummary }: CollaborationS
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="参与方" value={summary.stakeholders.length} />
-        <StatCard label="待评审" value={summary.pendingCount} accent="text-amber-400" />
-        <StatCard label="协商中" value={summary.negotiatingCount} accent="text-blue-400" />
-        <StatCard label="已通过" value={summary.approvedCount} accent="text-emerald-400" />
+        <StatCard label={t("Stakeholders", "参与方")} value={summary.stakeholders.length} />
+        <StatCard label={t("Pending Review", "待评审")} value={summary.pendingCount} accent="text-amber-400" />
+        <StatCard label={t("Negotiating", "协商中")} value={summary.negotiatingCount} accent="text-blue-400" />
+        <StatCard label={t("Approved", "已通过")} value={summary.approvedCount} accent="text-emerald-400" />
       </div>
 
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Users className="h-4 w-4 text-copper" />
-            项目参与方 · Stakeholders
+            {t("Project Stakeholders", "项目参与方")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -147,7 +157,7 @@ export function CollaborationSection({ project, initialSummary }: CollaborationS
       </Card>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-medium">评审事项 · Review Items</h3>
+        <h3 className="text-sm font-medium">{t("Review Items", "评审事项")}</h3>
         {summary.reviews.length === 0 ? (
           <EmptyState
             icon={MessageSquare}
@@ -186,7 +196,7 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
 }
 
 function StakeholderCard({ stakeholder }: { stakeholder: ProjectStakeholder }) {
-  const { t } = useLocale();
+  const { t, label } = useLocale();
   return (
     <div className="rounded-md border p-3 space-y-1">
       <div className="flex items-center justify-between">
@@ -195,7 +205,7 @@ function StakeholderCard({ stakeholder }: { stakeholder: ProjectStakeholder }) {
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-copper/15 text-copper">{t("Lead", "负责人")}</span>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">{PARTY_LABELS[stakeholder.party]}</p>
+      <p className="text-xs text-muted-foreground">{label(PARTY_LABELS, PARTY_LABELS_ZH, stakeholder.party)}</p>
       {stakeholder.organization && (
         <p className="text-[10px] text-muted-foreground/70">{stakeholder.organization}</p>
       )}
@@ -220,7 +230,7 @@ function ReviewCard({
   onComment: () => void;
   onApprove: (party: StakeholderParty) => void;
 }) {
-  const { t } = useLocale();
+  const { t, label } = useLocale();
   const config = STATUS_CONFIG[review.status];
   const StatusIcon = config.icon;
   const approvedCount = review.approvals.filter((a) => a.approved).length;
@@ -238,7 +248,7 @@ function ReviewCard({
           </div>
           <span className={cn("inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium shrink-0", config.color)}>
             <StatusIcon className="h-3 w-3" />
-            {config.label}
+            {t(config.en, config.zh)}
           </span>
         </div>
       </CardHeader>
@@ -248,7 +258,7 @@ function ReviewCard({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {review.approvals.map((a) => (
               <div key={a.party} className="flex items-center justify-between rounded border p-2 text-xs">
-                <span>{PARTY_LABELS[a.party]}</span>
+                <span>{label(PARTY_LABELS, PARTY_LABELS_ZH, a.party)}</span>
                 <div className="flex items-center gap-2">
                   {a.approved ? (
                     <span className="text-emerald-400 flex items-center gap-1">
@@ -271,13 +281,13 @@ function ReviewCard({
 
           {review.negotiationPoints.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-xs font-medium text-amber-400">协商要点 · Negotiation Points</h4>
+              <h4 className="text-xs font-medium text-amber-400">{t("Negotiation Points", "协商要点")}</h4>
               {review.negotiationPoints.map((np) => (
                 <div key={np.id} className="rounded border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
                   <p className="text-xs font-medium">{np.topic}</p>
                   {np.positions.map((pos, i) => (
                     <div key={i} className="text-[10px] text-muted-foreground">
-                      <span className="text-foreground">{PARTY_LABELS[pos.party]}:</span> {pos.stance}
+                      <span className="text-foreground">{label(PARTY_LABELS, PARTY_LABELS_ZH, pos.party)}:</span> {pos.stance}
                       <span className="ml-2 opacity-60">({pos.priority.replace(/_/g, " ")})</span>
                     </div>
                   ))}
@@ -288,12 +298,12 @@ function ReviewCard({
 
           {review.comments.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-xs font-medium">评论 · Comments</h4>
+              <h4 className="text-xs font-medium">{t("Comments", "评论")}</h4>
               {review.comments.map((c) => (
                 <div key={c.id} className="rounded border p-2 space-y-0.5">
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     <span className="font-medium text-foreground">{c.authorName}</span>
-                    <span>· {PARTY_LABELS[c.party]}</span>
+                    <span>· {label(PARTY_LABELS, PARTY_LABELS_ZH, c.party)}</span>
                   </div>
                   <p className="text-xs">{c.content}</p>
                 </div>
