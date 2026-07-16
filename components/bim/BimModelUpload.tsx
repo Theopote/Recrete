@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BIM_ACCEPT } from "@/lib/bim/formats";
 import type { BimModel } from "@/types/bim";
 import { Loader2, Upload } from "lucide-react";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface BimModelUploadProps {
   projectId: string;

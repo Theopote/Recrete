@@ -6,6 +6,7 @@ import type { RenovationStrategy } from "@/types";
 import type { BimModel } from "@/types/bim";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface StrategySpatialCompareSectionProps {
   projectId: string;

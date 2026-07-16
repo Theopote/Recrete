@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { strategySchema, type StrategyFormValues } from "@/lib/validators/project";
-import { strategyTypeLabels, riskLevelLabels } from "@/lib/utils/labels";
+import { strategyTypeLabels, strategyTypeLabelsZh, riskLevelLabels, riskLevelLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { StrategyWithMetrics } from "@/types";
 import { Plus, X } from "lucide-react";
 
@@ -19,6 +20,7 @@ interface CreateStrategyFormProps {
 }
 
 export function CreateStrategyForm({ projectId, onCreated }: CreateStrategyFormProps) {
+  const { t, label } = useLocale();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -60,7 +62,7 @@ export function CreateStrategyForm({ projectId, onCreated }: CreateStrategyFormP
   if (!open) {
     return (
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Strategy
+        <Plus className="h-3.5 w-3.5 mr-1.5" /> {t("Add Strategy", "添加策略")}
       </Button>
     );
   }
@@ -68,89 +70,93 @@ export function CreateStrategyForm({ projectId, onCreated }: CreateStrategyFormP
   return (
     <div className="rounded-lg border bg-card p-4 space-y-4 col-span-full">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Create Renovation Strategy</h3>
+        <h3 className="text-sm font-medium">{t("Create Renovation Strategy", "创建改造策略")}</h3>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Field label="Strategy Name" error={errors.name?.message} className="md:col-span-2">
-          <Input {...register("name")} className="h-8 text-xs" placeholder="e.g. Heritage-Focused Renewal" />
+        <Field label={t("Strategy Name", "策略名称")} error={errors.name?.message} className="md:col-span-2">
+          <Input {...register("name")} className="h-8 text-xs" placeholder={t("e.g. Heritage-Focused Renewal", "例如：文保导向更新")} />
         </Field>
 
-        <Field label="Type" error={errors.type?.message}>
+        <Field label={t("Type", "类型")} error={errors.type?.message}>
           <Select {...register("type")} className="h-8 text-xs">
-            {Object.entries(strategyTypeLabels).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+            {Object.keys(strategyTypeLabels).map((k) => (
+              <option key={k} value={k}>
+                {label(strategyTypeLabels, strategyTypeLabelsZh, k as keyof typeof strategyTypeLabels)}
+              </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="Risk Level" error={errors.riskLevel?.message}>
+        <Field label={t("Risk Level", "风险等级")} error={errors.riskLevel?.message}>
           <Select {...register("riskLevel")} className="h-8 text-xs">
-            {Object.entries(riskLevelLabels).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+            {Object.keys(riskLevelLabels).map((k) => (
+              <option key={k} value={k}>
+                {label(riskLevelLabels, riskLevelLabelsZh, k as keyof typeof riskLevelLabels)}
+              </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="Cost Level" error={errors.costLevel?.message}>
+        <Field label={t("Cost Level", "成本等级")} error={errors.costLevel?.message}>
           <Select {...register("costLevel")} className="h-8 text-xs">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low">{t("Low", "低")}</option>
+            <option value="medium">{t("Medium", "中")}</option>
+            <option value="high">{t("High", "高")}</option>
           </Select>
         </Field>
 
-        <Field label="Schedule Level" error={errors.scheduleLevel?.message}>
+        <Field label={t("Schedule Level", "工期等级")} error={errors.scheduleLevel?.message}>
           <Select {...register("scheduleLevel")} className="h-8 text-xs">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low">{t("Low", "低")}</option>
+            <option value="medium">{t("Medium", "中")}</option>
+            <option value="high">{t("High", "高")}</option>
           </Select>
         </Field>
 
-        <Field label="Summary" error={errors.summary?.message} className="md:col-span-2">
+        <Field label={t("Summary", "摘要")} error={errors.summary?.message} className="md:col-span-2">
           <Textarea {...register("summary")} className="text-xs min-h-[48px]" />
         </Field>
 
-        <Field label="Design Goal" error={errors.designGoal?.message}>
+        <Field label={t("Design Goal", "设计目标")} error={errors.designGoal?.message}>
           <Textarea {...register("designGoal")} className="text-xs min-h-[48px]" />
         </Field>
 
-        <Field label="Spatial Strategy" error={errors.spatialStrategy?.message}>
+        <Field label={t("Spatial Strategy", "空间策略")} error={errors.spatialStrategy?.message}>
           <Textarea {...register("spatialStrategy")} className="text-xs min-h-[48px]" />
         </Field>
 
-        <Field label="Structural Strategy" error={errors.structuralStrategy?.message}>
+        <Field label={t("Structural Strategy", "结构策略")} error={errors.structuralStrategy?.message}>
           <Textarea {...register("structuralStrategy")} className="text-xs min-h-[48px]" />
         </Field>
 
-        <Field label="Facade Strategy" error={errors.facadeStrategy?.message}>
+        <Field label={t("Facade Strategy", "立面策略")} error={errors.facadeStrategy?.message}>
           <Textarea {...register("facadeStrategy")} className="text-xs min-h-[48px]" />
         </Field>
 
-        <Field label="MEP Strategy" error={errors.mepStrategy?.message} className="md:col-span-2">
+        <Field label={t("MEP Strategy", "机电策略")} error={errors.mepStrategy?.message} className="md:col-span-2">
           <Textarea {...register("mepStrategy")} className="text-xs min-h-[48px]" />
         </Field>
 
-        <Field label="Pros (one per line)" error={errors.pros?.message}>
+        <Field label={t("Pros (one per line)", "优点（每行一条）")} error={errors.pros?.message}>
           <Textarea {...register("pros")} className="text-xs min-h-[64px]" />
         </Field>
 
-        <Field label="Cons (one per line)" error={errors.cons?.message}>
+        <Field label={t("Cons (one per line)", "缺点（每行一条）")} error={errors.cons?.message}>
           <Textarea {...register("cons")} className="text-xs min-h-[64px]" />
         </Field>
 
-        <Field label="Recommendation Reason (optional)" error={errors.recommendationReason?.message} className="md:col-span-2">
+        <Field label={t("Recommendation Reason (optional)", "推荐理由（可选）")} error={errors.recommendationReason?.message} className="md:col-span-2">
           <Textarea {...register("recommendationReason")} className="text-xs min-h-[40px]" />
         </Field>
 
         <div className="md:col-span-2 flex justify-end gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>{t("Cancel", "取消")}</Button>
           <Button type="submit" variant="copper" size="sm" disabled={submitting}>
-            {submitting ? "Creating..." : "Create Strategy"}
+            {submitting ? t("Creating...", "创建中...") : t("Create Strategy", "创建策略")}
           </Button>
         </div>
       </form>

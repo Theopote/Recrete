@@ -5,8 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { BimAnnotationCategory, BimRoomInfo, BimSpatialAnnotation } from "@/types/bim";
 import { MapPin, Plus, Tag } from "lucide-react";
+import { useLocale } from "@/lib/i18n/use-locale";
 
-const CATEGORY_LABELS: Record<BimAnnotationCategory, string> = {
+const CATEGORY_LABELS_EN: Record<BimAnnotationCategory, string> = {
+  structure: "Structure",
+  heritage: "Heritage",
+  mep: "MEP",
+  program: "Program",
+  fire_safety: "Fire safety",
+  note: "Note",
+};
+
+const CATEGORY_LABELS_ZH: Record<BimAnnotationCategory, string> = {
   structure: "结构",
   heritage: "文保",
   mep: "机电",

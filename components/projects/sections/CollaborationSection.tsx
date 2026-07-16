@@ -22,6 +22,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 const PARTY_LABELS: Record<StakeholderParty, string> = {
   owner: "甲方 / Owner",
@@ -47,6 +48,7 @@ interface CollaborationSectionProps {
 }
 
 export function CollaborationSection({ project, initialSummary }: CollaborationSectionProps) {
+  const { t } = useLocale();
   const [summary, setSummary] = useState<CollaborationSummary | null>(initialSummary ?? null);
   const [loading, setLoading] = useState(!initialSummary);
   const [activeReview, setActiveReview] = useState<string | null>(null);
@@ -66,16 +68,16 @@ export function CollaborationSection({ project, initialSummary }: CollaborationS
   };
 
   if (loading && !summary) {
-    return <div className="text-sm text-muted-foreground">Loading collaboration data...</div>;
+    return <div className="text-sm text-muted-foreground">{t("Loading collaboration data...", "加载协同数据...")}</div>;
   }
 
   if (!summary) {
     return (
       <EmptyState
         icon={Users}
-        title="No collaboration data"
-        description="Unable to load stakeholder reviews."
-        action={{ label: "Retry", onClick: loadSummary }}
+        title={t("No collaboration data", "暂无协同数据")}
+        description={t("Unable to load stakeholder reviews.", "无法加载参与方评审数据。")}
+        action={{ label: t("Retry", "重试"), onClick: loadSummary }}
       />
     );
   }
@@ -149,8 +151,11 @@ export function CollaborationSection({ project, initialSummary }: CollaborationS
         {summary.reviews.length === 0 ? (
           <EmptyState
             icon={MessageSquare}
-            title="No reviews yet"
-            description="Reviews will appear when strategies or diagnosis items enter the approval workflow."
+            title={t("No reviews yet", "暂无评审事项")}
+            description={t(
+              "Reviews will appear when strategies or diagnosis items enter the approval workflow.",
+              "当策略或诊断项进入审批流程后，评审事项将显示在此处。"
+            )}
           />
         ) : (
           summary.reviews.map((review) => (
@@ -181,12 +186,13 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
 }
 
 function StakeholderCard({ stakeholder }: { stakeholder: ProjectStakeholder }) {
+  const { t } = useLocale();
   return (
     <div className="rounded-md border p-3 space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{stakeholder.name}</span>
         {stakeholder.isLead && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-copper/15 text-copper">Lead</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-copper/15 text-copper">{t("Lead", "负责人")}</span>
         )}
       </div>
       <p className="text-xs text-muted-foreground">{PARTY_LABELS[stakeholder.party]}</p>
@@ -214,6 +220,7 @@ function ReviewCard({
   onComment: () => void;
   onApprove: (party: StakeholderParty) => void;
 }) {
+  const { t } = useLocale();
   const config = STATUS_CONFIG[review.status];
   const StatusIcon = config.icon;
   const approvedCount = review.approvals.filter((a) => a.approved).length;
@@ -226,7 +233,7 @@ function ReviewCard({
           <div className="space-y-1 min-w-0">
             <CardTitle className="text-sm font-medium truncate">{review.targetTitle}</CardTitle>
             <p className="text-[10px] text-muted-foreground capitalize">
-              {review.targetType.replace(/_/g, " ")} · {approvedCount}/{totalRequired} approvals
+              {review.targetType.replace(/_/g, " ")} · {approvedCount}/{totalRequired} {t("approvals", "项已通过")}
             </p>
           </div>
           <span className={cn("inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium shrink-0", config.color)}>
@@ -249,10 +256,10 @@ function ReviewCard({
                     </span>
                   ) : (
                     <>
-                      <span className="text-muted-foreground">Pending</span>
+                      <span className="text-muted-foreground">{t("Pending", "待审批")}</span>
                       <RoleGate anyOf={["approve_strategy", "manage_collaboration"]}>
                         <Button variant="outline" size="sm" className="h-6 text-[10px]" onClick={() => onApprove(a.party)}>
-                          Approve
+                          {t("Approve", "通过")}
                         </Button>
                       </RoleGate>
                     </>
@@ -299,10 +306,10 @@ function ReviewCard({
               type="text"
               value={commentText}
               onChange={(e) => onCommentChange(e.target.value)}
-              placeholder="Add a review comment..."
+              placeholder={t("Add a review comment...", "添加评审评论...")}
               className="flex-1 rounded-md border bg-background px-3 py-1.5 text-xs"
             />
-            <Button size="sm" onClick={onComment}>Comment</Button>
+            <Button size="sm" onClick={onComment}>{t("Comment", "评论")}</Button>
           </div>
         </CardContent>
       )}

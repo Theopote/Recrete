@@ -17,6 +17,7 @@ import {
   type StreamState,
 } from "@/components/projects/AICreateStreamPanel";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 const EXAMPLE_BRIEF =
   "我有一栋 1986 年建成的混凝土框架办公楼，位于西安，原本是政府办公，现在想改成社区文化中心，预算有限，希望保留主体结构。";
@@ -24,6 +25,7 @@ const EXAMPLE_BRIEF =
 function CreateProjectContent() {
   const router = useRouter();
   const { can, isLoading } = usePermissions();
+  const { t } = useLocale();
   const searchParams = useSearchParams();
   const [brief, setBrief] = useState(searchParams.get("brief") ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -47,7 +49,10 @@ function CreateProjectContent() {
         });
       });
     } catch {
-      setCreateError({ message: "创建失败，请稍后重试。", retryable: true });
+      setCreateError({
+        message: t("Creation failed. Please try again.", "创建失败，请稍后重试。"),
+        retryable: true,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -87,15 +92,24 @@ function CreateProjectContent() {
   if (!isLoading && !can("edit_profile")) {
     return (
       <AppShell>
-        <TopBar title="AI Create Project" subtitle="Access restricted" />
+        <TopBar
+          title="AI Create Project"
+          titleZh="AI 创建项目"
+          subtitle={t("Access restricted", "权限受限")}
+        />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="mx-auto max-w-lg rounded-lg border border-dashed p-8 text-center space-y-3">
-            <p className="text-sm font-medium">Project creation not available</p>
+            <p className="text-sm font-medium">
+              {t("Project creation not available", "无法创建项目")}
+            </p>
             <p className="text-xs text-muted-foreground">
-              Your account role does not include permission to create projects. Contact a project manager.
+              {t(
+                "Your account role does not include permission to create projects. Contact a project manager.",
+                "当前账号角色无权创建项目，请联系项目经理。"
+              )}
             </p>
             <Button variant="outline" size="sm" onClick={() => router.push("/projects")}>
-              Back to Projects
+              {t("Back to Projects", "返回项目列表")}
             </Button>
           </div>
         </main>
@@ -107,21 +121,27 @@ function CreateProjectContent() {
     <AppShell>
       <TopBar
         title="AI Create Project"
-        subtitle="面向既有建筑更新的 AI 设计助手 · AI Copilot for Existing Building Renovation"
+        titleZh="AI 创建项目"
+        subtitle={t(
+          "AI Copilot for Existing Building Renovation",
+          "面向既有建筑更新的 AI 设计助手"
+        )}
       />
       <main className="flex-1 overflow-y-auto p-6 bg-grid-pattern bg-grid">
         <div className="mx-auto max-w-3xl space-y-6">
           <div className="text-center space-y-2 pb-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-copper/30 bg-copper/5 px-3 py-1 text-[10px] font-medium text-copper">
               <Sparkles className="h-3 w-3" />
-              Recrete / 砼憶 — AI Building Renovation Agent
+              Recrete / 砼憶 — {t("AI Building Renovation Agent", "AI 建筑更新智能体")}
             </div>
             <h2 className="text-lg font-semibold tracking-tight">
-              Describe your building in one sentence
+              {t("Describe your building in one sentence", "用一句话描述您的建筑")}
             </h2>
             <p className="text-xs text-muted-foreground max-w-lg mx-auto leading-relaxed">
-              会阅读、理解、诊断、想象和管理老旧建筑改造项目的 AI 建筑更新智能体。
-              No forms — AI generates your project profile, Building Memory, risks, and next steps.
+              {t(
+                "No forms — AI generates your project profile, Building Memory, risks, and next steps.",
+                "无需填表 — AI 将生成项目档案、建筑记忆、风险分析与下一步建议。"
+              )}
             </p>
           </div>
 
@@ -141,7 +161,7 @@ function CreateProjectContent() {
                     onClick={() => setBrief(EXAMPLE_BRIEF)}
                     className="text-[10px] text-muted-foreground hover:text-copper underline-offset-2 hover:underline"
                   >
-                    Use example brief
+                    {t("Use example brief", "使用示例描述")}
                   </button>
                   <Button
                     variant="copper"
@@ -149,7 +169,7 @@ function CreateProjectContent() {
                     disabled={isGenerating || brief.trim().length < 20}
                   >
                     <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                    Create with AI
+                    {t("Create with AI", "AI 创建项目")}
                   </Button>
                 </div>
               </CardContent>
@@ -170,9 +190,18 @@ function CreateProjectContent() {
           {!showStream && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               {[
-                { title: "AI 创建项目", desc: "One sentence → full project workspace" },
-                { title: "AI 建筑记忆", desc: "Persistent building intelligence" },
-                { title: "AI 策略实验室", desc: "Three strategies, one click" },
+                {
+                  title: t("AI Create Project", "AI 创建项目"),
+                  desc: t("One sentence → full project workspace", "一句话 → 完整项目工作区"),
+                },
+                {
+                  title: t("AI Building Memory", "AI 建筑记忆"),
+                  desc: t("Persistent building intelligence", "持久化建筑智能"),
+                },
+                {
+                  title: t("AI Strategy Lab", "AI 策略实验室"),
+                  desc: t("Three strategies, one click", "三种方案，一键生成"),
+                },
               ].map((item) => (
                 <div key={item.title} className="rounded-lg border bg-card/60 p-3 text-center">
                   <p className="text-xs font-medium">{item.title}</p>
@@ -185,7 +214,7 @@ function CreateProjectContent() {
           {showStream && isGenerating && (
             <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1.5">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Streaming AI output — please wait
+              {t("Streaming AI output — please wait", "AI 流式输出中，请稍候…")}
             </p>
           )}
         </div>

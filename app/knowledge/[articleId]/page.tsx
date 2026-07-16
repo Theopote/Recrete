@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { AppShell } from "@/components/app/AppShell";
 import { TopBar } from "@/components/app/TopBar";
 import { Card, CardContent } from "@/components/ui/card";
+import { KnowledgeBackLink } from "@/components/knowledge/KnowledgeBackLink";
+import { KnowledgeArticleMeta } from "@/components/knowledge/KnowledgeArticleMeta";
 import { getKnowledgeArticle } from "@/lib/db/repository";
-import { formatDate } from "@/lib/utils";
-import { ArrowLeft, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 
 interface KnowledgeArticlePageProps {
   params: Promise<{ articleId: string }>;
@@ -22,9 +22,7 @@ export default async function KnowledgeArticlePage({ params }: KnowledgeArticleP
       <TopBar title={article.title} subtitle={article.category} />
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-3xl space-y-6">
-          <Link href="/knowledge" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-3 w-3" /> Back to Knowledge Base
-          </Link>
+          <KnowledgeBackLink />
 
           <Card>
             <CardContent className="p-8">
@@ -41,9 +39,7 @@ export default async function KnowledgeArticlePage({ params }: KnowledgeArticleP
               <article className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground/80">
                 <ReactMarkdown>{article.content}</ReactMarkdown>
               </article>
-              <p className="text-[10px] text-muted-foreground mt-8 pt-4 border-t">
-                Last updated {formatDate(article.updatedAt)}
-              </p>
+              <KnowledgeArticleMeta updatedAt={article.updatedAt} />
             </CardContent>
           </Card>
         </div>

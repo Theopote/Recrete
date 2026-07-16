@@ -14,6 +14,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { ProjectWithRelations } from "@/types";
 import {
   CREATE_PHASES,
@@ -116,14 +117,14 @@ function reviveProject(raw: ProjectWithRelations): ProjectWithRelations {
 
 const CATEGORY_META: Record<
   AICreateItemCategory,
-  { icon: React.ComponentType<{ className?: string }>; label: string; color: string }
+  { icon: React.ComponentType<{ className?: string }>; labelEn: string; labelZh: string; color: string }
 > = {
-  profile: { icon: Building2, label: "Profile", color: "text-copper" },
-  memory: { icon: Brain, label: "Memory", color: "text-sage" },
-  risk: { icon: AlertTriangle, label: "Risk", color: "text-amber-600" },
-  missing: { icon: FileQuestion, label: "Missing", color: "text-muted-foreground" },
-  task: { icon: ListChecks, label: "Task", color: "text-copper" },
-  insight: { icon: Lightbulb, label: "Insight", color: "text-sage" },
+  profile: { icon: Building2, labelEn: "Profile", labelZh: "档案", color: "text-copper" },
+  memory: { icon: Brain, labelEn: "Memory", labelZh: "记忆", color: "text-sage" },
+  risk: { icon: AlertTriangle, labelEn: "Risk", labelZh: "风险", color: "text-amber-600" },
+  missing: { icon: FileQuestion, labelEn: "Missing", labelZh: "缺失", color: "text-muted-foreground" },
+  task: { icon: ListChecks, labelEn: "Task", labelZh: "任务", color: "text-copper" },
+  insight: { icon: Lightbulb, labelEn: "Insight", labelZh: "洞察", color: "text-sage" },
 };
 
 interface AICreateStreamPanelProps {
@@ -131,6 +132,7 @@ interface AICreateStreamPanelProps {
 }
 
 export function AICreateStreamPanel({ state }: AICreateStreamPanelProps) {
+  const { t } = useLocale();
   const feedRef = useRef<HTMLDivElement>(null);
   const doneCount = CREATE_PHASES.filter((p) => state.phaseStatus[p.id] === "done").length;
   const progress = state.isComplete ? 100 : Math.round((doneCount / CREATE_PHASES.length) * 100);
@@ -151,12 +153,14 @@ export function AICreateStreamPanel({ state }: AICreateStreamPanelProps) {
             )}
             <div>
               <p className="text-sm font-medium">
-                {state.isComplete ? "Project ready" : "砼憶正在理解您的建筑…"}
+                {state.isComplete
+                  ? t("Project ready", "项目已就绪")
+                  : t("Recrete is understanding your building…", "砼憶正在理解您的建筑…")}
               </p>
               <p className="text-[10px] text-muted-foreground">
                 {state.isComplete
-                  ? "Building Memory initialized — redirecting"
-                  : "AI is generating your project step by step"}
+                  ? t("Building Memory initialized — redirecting", "建筑记忆已初始化 — 正在跳转")
+                  : t("AI is generating your project step by step", "AI 正在逐步生成您的项目")}
               </p>
             </div>
           </div>
@@ -188,7 +192,7 @@ export function AICreateStreamPanel({ state }: AICreateStreamPanelProps) {
           <div ref={feedRef} className="p-4 max-h-[320px] overflow-y-auto space-y-2">
             {state.items.length === 0 && !state.isComplete && (
               <p className="text-xs text-muted-foreground py-6 text-center">
-                Waiting for AI output…
+                {t("Waiting for AI output…", "等待 AI 输出…")}
               </p>
             )}
             {state.items.map((item, index) => (
@@ -225,6 +229,9 @@ function PhaseRow({
   labelZh: string;
   status: "pending" | "active" | "done";
 }) {
+  const { t } = useLocale();
+  const displayLabel = t(label, labelZh);
+
   return (
     <div
       className={cn(
@@ -243,9 +250,8 @@ function PhaseRow({
       )}
       <div className="min-w-0">
         <p className={cn("font-medium leading-tight", status === "active" && "text-copper")}>
-          {label}
+          {displayLabel}
         </p>
-        <p className="text-[10px] opacity-70">{labelZh}</p>
       </div>
     </div>
   );
@@ -258,6 +264,7 @@ function StreamItem({
   item: StreamState["items"][number];
   index: number;
 }) {
+  const { t } = useLocale();
   const meta = CATEGORY_META[item.category];
   const Icon = meta.icon;
 
@@ -269,7 +276,7 @@ function StreamItem({
       <Icon className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", meta.color)} />
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">
-          {meta.label}
+          {t(meta.labelEn, meta.labelZh)}
         </p>
         <p className="text-xs leading-relaxed">{item.text}</p>
         {item.detail && (

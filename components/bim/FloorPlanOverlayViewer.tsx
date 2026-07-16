@@ -10,6 +10,7 @@ import type {
 } from "@/types/bim";
 import { costHeatColor, impactHeatColor } from "@/lib/bim/spatial-cost";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 export type FloorPlanOverlayMode = "none" | "circulation" | "cost" | "impact";
 
