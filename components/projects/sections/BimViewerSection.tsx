@@ -15,6 +15,7 @@ import { Box, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { BimSpatialAnalyticsPanel } from "@/components/bim/BimSpatialAnalyticsPanel";
 import { IfcLightweightProcessor } from "@/components/bim/IfcLightweightProcessor";
+import { MepIfcClashPanel } from "@/components/bim/MepIfcClashPanel";
 import { useLocale } from "@/lib/i18n/use-locale";
 
 const IfcModelViewer = dynamic(
@@ -384,6 +385,14 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
               projectId={project.id}
               model={selected}
               strategies={project.strategies ?? []}
+            />
+          )}
+
+          {selected?.format === "ifc" && selected.status === "ready" && selected.fileUrl && (
+            <MepIfcClashPanel
+              projectId={project.id}
+              model={selected}
+              onComplete={() => loadModels()}
             />
           )}
         </div>

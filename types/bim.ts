@@ -159,6 +159,37 @@ export interface BimSpatialAnnotation {
   updatedAt: Date;
 }
 
+export interface BimPoint3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface BimBoundingBox3D {
+  min: BimPoint3D;
+  max: BimPoint3D;
+}
+
+export type BimIfcDiscipline = "hvac" | "plumbing" | "electrical" | "structure" | "other";
+
+export interface BimIfcElement {
+  id: string;
+  expressId: number;
+  ifcType: string;
+  label: string;
+  discipline: BimIfcDiscipline;
+  bbox: BimBoundingBox3D;
+  centroid?: BimPoint3D;
+}
+
+export interface BimMepClashSummary {
+  clashCount: number;
+  criticalCount: number;
+  elementCount: number;
+  lastRunAt: string;
+  source: "ifc_geometry";
+}
+
 export interface BimModelMetadata {
   entityCount?: number;
   layerCount?: number;
@@ -170,6 +201,8 @@ export interface BimModelMetadata {
   unitScale?: number;
   circulation?: BimCirculationAnalysis;
   roomCosts?: BimRoomCostCell[];
+  mepElements?: BimIfcElement[];
+  mepClashSummary?: BimMepClashSummary;
 }
 
 export interface BimModel {

@@ -17,9 +17,17 @@ export type MepClashType =
   | "legacy_hvac_routing"
   | "plumbing_riser_conflict"
   | "low_floor_to_floor"
-  | "routing_verification";
+  | "routing_verification"
+  | "ifc_geometry_clash";
 
 export type MepClashSeverity = "low" | "medium" | "high" | "critical";
+
+export interface MepClashElementRef {
+  expressId: number;
+  ifcType: string;
+  label: string;
+  discipline: string;
+}
 
 export interface MepClashInput {
   shaftWidthMm?: number;
@@ -42,6 +50,11 @@ export interface MepClashItem {
   remediation: BilingualString;
   clearanceMm?: number;
   requiredClearanceMm?: number;
+  modelId?: string;
+  elementA?: MepClashElementRef;
+  elementB?: MepClashElementRef;
+  centroid?: { x: number; y: number; z: number };
+  overlapVolumeM3?: number;
 }
 
 export interface MepClashReport {

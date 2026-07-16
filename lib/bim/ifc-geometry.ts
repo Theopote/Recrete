@@ -27,6 +27,102 @@ export function bufferGeometryFromPlacedMesh(
   return buffer;
 }
 
+export interface Bbox3D {
+  min: { x: number; y: number; z: number };
+  max: { x: number; y: number; z: number };
+}
+
+export function computeExpressIdBbox3D(
+  ifcApi: WebIFC.IfcAPI,
+  modelId: number,
+  expressId: number
+): Bbox3D | null {
+  const geometries: THREE.BufferGeometry[] = [];
+
+  const collect = (flatMesh: WebIFC.FlatMesh) => {
+    const placedGeometries = flatMesh.geometries;
+    for (let i = 0; i < placedGeometries.size(); i++) {
+      geometries.push(bufferGeometryFromPlacedMesh(ifcApi, modelId, placedGeometries.get(i)));
+    }
+  };
+
+  ifcApi.StreamMeshes(modelId, [expressId], collect);
+
+  if (geometries.length === 0) {
+    const flatMesh = ifcApi.GetFlatMesh(modelId, expressId);
+    collect(flatMesh);
+    flatMesh.delete();
+  }
+
+  if (geometries.length === 0) return null;
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let minZ = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  let maxZ = Number.NEGATIVE_INFINITY;
+
+  for (const geometry of geometries) {
+    const position = geometry.getAttribute("position");
+    if (!position) continue;
+    for (let i = 0; i < position.count; i++) {
+      const x = position.getX(i);
+      const y = position.getY(i);
+      const z = position.getZ(i);
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      minZ = Math.min(minZ, z);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+      maxZ = Math.max(maxZ, z);
+    }
+    geometry.dispose();
+  }
+
+  if (!Number.isFinite(minX)) return null;
+  return {
+    min: { x: minX, y: minY, z: minZ },
+    max: { x: maxX, y: maxY, z: maxZ },
+  };
+}
+
+export function buildExpressIdMeshGroup(
+  ifcApi: WebIFC.IfcAPI,
+  modelId: number,
+  expressIds: number[],
+  color = 0xef4444
+) {
+  const geometries: THREE.BufferGeometry[] = [];
+
+  for (const expressId of expressIds) {
+    ifcApi.StreamMeshes(modelId, [expressId], (flatMesh) => {
+      const placedGeometries = flatMesh.geometries;
+      for (let i = 0; i < placedGeometries.size(); i++) {
+        geometries.push(
+          bufferGeometryFromPlacedMesh(ifcApi, modelId, placedGeometries.get(i))
+        );
+      }
+    });
+  }
+
+  const group = new THREE.Group();
+  if (geometries.length === 0) return group;
+
+  const merged = mergeGeometries(geometries, false);
+  geometries.forEach((geometry) => geometry.dispose());
+  if (!merged) return group;
+
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    transparent: true,
+    opacity: 0.88,
+    depthTest: true,
+  });
+  group.add(new THREE.Mesh(merged, material));
+  return group;
+}
+
 export function buildIfcMeshGroup(ifcApi: WebIFC.IfcAPI, modelId: number) {
   const opaqueGeometries: THREE.BufferGeometry[] = [];
   const transparentGeometries: THREE.BufferGeometry[] = [];

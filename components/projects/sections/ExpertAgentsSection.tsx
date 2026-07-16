@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import type { ProjectWithRelations } from "@/types";
 import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Landmark } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { BilingualString } from "@/lib/i18n/bilingual";
+import { MepIfcClashPanel } from "@/components/bim/MepIfcClashPanel";
+import type { BimModel } from "@/types/bim";
 
 type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost" | "heritage";
 
@@ -44,6 +46,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const [costResult, setCostResult] = useState<Record<string, unknown> | null>(null);
   const [heritageLoading, setHeritageLoading] = useState(false);
   const [heritageResult, setHeritageResult] = useState<Record<string, unknown> | null>(null);
+  const [bimModels, setBimModels] = useState<BimModel[]>([]);
+  const [selectedBimModelId, setSelectedBimModelId] = useState("");
 
   const [structuralInput, setStructuralInput] = useState({
     carbonationDepth: "",
@@ -111,6 +115,31 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       | "partial_interior"
       | "full_adaptive_reuse",
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await fetch(`/api/projects/${project.id}/bim-models`);
+      if (!res.ok || cancelled) return;
+      const data = await res.json();
+      const list = (data.models as BimModel[]).map((model) => ({
+        ...model,
+        createdAt: new Date(model.createdAt),
+        updatedAt: new Date(model.updatedAt),
+      }));
+      if (!cancelled) {
+        setBimModels(list);
+        const firstReadyIfc = list.find((model) => model.format === "ifc" && model.status === "ready");
+        if (firstReadyIfc) setSelectedBimModelId(firstReadyIfc.id);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [project.id]);
+
+  const selectedBimModel =
+    bimModels.find((model) => model.id === selectedBimModelId) ?? null;
 
   const runStructural = async () => {
     setStructuralLoading(true);
@@ -1338,6 +1367,43 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <p className="text-muted-foreground">
                     {t("No clashes detected with current inputs.", "当前参数未检测到冲突。")}
                   </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {bimModels.filter((model) => model.format === "ifc" && model.status === "ready").length > 0 ? (
+            <>
+              <div className="rounded-md border p-3 space-y-2">
+                <Label className="text-xs">{t("BIM model for IFC clash", "IFC 碰撞 BIM 模型")}</Label>
+                <select
+                  className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                  value={selectedBimModelId}
+                  onChange={(e) => setSelectedBimModelId(e.target.value)}
+                >
+                  {bimModels
+                    .filter((model) => model.format === "ifc" && model.status === "ready")
+                    .map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              {selectedBimModel && (
+                <MepIfcClashPanel
+                  projectId={project.id}
+                  model={selectedBimModel}
+                  createIssues={mepInput.createIssues}
+                />
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-4 text-xs text-muted-foreground">
+                {t(
+                  "Upload a ready IFC model in BIM / CAD Viewer to run geometry clash detection.",
+                  "请在 BIM / CAD 查看器上传并就绪 IFC 模型后运行几何碰撞检测。"
                 )}
               </CardContent>
             </Card>
