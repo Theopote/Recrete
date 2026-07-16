@@ -6,6 +6,19 @@ import {
   runDiagnosisInsightsChain,
   runDiagnosisTasksChain,
 } from "../langchain/diagnosis-chain";
+import { insightConfidenceFromDiagnosis } from "./cost-risk-scoring";
+
+function findDiagnosisForDraft(
+  diagnosisItems: DiagnosisItem[],
+  sourceTitle?: string
+): DiagnosisItem | undefined {
+  if (!sourceTitle) return undefined;
+  return diagnosisItems.find(
+    (item) =>
+      item.title.trim().toLowerCase() === sourceTitle.trim().toLowerCase() ||
+      item.id === sourceTitle
+  );
+}
 
 export async function generateDiagnosis(
   project: ProjectWithRelations
@@ -22,18 +35,23 @@ export async function generateDiagnosisInsights(
 
   return withMockDelay(
     () =>
-      drafts.map((d) => ({
-        title: d.title,
-        type: d.type,
-        priority: d.priority,
-        summary: d.summary,
-        evidence: d.sourceTitle ? `Diagnosis: ${d.sourceTitle}` : null,
-        recommendation: d.recommendation,
-        confidence: 0.88,
-        status: "open" as const,
-        sourceType: "diagnosis" as const,
-        sourceId: diagnosisItems.find((item) => item.title === d.sourceTitle)?.id ?? null,
-      })),
+      drafts.map((d) => {
+        const matched = findDiagnosisForDraft(diagnosisItems, d.sourceTitle);
+        return {
+          title: d.title,
+          type: d.type,
+          priority: d.priority,
+          summary: d.summary,
+          evidence:
+            matched?.evidence ??
+            (d.sourceTitle ? `Diagnosis: ${d.sourceTitle}` : null),
+          recommendation: d.recommendation,
+          confidence: insightConfidenceFromDiagnosis(matched),
+          status: "open" as const,
+          sourceType: "diagnosis" as const,
+          sourceId: matched?.id ?? null,
+        };
+      }),
     400
   );
 }

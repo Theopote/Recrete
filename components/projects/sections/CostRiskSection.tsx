@@ -44,6 +44,11 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
     [costRiskInsights]
   );
 
+  const persistedScheduleWarnings = useMemo(
+    () => costRiskInsights.filter((i) => i.type === "schedule_warning"),
+    [costRiskInsights]
+  );
+
   const otherCostInsights = useMemo(
     () =>
       (project.insights ?? []).filter(
@@ -106,6 +111,56 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
 
       {matrix?.energyRoi && <EnergyRoiPanel energyRoi={matrix.energyRoi} />}
 
+      {matrix?.dataSourceNote && (
+        <p className="text-[10px] text-muted-foreground -mt-2">
+          {matrix.dataSourceNote}
+        </p>
+      )}
+
+      {matrix?.strategyEstimates && matrix.strategyEstimates.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+              {t("Strategy Cost Estimates", "方案造价估算")}
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-xs">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="p-2 text-left font-medium">{t("Strategy", "方案")}</th>
+                    <th className="p-2 text-right font-medium">{t("¥/m²", "元/㎡")}</th>
+                    <th className="p-2 text-right font-medium">{t("Total", "总价")}</th>
+                    <th className="p-2 text-center font-medium">{t("Level", "等级")}</th>
+                    <th className="p-2 text-center font-medium">{t("Conf.", "置信")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrix.strategyEstimates.map((row) => (
+                    <tr key={row.strategyId} className="border-b last:border-0">
+                      <td className="p-2 font-medium">{row.strategyName}</td>
+                      <td className="p-2 text-right font-mono tabular-nums">
+                        ¥{row.estimatedCostPerSqm.toLocaleString()}
+                        <span className="text-muted-foreground text-[10px] block">
+                          ¥{row.estimatedCostPerSqmMin.toLocaleString()}–
+                          {row.estimatedCostPerSqmMax.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="p-2 text-right font-mono tabular-nums">
+                        ¥{row.estimatedTotalCost.toLocaleString()}
+                      </td>
+                      <td className="p-2 text-center uppercase">{row.costLevel}</td>
+                      <td className="p-2 text-center font-mono">
+                        {Math.round(row.confidence * 100)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {matrix ? (
         <RiskMatrix matrix={matrix} />
       ) : (
@@ -129,10 +184,13 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
         </div>
       )}
 
-      {allCostWarnings.length > 0 && (
+      {(allCostWarnings.length > 0 || persistedScheduleWarnings.length > 0) && (
         <div>
           <SectionHeader title="Cost & Schedule Warnings" titleZh="成本与进度预警" />
-          <AIInsightList insights={allCostWarnings} compact />
+          <AIInsightList
+            insights={[...allCostWarnings, ...persistedScheduleWarnings]}
+            compact
+          />
         </div>
       )}
 

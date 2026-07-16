@@ -26,6 +26,7 @@ export async function POST(
 
   const insightDrafts: InsightDraft[] = [
     ...(matrix.costWarnings ?? []),
+    ...(matrix.scheduleWarnings ?? []),
     ...(matrix.energyOpportunities ?? []),
   ].map((draft) => ({
     title: draft.title,
@@ -52,9 +53,19 @@ export async function POST(
     inputSummary: `Cost & risk — ${strategies.length} strategies, energy EUI ${matrix.energyRoi?.currentEui ?? "n/a"}`,
     outputSummary: `Persisted ${insights.length} cost/ROI insights; lifecycle scores computed`,
     generatedItemCount: insights.length,
-    modelName: "recrete-cost-risk-v1",
-    confidence: 0.85,
+    modelName: "recrete-cost-estimator-v1",
+    confidence:
+      matrix.strategyEstimates && matrix.strategyEstimates.length > 0
+        ? matrix.strategyEstimates.reduce((sum, item) => sum + item.confidence, 0) /
+          matrix.strategyEstimates.length
+        : 0.75,
   });
 
-  return NextResponse.json({ matrix, phasingPlan, insights });
+  return NextResponse.json({
+    matrix,
+    phasingPlan,
+    insights,
+    strategyEstimates: matrix.strategyEstimates,
+    dataSourceNote: matrix.dataSourceNote,
+  });
 }

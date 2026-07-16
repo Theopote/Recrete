@@ -196,6 +196,19 @@ export interface StrategyVersion {
   createdAt: Date;
 }
 
+export interface StrategyCostEstimate {
+  strategyId: string;
+  strategyName: string;
+  estimatedCostPerSqm: number;
+  estimatedCostPerSqmMin: number;
+  estimatedCostPerSqmMax: number;
+  estimatedTotalCost: number;
+  costLevel: "low" | "medium" | "high";
+  confidence: number;
+  referenceCaseCount: number;
+  hasBenchmark: boolean;
+}
+
 export interface CostRiskMatrix {
   strategies: {
     strategyId: string;
@@ -207,6 +220,8 @@ export interface CostRiskMatrix {
     /** Lifecycle-adjusted score when energy ROI improves operational cost profile */
     lifecycleCostScore?: number;
   }[];
+  strategyEstimates?: StrategyCostEstimate[];
+  dataSourceNote?: string;
   costWarnings: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
   scheduleWarnings: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
   phasingPlan: string[];

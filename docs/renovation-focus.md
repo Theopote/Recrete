@@ -20,14 +20,14 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 | 文档/证据/诊断注入方案 prompt | ✅ | 增强 `buildStrategyPrompt` |
 | Building Memory LLM 合成 | ✅ | `synthesizeBuildingMemory`（有 OpenAI Key 时） |
 | 方案迭代 LLM 精修 | ✅ | `refineRenovationStrategy`（有 Key 时） |
-| 合规测量 ← 图纸自动提取 | 🔲 | 下一步 |
+| 合规测量 ← 图纸自动提取 | ✅ | 启发式提取 + 手动录入 + 项目存储 |
 | 推荐引擎多准则评分 | 🔲 | 下一步 |
 
 ### P1 · 方案专业可信度
 
 - 统一 light / medium / deep 三档输出 schema
 - 空间策略与 drawing graph 关联
-- 造价估算接入 Cost & Risk（替换 mock 矩阵）
+- 造价 Cost & Risk 接入 cost-estimator（✅ 案例/基准驱动；种子数据需标注）
 
 ### P2 · 交付物
 

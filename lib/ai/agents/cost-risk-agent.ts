@@ -1,10 +1,19 @@
 import type { DiagnosisItem, ProjectWithRelations, RenovationStrategy } from "@/types";
-import type { AIInsight, CostRiskMatrix, EnergyRoiSummary } from "@/types/ai";
+import type { AIInsight, CostRiskMatrix, EnergyRoiSummary, StrategyCostEstimate } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
+import { runComplianceEngine } from "@/lib/ai/compliance";
+import { resolveProjectMeasurements } from "@/lib/db/site-measurements-store";
 import { analyzeEnergyPerformance } from "./energy-agent";
-import { withMockDelay } from "../providers/utils";
-
-const riskScore: Record<string, number> = { low: 25, medium: 55, high: 80, critical: 95 };
+import { estimateProjectCost, type CostEstimateResult } from "./cost-estimator-agent";
+import {
+  buildPhasingFromEstimate,
+  complianceRiskFromReport,
+  constructionRiskFromProject,
+  costRiskFromEstimate,
+  energyInsightConfidence,
+  lifecycleCostScore,
+  scheduleRiskFromStrategy,
+} from "./cost-risk-scoring";
 
 /** sourceType tag for insights persisted from Cost & Risk analysis */
 export { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
@@ -34,27 +43,87 @@ function buildEnergyRoiSummary(
   };
 }
 
-function lifecycleCostScore(
-  capexRisk: number,
-  energyRoi: EnergyRoiSummary,
-  strategyType: string
-): number {
-  if (strategyType !== "energy_retrofit") {
-    return capexRisk;
-  }
-  const roiBonus = Math.min(25, Math.round(energyRoi.roiPercent10Year / 8));
-  const paybackBonus =
-    energyRoi.simplePaybackYears <= 8 ? 15 : energyRoi.simplePaybackYears <= 12 ? 8 : 0;
-  return Math.max(15, capexRisk - roiBonus - paybackBonus);
+function toStrategyCostEstimate(
+  strategy: RenovationStrategy,
+  estimate: CostEstimateResult
+): StrategyCostEstimate {
+  return {
+    strategyId: strategy.id,
+    strategyName: strategy.name,
+    estimatedCostPerSqm: estimate.estimatedCostPerSqm,
+    estimatedCostPerSqmMin: estimate.estimatedCostPerSqmMin,
+    estimatedCostPerSqmMax: estimate.estimatedCostPerSqmMax,
+    estimatedTotalCost: estimate.estimatedTotalCost,
+    costLevel: estimate.costLevel,
+    confidence: estimate.confidence,
+    referenceCaseCount: estimate.referenceCases.length,
+    hasBenchmark: Boolean(estimate.benchmark),
+  };
+}
+
+function buildCostInsight(
+  strategy: RenovationStrategy,
+  estimate: CostEstimateResult
+): Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt"> {
+  const evidenceParts = [
+    estimate.benchmark
+      ? `Benchmark ${estimate.benchmark.region} (n=${estimate.benchmark.sampleSize}, ${estimate.benchmark.updatedAt})`
+      : null,
+    estimate.referenceCases.length > 0
+      ? `Cases: ${estimate.referenceCases.map((item) => item.title).join("; ")}`
+      : "No comparable cases — regional default applied",
+  ].filter(Boolean);
+
+  return {
+    title: `Cost estimate — ${strategy.name}`,
+    type: "cost_warning",
+    priority: estimate.costLevel === "high" ? "high" : "medium",
+    summary: `¥${estimate.estimatedCostPerSqm.toLocaleString()}/m² (total ¥${estimate.estimatedTotalCost.toLocaleString()}, range ¥${estimate.estimatedCostPerSqmMin.toLocaleString()}–¥${estimate.estimatedCostPerSqmMax.toLocaleString()}/m²).`,
+    evidence: evidenceParts.join(" · "),
+    recommendation:
+      estimate.assumptions[0] ??
+      "Validate quantities with a cost consultant before budget approval.",
+    confidence: estimate.confidence,
+    status: "open",
+    sourceType: COST_RISK_INSIGHT_SOURCE,
+    sourceId: strategy.id,
+  };
+}
+
+function buildScheduleInsight(
+  strategy: RenovationStrategy,
+  estimate: CostEstimateResult,
+  diagnosisItems: DiagnosisItem[]
+): Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt"> {
+  const criticalCount = diagnosisItems.filter((item) => item.severity === "critical").length;
+  const scheduleRisk = scheduleRiskFromStrategy(strategy, estimate.confidence);
+
+  return {
+    title: `Schedule risk — ${strategy.name}`,
+    type: "schedule_warning",
+    priority: scheduleRisk >= 70 ? "high" : "medium",
+    summary: `${strategy.scheduleLevel} schedule intensity; estimator confidence ${Math.round(estimate.confidence * 100)}%. ${criticalCount > 0 ? `${criticalCount} critical diagnosis items may extend permitting.` : "No critical blockers flagged in diagnosis."}`,
+    evidence: `${diagnosisItems.length} diagnosis items; strategy type ${strategy.type}`,
+    recommendation:
+      criticalCount >= 2
+        ? "Front-load structural and fire consultant engagement before construction procurement."
+        : "Align procurement with WBS top packages and allow contingency for existing-building unknowns.",
+    confidence: Math.min(0.88, estimate.confidence + 0.05),
+    status: "open",
+    sourceType: COST_RISK_INSIGHT_SOURCE,
+    sourceId: strategy.id,
+  };
 }
 
 function buildEnergyInsights(
   project: ProjectWithRelations,
   energyRoi: EnergyRoiSummary,
-  strategies: RenovationStrategy[]
+  strategies: RenovationStrategy[],
+  hasMeasurementData: boolean
 ): Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[] {
   const energyStrategy = strategies.find((s) => s.type === "energy_retrofit");
   const insights: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[] = [];
+  const roiConfidence = energyInsightConfidence(energyRoi, hasMeasurementData);
 
   if (energyRoi.rating === "poor" || energyRoi.currentEui > energyRoi.targetEui * 1.15) {
     insights.push({
@@ -64,7 +133,7 @@ function buildEnergyInsights(
       summary: `Current EUI ${energyRoi.currentEui} kWh/m²·a exceeds benchmark (${energyRoi.targetEui}). Operating cost is a material lifecycle risk for ${project.name}.`,
       evidence: `Energy simulation — ${energyRoi.rating} performance rating`,
       recommendation: "Prioritize envelope-first retrofit or bundle with energy_retrofit strategy.",
-      confidence: 0.84,
+      confidence: Math.max(0.62, roiConfidence - 0.04),
       status: "open",
       sourceType: COST_RISK_INSIGHT_SOURCE,
     });
@@ -75,11 +144,13 @@ function buildEnergyInsights(
     type: "opportunity",
     priority: energyRoi.simplePaybackYears <= 10 ? "high" : "medium",
     summary: `Recommended bundle: invest ¥${energyRoi.totalInvestment.toLocaleString()}, save ¥${energyRoi.annualCostSavings.toLocaleString()}/year. Payback ~${energyRoi.simplePaybackYears} years; 10-year ROI ${energyRoi.roiPercent10Year}%.`,
-    evidence: energyRoi.recommendedMeasures.map((m) => `${m.nameZh} (−${m.savingsPercent}%)`).join("; "),
+    evidence: energyRoi.recommendedMeasures
+      .map((item) => `${item.nameZh} (−${item.savingsPercent}%)`)
+      .join("; "),
     recommendation: energyStrategy
       ? `Align capex with strategy "${energyStrategy.name}" and phase MEP/envelope works for grant eligibility.`
       : "Generate Green Energy Retrofit strategy in Strategy Lab to formalize scope.",
-    confidence: 0.81,
+    confidence: roiConfidence,
     status: "open",
     sourceType: COST_RISK_INSIGHT_SOURCE,
     sourceId: energyStrategy?.id,
@@ -91,9 +162,10 @@ function buildEnergyInsights(
 export function buildCostRiskEnergyInsightDrafts(
   project: ProjectWithRelations,
   energyRoi: EnergyRoiSummary,
-  strategies: RenovationStrategy[]
+  strategies: RenovationStrategy[],
+  hasMeasurementData = false
 ): Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[] {
-  return buildEnergyInsights(project, energyRoi, strategies);
+  return buildEnergyInsights(project, energyRoi, strategies, hasMeasurementData);
 }
 
 /** ROI-adjusted lifecycle cost score for strategy comparison (lower = better) */
@@ -104,8 +176,18 @@ export function computeLifecycleCostScore(
 ): number {
   const strategies = allStrategies ?? project.strategies ?? [];
   const energyRoi = buildEnergyRoiSummary(project, strategies);
-  const costRisk = riskScore[strategy.costLevel] ?? 50;
-  return lifecycleCostScore(costRisk, energyRoi, strategy.type);
+  const estimate = estimateProjectCost(
+    project,
+    strategies.find((item) => item.type === strategy.type) ?? null,
+    { strategyType: strategy.type }
+  );
+  const capexRisk = costRiskFromEstimate(estimate);
+  return lifecycleCostScore(
+    capexRisk,
+    energyRoi.roiPercent10Year,
+    energyRoi.simplePaybackYears,
+    strategy.type
+  );
 }
 
 function buildPhasingWithEnergy(
@@ -113,7 +195,7 @@ function buildPhasingWithEnergy(
   energyRoi: EnergyRoiSummary,
   strategies: RenovationStrategy[]
 ): string[] {
-  const hasEnergyStrategy = strategies.some((s) => s.type === "energy_retrofit");
+  const hasEnergyStrategy = strategies.some((item) => item.type === "energy_retrofit");
   if (!hasEnergyStrategy && energyRoi.rating === "good") {
     return basePhasing;
   }
@@ -127,109 +209,113 @@ function buildPhasingWithEnergy(
 export async function estimateCostAndRisk(
   project: ProjectWithRelations,
   strategy: RenovationStrategy,
-  diagnosisItems: DiagnosisItem[]
+  diagnosisItems: DiagnosisItem[],
+  hasMeasurementData = false
 ): Promise<{
   costLevel: string;
   scheduleLevel: string;
   riskLevel: string;
+  estimate: CostEstimateResult;
   insights: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
 }> {
-  return withMockDelay(() => {
-    const criticalCount = diagnosisItems.filter((d) => d.severity === "critical").length;
-    const energyRoi = buildEnergyRoiSummary(project, [strategy]);
-    const energyInsights =
-      strategy.type === "energy_retrofit" ? buildEnergyInsights(project, energyRoi, [strategy]) : [];
+  const estimate = estimateProjectCost(project, strategy);
+  const energyRoi = buildEnergyRoiSummary(project, [strategy]);
+  const energyInsights =
+    strategy.type === "energy_retrofit"
+      ? buildEnergyInsights(project, energyRoi, [strategy], hasMeasurementData)
+      : [];
 
-    return {
-      costLevel: strategy.costLevel,
-      scheduleLevel: strategy.scheduleLevel,
-      riskLevel: criticalCount >= 2 ? "high" : strategy.riskLevel,
-      insights: [
-        {
-          title: `Cost profile for ${strategy.name}`,
-          type: "cost_warning",
-          priority: strategy.costLevel === "high" ? "high" : "medium",
-          summary: `Estimated ${strategy.costLevel} cost level for ${project.name}. MEP replacement is primary cost driver.`,
-          evidence: `${diagnosisItems.length} diagnosis items; strategy type: ${strategy.type}`,
-          recommendation: "Develop phased budget with 15% contingency for existing building unknowns.",
-          confidence: 0.79,
-          status: "open",
-          sourceType: "strategy",
-          sourceId: strategy.id,
-        },
-        {
-          title: `Schedule risk for ${strategy.name}`,
-          type: "schedule_warning",
-          priority: strategy.scheduleLevel === "high" ? "high" : "medium",
-          summary: `${strategy.scheduleLevel} schedule intensity. Permit and occupancy change reviews may add 2–4 months.`,
-          evidence: "Comparable adaptive reuse projects in China",
-          recommendation: "Front-load survey and code consultant engagement.",
-          confidence: 0.76,
-          status: "open",
-          sourceType: "strategy",
-          sourceId: strategy.id,
-        },
-        ...energyInsights,
-      ],
-    };
-  }, 1000);
+  const criticalCount = diagnosisItems.filter((item) => item.severity === "critical").length;
+
+  return {
+    costLevel: estimate.costLevel,
+    scheduleLevel: strategy.scheduleLevel,
+    riskLevel: criticalCount >= 2 ? "high" : strategy.riskLevel,
+    estimate,
+    insights: [buildCostInsight(strategy, estimate), buildScheduleInsight(strategy, estimate, diagnosisItems), ...energyInsights],
+  };
 }
 
 export async function generateRiskMatrix(
   project: ProjectWithRelations,
   strategies: RenovationStrategy[]
 ): Promise<CostRiskMatrix> {
-  return withMockDelay(() => {
-    const energyRoi = buildEnergyRoiSummary(project, strategies);
-    const energyInsights = buildEnergyInsights(project, energyRoi, strategies);
+  const measurements = await resolveProjectMeasurements(project.id);
+  const hasMeasurementData = Object.keys(measurements).length > 0;
+  const complianceReport = runComplianceEngine(project, { measurements });
+  const complianceRisk = complianceRiskFromReport(complianceReport);
+  const energyRoi = buildEnergyRoiSummary(project, strategies);
+  const energyInsights = buildEnergyInsights(
+    project,
+    energyRoi,
+    strategies,
+    hasMeasurementData
+  );
 
-    const costWarnings = energyInsights.filter((i) => i.type === "cost_warning");
-    const energyOpportunities = energyInsights.filter((i) => i.type === "opportunity");
+  const strategyEstimates: StrategyCostEstimate[] = [];
+  const costWarnings: CostRiskMatrix["costWarnings"] = [];
+  const scheduleWarnings: CostRiskMatrix["scheduleWarnings"] = [];
 
-    const basePhasing = [
-      "Phase 1: Safety stabilization — facade netting, roof temporary waterproofing, hazardous materials survey",
-      "Phase 2: Code compliance — fire egress, accessibility, structural verification",
-      "Phase 3: MEP replacement and envelope upgrade",
-      "Phase 4: Interior fit-out for cultural program",
-    ];
+  const rows = strategies.map((strategy) => {
+    const estimate = estimateProjectCost(project, strategy);
+    strategyEstimates.push(toStrategyCostEstimate(strategy, estimate));
+    costWarnings.push(buildCostInsight(strategy, estimate));
+    scheduleWarnings.push(
+      buildScheduleInsight(strategy, estimate, project.diagnosis ?? [])
+    );
+
+    const capexRisk = costRiskFromEstimate(estimate);
 
     return {
-      strategies: strategies.map((s) => {
-        const costRisk = riskScore[s.costLevel] ?? 50;
-        return {
-          strategyId: s.id,
-          strategyName: s.name,
-          costRisk,
-          scheduleRisk: riskScore[s.scheduleLevel] ?? 50,
-          constructionRisk: riskScore[s.riskLevel] ?? 50,
-          complianceRisk: project.status === "diagnosis" ? 70 : 45,
-          lifecycleCostScore: lifecycleCostScore(costRisk, energyRoi, s.type),
-        };
-      }),
-      costWarnings: costWarnings as Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[],
-      scheduleWarnings: [],
-      phasingPlan: buildPhasingWithEnergy(basePhasing, energyRoi, strategies),
-      energyRoi,
-      energyOpportunities: energyOpportunities as Omit<
-        AIInsight,
-        "id" | "projectId" | "createdAt" | "updatedAt"
-      >[],
+      strategyId: strategy.id,
+      strategyName: strategy.name,
+      costRisk: capexRisk,
+      scheduleRisk: scheduleRiskFromStrategy(strategy, estimate.confidence),
+      constructionRisk: constructionRiskFromProject(project, strategy),
+      complianceRisk,
+      lifecycleCostScore: lifecycleCostScore(
+        capexRisk,
+        energyRoi.roiPercent10Year,
+        energyRoi.simplePaybackYears,
+        strategy.type
+      ),
     };
-  }, 900);
+  });
+
+  const leadStrategy = strategies[0];
+  const leadEstimate = leadStrategy
+    ? estimateProjectCost(project, leadStrategy)
+    : null;
+  const phasingPlan = leadStrategy && leadEstimate
+    ? buildPhasingWithEnergy(buildPhasingFromEstimate(leadStrategy, leadEstimate), energyRoi, strategies)
+    : [];
+
+  const hasBenchmark = strategyEstimates.some((item) => item.hasBenchmark);
+  const dataSourceNote = hasBenchmark
+    ? "Cost risks derived from regional benchmarks and comparable renovation cases."
+    : "Cost risks derived from seed case library — validate with local QS before decisions.";
+
+  return {
+    strategies: rows,
+    strategyEstimates,
+    dataSourceNote,
+    costWarnings: [...costWarnings, ...energyInsights.filter((item) => item.type === "cost_warning")],
+    scheduleWarnings,
+    phasingPlan,
+    energyRoi,
+    energyOpportunities: energyInsights.filter((item) => item.type === "opportunity"),
+  };
 }
 
 export async function suggestPhasingPlan(
   project: ProjectWithRelations,
   strategy: RenovationStrategy
 ): Promise<string[]> {
-  return withMockDelay(() => {
-    const energyRoi = buildEnergyRoiSummary(project, [strategy]);
-    const base = [
-      `Phase 1 — Safety & survey (8–12 weeks): Address urgent site issues before ${strategy.name} construction`,
-      "Phase 2 — Structure & egress (12–16 weeks): Structural repairs, stair/elevator upgrades",
-      "Phase 3 — MEP & envelope (16–24 weeks): Full systems replacement per strategy",
-      "Phase 4 — Fit-out & commissioning (12–16 weeks): Cultural program interior works",
-    ];
-    return buildPhasingWithEnergy(base, energyRoi, [strategy]);
-  }, 600);
+  const energyRoi = buildEnergyRoiSummary(project, [strategy]);
+  const estimate = estimateProjectCost(project, strategy);
+  return buildPhasingWithEnergy(
+    buildPhasingFromEstimate(strategy, estimate),
+    energyRoi,
+    [strategy]
+  );
 }

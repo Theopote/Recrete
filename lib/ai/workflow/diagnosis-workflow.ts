@@ -19,6 +19,7 @@ import {
 } from "@/lib/ai/langchain/diagnosis-chain";
 import { isLangChainEnabled } from "@/lib/ai/langchain/chains";
 import { langChainModelLabel } from "@/lib/ai/langchain/report-chain";
+import { executiveInsightConfidence } from "@/lib/ai/agents/cost-risk-scoring";
 import type { DiagnosisItem } from "@/types";
 import type { AIInsight, AITask, BuildingMemory, AIAnalysisRun } from "@/types/ai";
 
@@ -148,7 +149,10 @@ export async function runDiagnosisWorkflow(
     summary: executiveSummary.slice(0, 500),
     evidence: expertSummaryText ?? null,
     recommendation: "Review full diagnosis matrix and prioritize engineer reviews.",
-    confidence: isLangChainEnabled() ? 0.9 : 0.85,
+    confidence: executiveInsightConfidence(diagnosisItems, {
+      expertSummary: expertSummaryText,
+      langChainEnabled: isLangChainEnabled(),
+    }),
     status: "open",
     sourceType: "diagnosis",
     sourceId: null,
