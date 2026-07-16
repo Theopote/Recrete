@@ -24,7 +24,9 @@
 | 级别 | 问题 | 说明 / 规避 |
 |------|------|-------------|
 | P2 | `updateBuildingMemory` | ~~prisma-repository 仍委托 mock~~ → **第 6 个月预置修复：DB upsert** |
-| P2 | `addStrategyVersion` | 方案版本历史 mock-only，主方案流不受影响 |
+| P2 | `addStrategyVersion` | ~~方案版本历史 mock-only~~ → **第 7 个月：Prisma StrategyVersion 持久化** |
+| P2 | 方案证据链 | 生成方案时自动关联诊断项与 SourceEvidence，策略卡片展示「方案依据链」 |
+| P2 | Building Memory 历史 | 每次更新前写入 `BuildingMemoryHistory`，Building Memory 页展示更新历史 |
 | P3 | 完整审计日志 | 未实现 |
 
 ## AI 与文档
