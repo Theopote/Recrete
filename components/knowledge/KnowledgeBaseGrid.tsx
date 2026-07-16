@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
-import { documentCategoryLabels } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { KnowledgeArticle } from "@/types";
 import { BookOpen, Tag } from "lucide-react";
 
@@ -12,6 +12,7 @@ interface KnowledgeBaseGridProps {
 }
 
 export function KnowledgeBaseGrid({ articles }: KnowledgeBaseGridProps) {
+  const { t } = useLocale();
   const categories = [...new Set(articles.map((a) => a.category))];
 
   return (
@@ -46,7 +47,9 @@ export function KnowledgeBaseGrid({ articles }: KnowledgeBaseGridProps) {
                     </span>
                   ))}
                 </div>
-                <p className="text-[10px] text-muted-foreground">Updated {formatDate(article.updatedAt)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {t("Updated", "更新于")} {formatDate(article.updatedAt)}
+                </p>
               </CardContent>
             </Card>
           </Link>

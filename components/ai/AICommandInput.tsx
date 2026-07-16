@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { Sparkles, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,13 +16,22 @@ interface AICommandInputProps {
 }
 
 export function AICommandInput({
-  placeholder = "Describe a renovation project, upload documents, or ask Recrete what to do next.",
+  placeholder,
   suggestions = [],
   onSubmit,
-  submitLabel = "Ask Recrete",
+  submitLabel,
   className,
 }: AICommandInputProps) {
+  const { t } = useLocale();
   const [value, setValue] = useState("");
+
+  const resolvedPlaceholder =
+    placeholder ??
+    t(
+      "Describe a renovation project, upload documents, or ask Recrete what to do next.",
+      "描述改造需求、上传资料，或询问 Recrete 下一步该做什么。"
+    );
+  const resolvedSubmitLabel = submitLabel ?? t("Ask Recrete", "询问 Recrete");
 
   const handleSubmit = () => {
     if (!value.trim()) return;
@@ -36,13 +46,13 @@ export function AICommandInput({
           <Sparkles className="h-4 w-4 text-copper" />
         </div>
         <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
-          AI Command
+          {t("AI Command", "AI 指令")}
         </p>
       </div>
       <Textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         className="min-h-[80px] resize-none border-0 bg-muted/40 text-sm focus-visible:ring-copper/30"
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -68,7 +78,7 @@ export function AICommandInput({
         )}
         <Button variant="copper" size="sm" onClick={handleSubmit} disabled={!value.trim()}>
           <Send className="mr-1.5 h-3.5 w-3.5" />
-          {submitLabel}
+          {resolvedSubmitLabel}
         </Button>
       </div>
     </div>

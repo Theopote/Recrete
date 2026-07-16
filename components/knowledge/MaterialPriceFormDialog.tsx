@@ -13,6 +13,7 @@ import {
   type MaterialPriceFormValues,
 } from "@/lib/validators/material-price";
 import type { MaterialPriceIndex } from "@/lib/ai/knowledge/cost-benchmarks";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { X } from "lucide-react";
 
 interface MaterialPriceFormDialogProps {
@@ -30,6 +31,7 @@ export function MaterialPriceFormDialog({
   onClose,
   onSaved,
 }: MaterialPriceFormDialogProps) {
+  const { t } = useLocale();
   const isEdit = !!item;
 
   const {
@@ -93,7 +95,7 @@ export function MaterialPriceFormDialog({
       <div className="relative z-10 w-full max-w-md rounded-lg border bg-card shadow-xl">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h3 className="text-sm font-medium">
-            {isEdit ? "Edit Material Price · 编辑材料价格" : "Add Material Price · 新增材料价格"}
+            {isEdit ? t("Edit Material Price", "编辑材料价格") : t("Add Material Price", "新增材料价格")}
           </h3>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
             <X className="h-3.5 w-3.5" />
@@ -101,16 +103,16 @@ export function MaterialPriceFormDialog({
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-3">
-          <Field label="Material (EN)" error={errors.material?.message}>
+          <Field label={t("Material (EN)", "材料名称 (EN)")} error={errors.material?.message}>
             <Input {...register("material")} className="h-8 text-xs" placeholder="Ready-mix concrete C30" />
           </Field>
 
-          <Field label="材料名称 (ZH)" error={errors.materialZh?.message}>
-            <Input {...register("materialZh")} className="h-8 text-xs" placeholder="商品混凝土 C30" />
+          <Field label={t("Material (ZH)", "材料名称 (ZH)")} error={errors.materialZh?.message}>
+            <Input {...register("materialZh")} className="h-8 text-xs" placeholder={t("Ready-mix concrete C30", "商品混凝土 C30")} />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Unit · 单位" error={errors.unit?.message}>
+            <Field label={t("Unit", "单位")} error={errors.unit?.message}>
               <Select {...register("unit")} className="h-8 text-xs">
                 {COMMON_UNITS.map((u) => (
                   <option key={u} value={u}>
@@ -119,7 +121,7 @@ export function MaterialPriceFormDialog({
                 ))}
               </Select>
             </Field>
-            <Field label="Region · 区域" error={errors.region?.message}>
+            <Field label={t("Region", "区域")} error={errors.region?.message}>
               <Select {...register("region")} className="h-8 text-xs">
                 {MATERIAL_REGIONS.map((r) => (
                   <option key={r} value={r}>
@@ -131,7 +133,7 @@ export function MaterialPriceFormDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Price (¥) · 单价" error={errors.pricePerUnit?.message}>
+            <Field label={t("Price (¥)", "单价 (¥)")} error={errors.pricePerUnit?.message}>
               <Input
                 type="number"
                 step="0.01"
@@ -139,7 +141,7 @@ export function MaterialPriceFormDialog({
                 className="h-8 text-xs"
               />
             </Field>
-            <Field label="Trend (%) · 环比" error={errors.trendPercent?.message}>
+            <Field label={t("Trend (%)", "环比 (%)")} error={errors.trendPercent?.message}>
               <Input
                 type="number"
                 step="0.1"
@@ -151,10 +153,10 @@ export function MaterialPriceFormDialog({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Cancel
+              {t("Cancel", "取消")}
             </Button>
             <Button type="submit" variant="copper" size="sm" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : isEdit ? "Save" : "Add"}
+              {isSubmitting ? t("Saving...", "保存中…") : isEdit ? t("Save", "保存") : t("Add", "添加")}
             </Button>
           </div>
         </form>

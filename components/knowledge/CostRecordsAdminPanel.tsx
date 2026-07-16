@@ -6,10 +6,12 @@ import { SectionHeader } from "@/components/app/SectionHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectCostRecordWithProject } from "@/types/cost";
-import { strategyTypeLabels } from "@/lib/utils/labels";
+import { strategyTypeLabels, strategyTypeLabelsZh } from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { Loader2 } from "lucide-react";
 
 export function CostRecordsAdminPanel() {
+  const { t, label } = useLocale();
   const [records, setRecords] = useState<ProjectCostRecordWithProject[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,12 +49,15 @@ export function CostRecordsAdminPanel() {
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading…
+          {t("Loading…", "加载中…")}
         </div>
       ) : records.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-xs text-muted-foreground">
-            No cost records yet. Record costs from a project&apos;s Cost &amp; Risk section.
+            {t(
+              "No cost records yet. Record costs from a project's Cost & Risk section.",
+              "暂无造价记录。请在项目的「成本与风险」板块录入完工造价。"
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -60,12 +65,12 @@ export function CostRecordsAdminPanel() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Project</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Region</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Strategy</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("Project", "项目")}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("Region", "区域")}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("Strategy", "方案")}</th>
                 <th className="px-4 py-3 text-right font-medium text-muted-foreground">¥/m²</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Total</th>
-                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Outcome</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t("Total", "总价")}</th>
+                <th className="px-4 py-3 text-center font-medium text-muted-foreground">{t("Outcome", "结果")}</th>
               </tr>
             </thead>
             <tbody>
@@ -87,7 +92,7 @@ export function CostRecordsAdminPanel() {
                   <td className="px-4 py-3">{r.region}{r.city ? ` · ${r.city}` : ""}</td>
                   <td className="px-4 py-3">
                     {r.strategyType
-                      ? strategyTypeLabels[r.strategyType as keyof typeof strategyTypeLabels] ?? r.strategyType
+                      ? label(strategyTypeLabels, strategyTypeLabelsZh, r.strategyType)
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums font-medium">

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeader } from "@/components/app/SectionHeader";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, BookOpen, CheckCircle2, Loader2 } from "lucide-react";
 import type { SimilarCaseResult, CaseFailureWarning } from "@/lib/ai/knowledge/similar-cases";
@@ -13,26 +14,28 @@ interface SimilarCasesPanelProps {
   compact?: boolean;
 }
 
-const outcomeStyles: Record<string, { label: string; labelZh: string; className: string }> = {
+const outcomeStyles: Record<string, { labelEn: string; labelZh: string; className: string }> = {
   success: {
-    label: "Success",
+    labelEn: "Success",
     labelZh: "成功",
     className: "bg-sage/15 text-sage border-sage/30",
   },
   partial: {
-    label: "Partial",
+    labelEn: "Partial",
     labelZh: "部分成功",
     className: "bg-amber-500/15 text-amber-700 border-amber-500/30",
   },
   failure: {
-    label: "Failure",
+    labelEn: "Failure",
     labelZh: "失败警示",
     className: "bg-red-500/15 text-red-700 border-red-500/30",
   },
 };
 
 function CaseCard({ c, compact }: { c: SimilarCaseResult; compact?: boolean }) {
+  const { t } = useLocale();
   const style = outcomeStyles[c.outcome] ?? outcomeStyles.success;
+  const outcomeLabel = t(style.labelEn, style.labelZh);
 
   return (
     <Card className={cn("border", c.outcome === "failure" && "border-red-200/60")}>
@@ -46,10 +49,10 @@ function CaseCard({ c, compact }: { c: SimilarCaseResult; compact?: boolean }) {
                 ) : c.outcome === "success" ? (
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                 ) : null}
-                {style.label} · {style.labelZh}
+                {outcomeLabel}
               </Badge>
               <span className="text-[10px] text-muted-foreground">
-                {Math.round(c.relevance * 100)}% match
+                {Math.round(c.relevance * 100)}% {t("match", "匹配")}
               </span>
             </div>
             <h4 className="text-sm font-semibold leading-tight">{c.title}</h4>
@@ -111,6 +114,7 @@ function WarningBanner({ w }: { w: CaseFailureWarning }) {
 }
 
 export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps) {
+  const { t } = useLocale();
   const [loading, setLoading] = useState(true);
   const [successCases, setSuccessCases] = useState<SimilarCaseResult[]>([]);
   const [warningCases, setWarningCases] = useState<SimilarCaseResult[]>([]);
@@ -141,7 +145,7 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading similar projects…
+        {t("Loading similar projects…", "加载相似项目…")}
       </div>
     );
   }
@@ -164,7 +168,7 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
       {failureWarnings.length > 0 && (
         <div className="space-y-2">
           <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700">
-            Failure Warnings · 失败案例警示
+            {t("Failure Warnings", "失败案例警示")}
           </p>
           {failureWarnings.slice(0, compact ? 2 : 4).map((w, i) => (
             <WarningBanner key={`${w.caseId}-${i}`} w={w} />
@@ -176,7 +180,7 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
         <div className="space-y-2">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <BookOpen className="h-3 w-3" />
-            Success References · 成功案例
+            {t("Success References", "成功案例")}
           </p>
           <div className={cn("grid gap-3", compact ? "grid-cols-1" : "md:grid-cols-2")}>
             {successCases.slice(0, compact ? 2 : 4).map((c) => (
@@ -190,7 +194,7 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
         <div className="space-y-2">
           <p className="text-[10px] font-medium uppercase tracking-wider text-red-700 flex items-center gap-1.5">
             <AlertTriangle className="h-3 w-3" />
-            Cautionary Cases · 警示案例
+            {t("Cautionary Cases", "警示案例")}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             {warningCases.map((c) => (
