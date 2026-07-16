@@ -202,6 +202,37 @@ type ProjectExtended = ProjectFull & {
   buildingMemoryHistory?: BuildingMemoryHistoryEntry[];
 };
 
+export function mapProjectOverview(
+  p: PrismaProject & {
+    building?: PrismaBuilding | null;
+    buildingMemory?: ProjectExtended["buildingMemory"];
+    insights?: ProjectExtended["insights"];
+    tasks?: ProjectExtended["tasks"];
+    issues?: PrismaIssue[];
+    analysisRuns?: ProjectExtended["analysisRuns"];
+  }
+): ProjectWithRelations {
+  return {
+    ...mapProject(p),
+    building: p.building ? mapBuilding(p.building) : null,
+    buildingMemory: p.buildingMemory
+      ? ({
+          ...p.buildingMemory,
+        } satisfies BuildingMemory)
+      : null,
+    insights: p.insights?.map((i) => ({ ...i })) ?? [],
+    tasks: p.tasks?.map((t) => ({ ...t, dueDate: t.dueDate })) ?? [],
+    issues: p.issues?.map(mapIssue) ?? [],
+    analysisRuns: p.analysisRuns?.map((r) => ({ ...r })) ?? [],
+    documents: [],
+    diagnosis: [],
+    strategies: [],
+    reports: [],
+    sourceEvidence: [],
+    buildingMemoryHistory: [],
+  };
+}
+
 export function mapProjectWithRelationsExtended(
   p: ProjectExtended & { evidence?: ProjectExtended["sourceEvidence"] }
 ): ProjectWithRelations {

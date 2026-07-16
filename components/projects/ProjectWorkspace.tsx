@@ -1,19 +1,9 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import type { ProjectSection, ProjectWithRelations, StrategyWithMetrics } from "@/types";
-import { ExpertAgentsSection } from "./sections/ExpertAgentsSection";
 import { OverviewSection } from "./sections/OverviewSection";
-import { BuildingMemorySection } from "./sections/BuildingMemorySection";
-import { BuildingConditionSection } from "./sections/BuildingConditionSection";
-import { SurveyIntelligenceSection } from "./sections/SurveyIntelligenceSection";
-import { BuildingSection } from "./sections/BuildingSection";
-import { DocumentsSection } from "./sections/DocumentsSection";
-import { DiagnosisSection } from "./sections/DiagnosisSection";
-import { StrategiesSection } from "./sections/StrategiesSection";
-import { CostRiskSection } from "./sections/CostRiskSection";
-import { IssuesSection } from "./sections/IssuesSection";
-import { ReportsSection } from "./sections/ReportsSection";
-import { TimelineSection } from "./sections/TimelineSection";
-import { BimViewerSection } from "./sections/BimViewerSection";
-import { CollaborationSection } from "./sections/CollaborationSection";
+import { resolveProjectSection } from "@/lib/projects/section-navigation";
 
 interface ProjectWorkspaceProps {
   project: ProjectWithRelations;
@@ -21,19 +11,87 @@ interface ProjectWorkspaceProps {
   strategiesWithMetrics: StrategyWithMetrics[];
 }
 
-const legacySectionMap: Record<string, ProjectSection> = {
-  building: "building-memory",
-  documents: "survey-intelligence",
-  strategies: "strategy-lab",
-  timeline: "overview",
-};
+function SectionSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading section">
+      <div className="h-10 w-full max-w-xl rounded-md bg-muted/50" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="h-28 rounded-lg bg-muted/40" />
+        ))}
+      </div>
+      <div className="h-48 rounded-lg bg-muted/40" />
+      <div className="h-32 rounded-lg bg-muted/40" />
+    </div>
+  );
+}
+
+const BuildingMemorySection = dynamic(
+  () =>
+    import("./sections/BuildingMemorySection").then((mod) => mod.BuildingMemorySection),
+  { loading: () => <SectionSkeleton /> }
+);
+const BuildingConditionSection = dynamic(
+  () =>
+    import("./sections/BuildingConditionSection").then((mod) => mod.BuildingConditionSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const SurveyIntelligenceSection = dynamic(
+  () =>
+    import("./sections/SurveyIntelligenceSection").then((mod) => mod.SurveyIntelligenceSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const BimViewerSection = dynamic(
+  () => import("./sections/BimViewerSection").then((mod) => mod.BimViewerSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const BuildingSection = dynamic(
+  () => import("./sections/BuildingSection").then((mod) => mod.BuildingSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const DocumentsSection = dynamic(
+  () => import("./sections/DocumentsSection").then((mod) => mod.DocumentsSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const DiagnosisSection = dynamic(
+  () => import("./sections/DiagnosisSection").then((mod) => mod.DiagnosisSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const ExpertAgentsSection = dynamic(
+  () => import("./sections/ExpertAgentsSection").then((mod) => mod.ExpertAgentsSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const StrategiesSection = dynamic(
+  () => import("./sections/StrategiesSection").then((mod) => mod.StrategiesSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const CollaborationSection = dynamic(
+  () => import("./sections/CollaborationSection").then((mod) => mod.CollaborationSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const CostRiskSection = dynamic(
+  () => import("./sections/CostRiskSection").then((mod) => mod.CostRiskSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const IssuesSection = dynamic(
+  () => import("./sections/IssuesSection").then((mod) => mod.IssuesSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const ReportsSection = dynamic(
+  () => import("./sections/ReportsSection").then((mod) => mod.ReportsSection),
+  { loading: () => <SectionSkeleton /> }
+);
+const TimelineSection = dynamic(
+  () => import("./sections/TimelineSection").then((mod) => mod.TimelineSection),
+  { loading: () => <SectionSkeleton /> }
+);
 
 export function ProjectWorkspace({
   project,
   section,
   strategiesWithMetrics,
 }: ProjectWorkspaceProps) {
-  const resolved = (legacySectionMap[section] ?? section) as ProjectSection;
+  const resolved = resolveProjectSection(section);
 
   switch (resolved) {
     case "building-memory":
@@ -56,7 +114,9 @@ export function ProjectWorkspace({
     case "strategies":
       return <StrategiesSection project={project} strategiesWithMetrics={strategiesWithMetrics} />;
     case "collaboration":
-      return <CollaborationSection project={project} initialSummary={project.collaboration} />;
+      return (
+        <CollaborationSection project={project} initialSummary={project.collaboration} />
+      );
     case "cost-risk":
       return <CostRiskSection project={project} strategiesWithMetrics={strategiesWithMetrics} />;
     case "issues":
@@ -69,3 +129,5 @@ export function ProjectWorkspace({
       return <OverviewSection project={project} />;
   }
 }
+
+export type { ProjectSection };

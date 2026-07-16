@@ -3,6 +3,7 @@ import {
   mapProject,
   mapProjectWithRelations,
   mapProjectWithRelationsExtended,
+  mapProjectOverview,
   mapDocument,
   mapDiagnosis,
   mapStrategy,
@@ -89,6 +90,24 @@ export async function getProjectById(
     },
   });
   return row ? mapProjectWithRelationsExtended(row) : null;
+}
+
+export async function getProjectOverview(
+  id: string,
+  organizationId: string
+): Promise<ProjectWithRelations | null> {
+  const row = await prisma.project.findFirst({
+    where: { id, organizationId },
+    include: {
+      building: true,
+      buildingMemory: true,
+      insights: { orderBy: { createdAt: "desc" }, take: 24 },
+      tasks: { orderBy: { createdAt: "desc" }, take: 12 },
+      issues: { orderBy: { updatedAt: "desc" }, take: 8 },
+      analysisRuns: { orderBy: { createdAt: "desc" }, take: 4 },
+    },
+  });
+  return row ? mapProjectOverview(row) : null;
 }
 
 export async function createProject(

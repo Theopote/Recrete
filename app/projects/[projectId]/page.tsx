@@ -4,7 +4,19 @@ import { TopBar } from "@/components/app/TopBar";
 import { ProjectDetailLayout } from "@/components/projects/ProjectDetailLayout";
 import { getCollaborationSummary } from "@/lib/db/collaboration-store";
 import { getSessionUser } from "@/lib/auth/session";
-import { getProjectById, getStrategiesWithMetrics } from "@/lib/db/repository";
+import {
+  getProjectById,
+  getProjectOverview,
+  getStrategiesWithMetrics,
+} from "@/lib/db/repository";
+import {
+  isOverviewSection,
+  resolveProjectSection,
+  sectionNeedsCollaboration,
+  sectionNeedsStrategyMetrics,
+} from "@/lib/projects/section-navigation";
+import type { StrategyWithMetrics } from "@/types";
+import type { CollaborationSummary } from "@/types/collaboration";
 
 interface ProjectDetailPageProps {
   params: Promise<{ projectId: string }>;
@@ -17,15 +29,27 @@ export default async function ProjectDetailPage({
 }: ProjectDetailPageProps) {
   const { projectId } = await params;
   const { section = "overview" } = await searchParams;
+  const resolvedSection = resolveProjectSection(section);
 
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const project = await getProjectById(projectId, user.organizationId);
-  if (!project) notFound();
+  const loadOverview = isOverviewSection(resolvedSection);
+  const needsStrategies = sectionNeedsStrategyMetrics(resolvedSection);
+  const needsCollaboration = sectionNeedsCollaboration(resolvedSection);
 
-  const strategiesWithMetrics = await getStrategiesWithMetrics(projectId);
-  const collaboration = await getCollaborationSummary(projectId);
+  const [project, strategiesWithMetrics, collaboration] = await Promise.all([
+    loadOverview
+      ? getProjectOverview(projectId, user.organizationId)
+      : getProjectById(projectId, user.organizationId),
+    needsStrategies
+      ? getStrategiesWithMetrics(projectId)
+      : Promise.resolve([] as StrategyWithMetrics[]),
+    needsCollaboration
+      ? getCollaborationSummary(projectId)
+      : Promise.resolve(undefined as CollaborationSummary | undefined),
+  ]);
+  if (!project) notFound();
 
   return (
     <AppShell>
@@ -36,7 +60,7 @@ export default async function ProjectDetailPage({
       />
       <ProjectDetailLayout
         project={{ ...project, collaboration }}
-        section={section}
+        section={resolvedSection}
         strategiesWithMetrics={strategiesWithMetrics}
       />
     </AppShell>

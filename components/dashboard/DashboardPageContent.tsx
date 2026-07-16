@@ -158,12 +158,13 @@ export function DashboardPageContent({ data }: DashboardPageContentProps) {
                       {t("Recent Reports", "近期报告")}
                     </h3>
                   </div>
-                  <a
+                  <Link
                     href="/projects/proj-demo?section=reports"
+                    prefetch
                     className="block text-xs text-muted-foreground hover:text-foreground no-underline"
                   >
                     Existing Condition Summary — May 2026
-                  </a>
+                  </Link>
                   <Link
                     href="/reports"
                     className="mt-2 inline-block text-[10px] font-medium text-copper hover:underline"

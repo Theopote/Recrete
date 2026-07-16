@@ -136,12 +136,13 @@ export function OverviewSection({ project }: OverviewSectionProps) {
                 {t("Building Memory Snapshot", "建筑记忆快照")}
               </h3>
             </div>
-            <a
+            <Link
               href={`/projects/${project.id}?section=building-memory`}
+              prefetch
               className="text-[10px] font-medium text-copper hover:underline no-underline"
             >
               {t("View full memory →", "查看完整记忆 →")}
-            </a>
+            </Link>
           </div>
           <BuildingMemoryCard memory={project.buildingMemory} />
         </div>

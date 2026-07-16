@@ -91,6 +91,32 @@ export async function getProjectById(
   };
 }
 
+export async function getProjectOverview(
+  id: string,
+  organizationId: string
+): Promise<ProjectWithRelations | null> {
+  const full = await getProjectById(id, organizationId);
+  if (!full) return null;
+
+  const openIssues =
+    full.issues?.filter((issue) => issue.status === "open" || issue.status === "in_progress") ??
+    [];
+
+  return {
+    ...full,
+    documents: [],
+    diagnosis: [],
+    strategies: [],
+    reports: [],
+    sourceEvidence: [],
+    buildingMemoryHistory: [],
+    issues: openIssues.slice(0, 8),
+    analysisRuns: (full.analysisRuns ?? []).slice(0, 4),
+    insights: (full.insights ?? []).slice(0, 24),
+    tasks: (full.tasks ?? []).slice(0, 12),
+  };
+}
+
 export function findProjectMetadataById(id: string) {
   const project = store.projects.find((p) => p.id === id);
   if (!project) return null;

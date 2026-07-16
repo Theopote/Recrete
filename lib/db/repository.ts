@@ -17,6 +17,10 @@ export async function getProjectById(id: string, organizationId: string) {
   return (await resolveDb()) ? db.getProjectById(id, organizationId) : mock.getProjectById(id, organizationId);
 }
 
+export async function getProjectOverview(id: string, organizationId: string) {
+  return (await resolveDb()) ? db.getProjectOverview(id, organizationId) : mock.getProjectOverview(id, organizationId);
+}
+
 export async function createProject(
   input: Parameters<typeof mock.createProject>[0],
   organizationId: string
