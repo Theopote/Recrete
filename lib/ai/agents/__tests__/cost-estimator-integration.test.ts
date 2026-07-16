@@ -3,7 +3,8 @@ import { costEstimatorAgent } from "@/lib/ai/agents/cost-estimator-agent";
 import { resetCostRecords } from "@/lib/ai/knowledge/cost-record-store";
 import { resetCostBenchmarks } from "@/lib/ai/knowledge/cost-benchmark-store";
 import { createCostRecord } from "@/lib/ai/knowledge/cost-record-store";
-import { buildCostDataSourceNote, syncCostKnowledgeForEstimation } from "@/lib/ai/knowledge/cost-knowledge-sync";
+import { buildCostDataSourceNote } from "@/lib/ai/knowledge/cost-knowledge-sync";
+import { syncCostKnowledgeForEstimation } from "@/lib/ai/knowledge/cost-knowledge-sync.server";
 import type { ProjectWithRelations } from "@/types";
 
 function sampleProject(overrides: Partial<ProjectWithRelations> = {}): ProjectWithRelations {

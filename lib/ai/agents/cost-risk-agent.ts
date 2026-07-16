@@ -4,8 +4,11 @@ import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { runComplianceEngine } from "@/lib/ai/compliance";
 import { resolveProjectMeasurements } from "@/lib/db/site-measurements-store";
 import { analyzeEnergyPerformance } from "./energy-agent";
-import { estimateProjectCost, prepareAndEstimateProjectCost, type CostEstimateResult } from "./cost-estimator-agent";
-import { prepareCostEstimateContext } from "../knowledge/cost-knowledge-sync";
+import {
+  estimateProjectCost,
+  type CostEstimateInput,
+  type CostEstimateResult,
+} from "./cost-estimator-agent";
 import {
   buildPhasingFromEstimate,
   complianceRiskFromReport,
@@ -211,11 +214,17 @@ function buildPhasingWithEnergy(
   return [...basePhasing.slice(0, insertAt), energyPhase, ...basePhasing.slice(insertAt)];
 }
 
+export type CostEstimateContext = Pick<
+  CostEstimateInput,
+  "costKnowledge" | "projectCostRecords"
+>;
+
 export async function estimateCostAndRisk(
   project: ProjectWithRelations,
   strategy: RenovationStrategy,
   diagnosisItems: DiagnosisItem[],
-  hasMeasurementData = false
+  hasMeasurementData = false,
+  costContext: CostEstimateContext = {}
 ): Promise<{
   costLevel: string;
   scheduleLevel: string;
@@ -223,7 +232,7 @@ export async function estimateCostAndRisk(
   estimate: CostEstimateResult;
   insights: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">[];
 }> {
-  const estimate = await prepareAndEstimateProjectCost(project, strategy);
+  const estimate = estimateProjectCost(project, strategy, costContext);
   const energyRoi = buildEnergyRoiSummary(project, [strategy]);
   const energyInsights =
     strategy.type === "energy_retrofit"
@@ -243,7 +252,8 @@ export async function estimateCostAndRisk(
 
 export async function generateRiskMatrix(
   project: ProjectWithRelations,
-  strategies: RenovationStrategy[]
+  strategies: RenovationStrategy[],
+  costContext: CostEstimateContext = {}
 ): Promise<CostRiskMatrix> {
   const measurements = await resolveProjectMeasurements(project.id);
   const hasMeasurementData = Object.keys(measurements).length > 0;
@@ -256,9 +266,6 @@ export async function generateRiskMatrix(
     strategies,
     hasMeasurementData
   );
-
-  const { snapshot, projectRecords } = await prepareCostEstimateContext(project.id);
-  const costContext = { costKnowledge: snapshot, projectCostRecords: projectRecords };
 
   const strategyEstimates: StrategyCostEstimate[] = [];
   const costWarnings: CostRiskMatrix["costWarnings"] = [];
@@ -318,10 +325,11 @@ export async function generateRiskMatrix(
 
 export async function suggestPhasingPlan(
   project: ProjectWithRelations,
-  strategy: RenovationStrategy
+  strategy: RenovationStrategy,
+  costContext: CostEstimateContext = {}
 ): Promise<string[]> {
   const energyRoi = buildEnergyRoiSummary(project, [strategy]);
-  const estimate = await prepareAndEstimateProjectCost(project, strategy);
+  const estimate = estimateProjectCost(project, strategy, costContext);
   return buildPhasingWithEnergy(
     buildPhasingFromEstimate(strategy, estimate),
     energyRoi,

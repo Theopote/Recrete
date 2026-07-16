@@ -4,7 +4,7 @@ import { getAIPlatform } from "@/lib/ai";
 import type { AIInsight } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { requireProjectAccess } from "@/lib/auth/authorize";
-
+import { prepareCostEstimateContext } from "@/lib/ai/knowledge/cost-knowledge-sync.server";
 type InsightDraft = Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">;
 
 export async function POST(
@@ -18,12 +18,13 @@ export async function POST(
 
   const strategies = project.strategies ?? [];
   const platform = getAIPlatform();
-  const matrix = await platform.costRisk.generateRiskMatrix(project, strategies);
+  const { snapshot, projectRecords } = await prepareCostEstimateContext(projectId);
+  const costContext = { costKnowledge: snapshot, projectCostRecords: projectRecords };
+  const matrix = await platform.costRisk.generateRiskMatrix(project, strategies, costContext);
   const phasingPlan =
     strategies.length > 0
-      ? await platform.costRisk.suggestPhasingPlan(project, strategies[0])
+      ? await platform.costRisk.suggestPhasingPlan(project, strategies[0], costContext)
       : matrix.phasingPlan;
-
   const insightDrafts: InsightDraft[] = [
     ...(matrix.costWarnings ?? []),
     ...(matrix.scheduleWarnings ?? []),

@@ -7,10 +7,9 @@ import {
   getMaterialPricesForRegion,
   type CostBenchmark,
 } from "../knowledge/cost-benchmarks";
-import type { CostKnowledgeSnapshot } from "../knowledge/cost-knowledge-sync";
 import {
   buildCostDataSourceNote,
-  prepareCostEstimateContext,
+  type CostKnowledgeSnapshot,
 } from "../knowledge/cost-knowledge-sync";
 import { inferRegion } from "../knowledge/prompt-context";
 
@@ -443,17 +442,4 @@ export function estimateProjectCost(
   input?: CostEstimateInput
 ) {
   return costEstimatorAgent.estimateProjectCost(project, strategy, input);
-}
-
-export async function prepareAndEstimateProjectCost(
-  project: ProjectWithRelations,
-  strategy?: RenovationStrategy | null,
-  input: CostEstimateInput = {}
-) {
-  const { snapshot, projectRecords } = await prepareCostEstimateContext(project.id);
-  return costEstimatorAgent.estimateProjectCost(project, strategy, {
-    ...input,
-    projectCostRecords: input.projectCostRecords ?? projectRecords,
-    costKnowledge: input.costKnowledge ?? snapshot,
-  });
 }

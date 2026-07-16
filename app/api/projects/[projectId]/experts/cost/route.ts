@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireProjectAccess } from "@/lib/auth/authorize";
-import { prepareAndEstimateProjectCost } from "@/lib/ai/agents/cost-estimator-agent";
+import { prepareAndEstimateProjectCost } from "@/lib/ai/knowledge/cost-knowledge-sync.server";
 
 export async function POST(
   request: Request,
