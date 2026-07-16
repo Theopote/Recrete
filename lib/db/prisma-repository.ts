@@ -326,7 +326,7 @@ export async function getDocumentById(documentId: string): Promise<DocumentAsset
 
 export async function updateDocument(
   documentId: string,
-  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description">>
+  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description" | "category">>
 ): Promise<DocumentAsset | null> {
   try {
     const updated = await prisma.documentAsset.update({

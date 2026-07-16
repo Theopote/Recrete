@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectWithRelations } from "@/types";
-import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf } from "lucide-react";
+import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Landmark } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
 
-type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost";
+type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost" | "heritage";
 
 type StrengtheningMethod = {
   method: string;
@@ -41,6 +41,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const [energyLoading, setEnergyLoading] = useState(false);
   const [energyResult, setEnergyResult] = useState<Record<string, unknown> | null>(null);
   const [costResult, setCostResult] = useState<Record<string, unknown> | null>(null);
+  const [heritageLoading, setHeritageLoading] = useState(false);
+  const [heritageResult, setHeritageResult] = useState<Record<string, unknown> | null>(null);
 
   const [structuralInput, setStructuralInput] = useState({
     carbonationDepth: "",
@@ -90,6 +92,15 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     wallInsulated: false,
     hvacAgeYears: "",
     electricityPricePerKwh: "0.85",
+  });
+
+  const [heritageInput, setHeritageInput] = useState({
+    hasProtectedFacade: false,
+    hasHistoricInterior: false,
+    interventionScope: "partial_interior" as
+      | "facade_only"
+      | "partial_interior"
+      | "full_adaptive_reuse",
   });
 
   const runStructural = async () => {
@@ -252,6 +263,20 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     }
   };
 
+  const runHeritage = async () => {
+    setHeritageLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/experts/heritage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(heritageInput),
+      });
+      if (res.ok) setHeritageResult(await res.json());
+    } finally {
+      setHeritageLoading(false);
+    }
+  };
+
   const fireAnalysis = fireResult?.analysis as {
     egressRating?: string;
     compartmentRating?: string;
@@ -319,6 +344,22 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       totalCost: number;
       sharePercent: number;
     }>;
+  } | undefined;
+
+  const heritageAssessment = heritageResult?.assessment as {
+    heritageLevel?: string;
+    overallRisk?: string;
+    authenticityScores?: Array<{
+      labelEn: string;
+      labelZh: string;
+      score: number;
+      noteEn: string;
+      noteZh: string;
+    }>;
+    reversibleInterventions?: Array<{ en: string; zh: string }>;
+    prohibitedActions?: Array<{ en: string; zh: string }>;
+    recommendations?: Array<{ en: string; zh: string }>;
+    guidelines?: Array<{ id: string; principleEn: string; principleZh: string }>;
   } | undefined;
 
   const assessment = structuralResult?.assessment as {
@@ -450,6 +491,14 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           onClick={() => setActiveTab("cost")}
         >
           <Coins className="h-3.5 w-3.5" /> {t("Cost", "成本")}
+        </Button>
+        <Button
+          variant={activeTab === "heritage" ? "default" : "outline"}
+          size="sm"
+          className="text-xs gap-1.5"
+          onClick={() => setActiveTab("heritage")}
+        >
+          <Landmark className="h-3.5 w-3.5" /> {t("Heritage", "遗产")}
         </Button>
       </div>
 
@@ -1116,6 +1165,131 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 </div>
               )}
             </CardContent></Card>
+          )}
+        </div>
+      )}
+
+      {activeTab === "heritage" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">
+                {t("Heritage Conservation Agent", "遗产保护 Agent")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "Assess authenticity, intervention scope, and approval pathway for historic buildings.",
+                  "评估历史建筑原真性、干预范围与审批路径。"
+                )}
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={heritageInput.hasProtectedFacade}
+                    onChange={(e) =>
+                      setHeritageInput((s) => ({ ...s, hasProtectedFacade: e.target.checked }))
+                    }
+                  />
+                  {t("Protected facade fabric", "保护立面本体")}
+                </label>
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={heritageInput.hasHistoricInterior}
+                    onChange={(e) =>
+                      setHeritageInput((s) => ({ ...s, hasHistoricInterior: e.target.checked }))
+                    }
+                  />
+                  {t("Historic interior features", "历史室内要素")}
+                </label>
+              </div>
+              <div>
+                <Label className="text-xs">{t("Intervention scope", "干预范围")}</Label>
+                <select
+                  className="mt-1 h-8 w-full rounded-md border bg-background px-2 text-xs"
+                  value={heritageInput.interventionScope}
+                  onChange={(e) =>
+                    setHeritageInput((s) => ({
+                      ...s,
+                      interventionScope: e.target.value as typeof s.interventionScope,
+                    }))
+                  }
+                >
+                  <option value="facade_only">{t("Facade only", "仅立面")}</option>
+                  <option value="partial_interior">{t("Partial interior", "局部室内")}</option>
+                  <option value="full_adaptive_reuse">
+                    {t("Full adaptive reuse", "整体活化利用")}
+                  </option>
+                </select>
+              </div>
+              <Button variant="copper" size="sm" onClick={runHeritage} disabled={heritageLoading}>
+                {heritageLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {t("Run Heritage Assessment", "运行遗产评估")}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {heritageAssessment && (
+            <Card>
+              <CardContent className="p-4 space-y-3 text-xs">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">
+                    {t("Level", "等级")}: {heritageAssessment.heritageLevel}
+                  </Badge>
+                  <Badge variant="outline">
+                    {t("Risk", "风险")}: {heritageAssessment.overallRisk}
+                  </Badge>
+                </div>
+                {heritageAssessment.authenticityScores && heritageAssessment.authenticityScores.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="font-medium">{t("Authenticity scores", "原真性评分")}</p>
+                    {heritageAssessment.authenticityScores.map((row) => (
+                      <div key={row.labelEn} className="flex justify-between gap-2 text-muted-foreground">
+                        <span>{t(row.labelEn, row.labelZh)}</span>
+                        <span className="tabular-nums shrink-0">{row.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {heritageAssessment.reversibleInterventions && (
+                  <div>
+                    <p className="font-medium mb-1">{t("Reversible interventions", "可逆干预建议")}</p>
+                    <ul className="text-muted-foreground space-y-1">
+                      {heritageAssessment.reversibleInterventions.map((item) => (
+                        <li key={item.en}>• {t(item.en, item.zh)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {heritageAssessment.prohibitedActions && (
+                  <div>
+                    <p className="font-medium mb-1 text-destructive">{t("Prohibited actions", "禁止行为")}</p>
+                    <ul className="text-muted-foreground space-y-1">
+                      {heritageAssessment.prohibitedActions.map((item) => (
+                        <li key={item.en}>• {t(item.en, item.zh)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {heritageAssessment.recommendations && (
+                  <div>
+                    <p className="font-medium mb-1">{t("Recommendations", "建议")}</p>
+                    <ul className="text-muted-foreground space-y-1">
+                      {heritageAssessment.recommendations.map((item) => (
+                        <li key={item.en}>• {t(item.en, item.zh)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       )}

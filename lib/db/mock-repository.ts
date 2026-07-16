@@ -424,13 +424,14 @@ export async function getDocumentById(documentId: string): Promise<DocumentAsset
 
 export async function updateDocument(
   documentId: string,
-  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description">>
+  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description" | "category">>
 ): Promise<DocumentAsset | null> {
   const doc = store.documents.find((d) => d.id === documentId);
   if (!doc) return null;
   if (data.aiSummary !== undefined) doc.aiSummary = data.aiSummary;
   if (data.extractedText !== undefined) doc.extractedText = data.extractedText;
   if (data.description !== undefined) doc.description = data.description;
+  if (data.category !== undefined) doc.category = data.category;
   doc.updatedAt = new Date();
   return doc;
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { formatFileSize, formatDate } from "@/lib/utils";
 import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
 import { useLocale } from "@/lib/i18n/use-locale";
@@ -37,8 +38,9 @@ export function DocumentCard({
   onToggleSelect,
 }: DocumentCardProps) {
   const router = useRouter();
-  const { label } = useLocale();
+  const { t, label } = useLocale();
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [analyzeNotice, setAnalyzeNotice] = useState<string | null>(null);
   const Icon =
@@ -54,6 +56,7 @@ export function DocumentCard({
     if (!projectId || analyzing) return;
 
     setAnalyzing(true);
+    setAnalyzeProgress(0);
     setAnalyzeError(null);
     setAnalyzeNotice(null);
     try {
@@ -73,30 +76,53 @@ export function DocumentCard({
       }
 
       if (data.analysisTaskId) {
-        setAnalyzeNotice("分析中…");
-        const outcome = await pollAnalysisTask(projectId, data.analysisTaskId, setAnalyzeNotice);
+        setAnalyzeNotice(t("Analyzing…", "分析中…"));
+        const outcome = await pollAnalysisTask(
+          projectId,
+          data.analysisTaskId,
+          (message, progress) => {
+            setAnalyzeNotice(message);
+            if (progress != null) setAnalyzeProgress(progress);
+          }
+        );
         if (outcome.result === "completed") {
           router.refresh();
-          onAnalyzed?.({ ...document, aiSummary: document.aiSummary ?? "分析完成" });
+          onAnalyzed?.({
+            ...document,
+            aiSummary: document.aiSummary ?? t("Analysis complete", "分析完成"),
+          });
         } else if (outcome.result === "failed") {
-          setAnalyzeError(outcome.error ?? "分析失败，请重试。");
+          setAnalyzeError(outcome.error ?? t("Analysis failed. Please retry.", "分析失败，请重试。"));
         } else {
-          setAnalyzeError("分析超时。大文件建议拆分上传，或稍后刷新页面查看结果。");
+          setAnalyzeError(
+            t(
+              "Analysis timed out. Split large files or refresh later to check results.",
+              "分析超时。大文件建议拆分上传，或稍后刷新页面查看结果。"
+            )
+          );
         }
       } else if (data.document) {
         onAnalyzed?.(data.document);
       }
     } catch {
-      setAnalyzeError("网络异常，请稍后重试。");
+      setAnalyzeError(t("Network error. Please try again.", "网络异常，请稍后重试。"));
     } finally {
       setAnalyzing(false);
+      setAnalyzeProgress(0);
       setAnalyzeNotice(null);
     }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!projectId || !confirm(`删除文档「${document.name}」？`)) return;
+    if (
+      !projectId ||
+      !confirm(
+        t(`Delete document "${document.name}"?`, `删除文档「${document.name}」？`)
+      )
+    ) {
+      return;
+    }
 
     const res = await fetch(`/api/projects/${projectId}/documents/${document.id}`, {
       method: "DELETE",
@@ -130,7 +156,7 @@ export function DocumentCard({
               onChange={() => onToggleSelect?.(document.id)}
               onClick={(e) => e.stopPropagation()}
               className="mt-1 h-4 w-4 rounded border-muted-foreground/40 accent-copper"
-              aria-label={`Select ${document.name}`}
+              aria-label={t(`Select ${document.name}`, `选择 ${document.name}`)}
             />
           )}
           <div className="rounded-md bg-muted p-2">
@@ -141,7 +167,10 @@ export function DocumentCard({
               <h4 className="text-sm font-medium truncate">{document.name}</h4>
               <div className="flex items-center gap-1 shrink-0">
                 {document.aiSummary && (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-label="AI analyzed" />
+                  <CheckCircle2
+                    className="h-3.5 w-3.5 text-emerald-500"
+                    aria-label={t("AI analyzed", "已 AI 分析")}
+                  />
                 )}
                 {previewable && onPreview && (
                   <Eye className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
@@ -170,15 +199,20 @@ export function DocumentCard({
               </p>
             ) : null}
             <div className="mt-2 flex items-center justify-between gap-2">
-              <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                   <span>{formatFileSize(document.fileSize)}</span>
                   <span>{formatDate(document.createdAt)}</span>
                 </div>
-                {analyzeNotice && (
-                  <p className="text-[10px] text-muted-foreground">{analyzeNotice}</p>
+                {analyzing && (
+                  <div className="space-y-1">
+                    <Progress value={analyzeProgress} className="h-1" />
+                    {analyzeNotice && (
+                      <p className="text-[10px] text-muted-foreground">{analyzeNotice}</p>
+                    )}
+                  </div>
                 )}
-                {analyzeError && (
+                {!analyzing && analyzeError && (
                   <p className="text-[10px] text-destructive">{analyzeError}</p>
                 )}
               </div>
@@ -196,7 +230,9 @@ export function DocumentCard({
                     ) : (
                       <Sparkles className="h-3 w-3 mr-1" />
                     )}
-                    {document.aiSummary ? "重新分析" : "分析"}
+                    {document.aiSummary
+                      ? t("Re-analyze", "重新分析")
+                      : t("Analyze", "分析")}
                   </Button>
                   <Button
                     variant="ghost"

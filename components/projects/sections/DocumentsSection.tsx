@@ -14,7 +14,7 @@ import { inferDocumentCategory } from "@/lib/storage/category-detect";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { DocumentAsset, DocumentCategory, ProjectWithRelations } from "@/types";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2, Tags } from "lucide-react";
 
 interface DocumentsSectionProps {
   project: ProjectWithRelations;
@@ -32,6 +32,8 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
   const [batchMode, setBatchMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkCategory, setBulkCategory] = useState<DocumentCategory>("others");
+  const [bulkCategorizing, setBulkCategorizing] = useState(false);
 
   const handleUpload = async (files: File[]) => {
     setUploading(true);
@@ -139,6 +141,42 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
     }
   };
 
+  const handleBulkCategorize = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkCategorizing(true);
+    try {
+      const ids = [...selectedIds];
+      for (const docId of ids) {
+        const res = await fetch(
+          `/api/projects/${initialProject.id}/documents/${docId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ category: bulkCategory }),
+          }
+        );
+        if (res.ok) {
+          const updated = await res.json();
+          setDocuments((prev) =>
+            prev.map((d) =>
+              d.id === docId
+                ? {
+                    ...d,
+                    category: updated.category,
+                    updatedAt: new Date(updated.updatedAt),
+                  }
+                : d
+            )
+          );
+        }
+      }
+      setBatchMode(false);
+      setSelectedIds(new Set());
+    } finally {
+      setBulkCategorizing(false);
+    }
+  };
+
   const filtered =
     filter === "all" ? documents : documents.filter((d) => d.category === filter);
 
@@ -227,6 +265,33 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
           <>
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={selectAllFiltered}>
               {t("Select all", "全选")}
+            </Button>
+            <Select
+              value={bulkCategory}
+              onChange={(e) => setBulkCategory(e.target.value as DocumentCategory)}
+              className="w-40 h-8 text-xs"
+            >
+              {Object.keys(documentCategoryLabels).map((key) => (
+                <option key={key} value={key}>
+                  {label(
+                    documentCategoryLabels,
+                    documentCategoryLabelsZh,
+                    key as keyof typeof documentCategoryLabels
+                  )}
+                </option>
+              ))}
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={handleBulkCategorize}
+              disabled={selectedIds.size === 0 || bulkCategorizing}
+            >
+              <Tags className="h-3 w-3 mr-1" />
+              {bulkCategorizing
+                ? t("Updating…", "更新中…")
+                : t("Set category", "设置分类")}
             </Button>
             <Button
               variant="destructive"

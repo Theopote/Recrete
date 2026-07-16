@@ -8,7 +8,7 @@ export interface AnalysisPollOutcome {
 export async function pollAnalysisTask(
   projectId: string,
   taskId: string,
-  onUpdate?: (message: string) => void,
+  onUpdate?: (message: string, progress?: number) => void,
   options?: { maxAttempts?: number; intervalMs?: number }
 ): Promise<AnalysisPollOutcome> {
   const maxAttempts = options?.maxAttempts ?? 45;
@@ -26,7 +26,7 @@ export async function pollAnalysisTask(
     const task = data.task;
     if (!task) return { result: "failed", error: "分析任务不存在" };
 
-    onUpdate?.(task.message ?? `分析中… ${task.progress}%`);
+    onUpdate?.(task.message ?? `分析中… ${task.progress}%`, task.progress);
 
     if (task.status === "completed") return { result: "completed" };
     if (task.status === "failed") {

@@ -47,19 +47,89 @@ function buildWbsItems(
   breakdown: Array<{ item: string; sharePercent: number }>
 ): WbsCostItem[] {
   const area = project.grossFloorArea;
-  return breakdown.map((row, index) => {
-    const totalCost = Math.round(estimatedTotalCost * (row.sharePercent / 100));
-    const unitCost = area > 0 ? Math.round(totalCost / area) : 0;
-    return {
-      code: `WBS-${String(index + 1).padStart(2, "0")}`,
-      name: row.item,
-      unit: "m²",
-      quantity: area,
-      unitCost,
-      totalCost,
-      sharePercent: row.sharePercent,
-    };
+  const subBreakdown: Record<string, Array<{ name: string; shareOfParent: number }>> = {
+    "拆除与清运": [
+      { name: "局部拆除工程", shareOfParent: 45 },
+      { name: "建筑垃圾清运", shareOfParent: 35 },
+      { name: "降噪防尘措施", shareOfParent: 20 },
+    ],
+    "装饰装修": [
+      { name: "墙面涂料翻新", shareOfParent: 30 },
+      { name: "地面铺装更换", shareOfParent: 28 },
+      { name: "天花吊顶整修", shareOfParent: 22 },
+      { name: "门窗套与收口", shareOfParent: 20 },
+    ],
+    "MEP 局部更新": [
+      { name: "配电箱与线路更新", shareOfParent: 35 },
+      { name: "给排水局部改造", shareOfParent: 30 },
+      { name: "暖通设备检修更换", shareOfParent: 35 },
+    ],
+    "结构加固与新建构件": [
+      { name: "碳纤维/粘钢加固", shareOfParent: 40 },
+      { name: "新增钢梁/楼板", shareOfParent: 35 },
+      { name: "节点连接与防腐", shareOfParent: 25 },
+    ],
+    "MEP 系统重建": [
+      { name: "强电主干与配电", shareOfParent: 30 },
+      { name: "暖通空调系统", shareOfParent: 35 },
+      { name: "给排水与消防管网", shareOfParent: 35 },
+    ],
+    "外立面与屋面": [
+      { name: "外立面清洗修补", shareOfParent: 40 },
+      { name: "门窗更换", shareOfParent: 35 },
+      { name: "屋面防水整修", shareOfParent: 25 },
+    ],
+    "室内装修与专项工程": [
+      { name: "功能分区隔墙", shareOfParent: 35 },
+      { name: "地坪与饰面", shareOfParent: 35 },
+      { name: "专项设备安装", shareOfParent: 30 },
+    ],
+    "MEP 更换与扩容": [
+      { name: "电气扩容改造", shareOfParent: 38 },
+      { name: "暖通系统升级", shareOfParent: 32 },
+      { name: "给排水改造", shareOfParent: 30 },
+    ],
+    "室内装修": [
+      { name: "公共区域装修", shareOfParent: 40 },
+      { name: "租户区装修", shareOfParent: 35 },
+      { name: "固定家具与标识", shareOfParent: 25 },
+    ],
+  };
+
+  const items: WbsCostItem[] = [];
+  breakdown.forEach((row, index) => {
+    const parentCost = Math.round(estimatedTotalCost * (row.sharePercent / 100));
+    const subs = subBreakdown[row.item];
+
+    if (subs && subs.length > 0) {
+      subs.forEach((sub, subIndex) => {
+        const totalCost = Math.round(parentCost * (sub.shareOfParent / 100));
+        const unitCost = area > 0 ? Math.round(totalCost / area) : 0;
+        items.push({
+          code: `WBS-${String(index + 1).padStart(2, "0")}.${subIndex + 1}`,
+          name: `${row.item} · ${sub.name}`,
+          unit: "m²",
+          quantity: area,
+          unitCost,
+          totalCost,
+          sharePercent: Math.round(row.sharePercent * (sub.shareOfParent / 100) * 10) / 10,
+        });
+      });
+    } else {
+      const unitCost = area > 0 ? Math.round(parentCost / area) : 0;
+      items.push({
+        code: `WBS-${String(index + 1).padStart(2, "0")}`,
+        name: row.item,
+        unit: "m²",
+        quantity: area,
+        unitCost,
+        totalCost: parentCost,
+        sharePercent: row.sharePercent,
+      });
+    }
   });
+
+  return items;
 }
 
 function buildCostBreakdown(strategyType: string) {
