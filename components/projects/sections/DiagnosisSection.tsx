@@ -17,6 +17,7 @@ import type { DiagnosisCategory, DiagnosisItem, ProjectWithRelations } from "@/t
 import { Sparkles, Stethoscope, Plus } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { EvidenceTrail } from "@/components/diagnosis/EvidenceTrail";
+import { AIDisclaimer } from "@/components/ai/AIDisclaimer";
 import type { SourceEvidence } from "@/types/ai";
 
 interface DiagnosisSectionProps {
@@ -134,6 +135,8 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
           </RoleGate>
         }
       />
+
+      <AIDisclaimer />
 
       {aiError && (
         <AIErrorBanner

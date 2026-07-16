@@ -42,6 +42,10 @@ export class MockAIProvider implements AIService {
   costEstimator = {
     estimateProjectCost: agents.estimateProjectCost,
   };
+  heritage = {
+    assessHeritageProject: agents.assessHeritageProject,
+    generateHeritageDiagnosis: agents.generateHeritageDiagnosis,
+  };
   conflict = {
     detectDataConflicts: agents.detectDataConflicts,
     conflictsToInsights: agents.conflictsToInsights,

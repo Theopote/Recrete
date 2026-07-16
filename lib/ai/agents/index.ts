@@ -36,3 +36,8 @@ export {
   energyAgent,
 } from "./energy-agent";
 export { estimateProjectCost, costEstimatorAgent } from "./cost-estimator-agent";
+export {
+  assessHeritageProject,
+  generateHeritageDiagnosis,
+  heritageAgent,
+} from "./heritage-agent";

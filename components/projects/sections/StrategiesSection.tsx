@@ -14,6 +14,7 @@ import type { StrategyLabParams } from "@/types/ai";
 import { StrategyRankingPanel } from "@/components/strategies/StrategyRankingPanel";
 import { StrategySpatialCompareSection } from "@/components/strategies/StrategySpatialCompareSection";
 import { SimilarCasesPanel } from "@/components/ai/SimilarCasesPanel";
+import { AIDisclaimer } from "@/components/ai/AIDisclaimer";
 import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
 import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -121,6 +122,8 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
           </div>
         }
       />
+
+      <AIDisclaimer />
 
       {aiError && (
         <AIErrorBanner
