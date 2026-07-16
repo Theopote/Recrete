@@ -1,13 +1,25 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
+import dynamic from "next/dynamic";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Save, Eye, Edit3, FileDown, Download, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { exportReportToPdf, downloadMarkdown } from "@/lib/reports/export-pdf";
-import { exportReportToDocx } from "@/lib/reports/export-docx";
 import { useLocale } from "@/lib/i18n/use-locale";
+
+const ReportMarkdownPreview = dynamic(
+  () =>
+    import("@/components/reports/ReportMarkdownPreview").then(
+      (mod) => mod.ReportMarkdownPreview
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[240px] animate-pulse rounded-md bg-muted/40" aria-hidden />
+    ),
+  }
+);
 
 interface ReportEditorProps {
   content: string;
@@ -61,6 +73,7 @@ export function ReportEditor({
   const handleExportWord = async () => {
     setExportingWord(true);
     try {
+      const { exportReportToDocx } = await import("@/lib/reports/export-docx");
       await exportReportToDocx(title, editedContent, projectName);
     } catch (error) {
       console.error("Word export failed:", error);
@@ -125,9 +138,7 @@ export function ReportEditor({
             className="min-h-[500px] font-mono text-xs"
           />
         ) : (
-          <article className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-table:text-xs">
-            <ReactMarkdown>{editedContent}</ReactMarkdown>
-          </article>
+          <ReportMarkdownPreview content={editedContent} />
         )}
       </div>
     </div>

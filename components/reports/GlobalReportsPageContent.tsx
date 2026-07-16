@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { reportTypeLabels, reportTypeLabelsZh } from "@/lib/utils/labels";
 import { useLocale } from "@/lib/i18n/use-locale";
@@ -38,7 +37,11 @@ export function GlobalReportsPageContent({ reports }: GlobalReportsPageContentPr
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {reports.map((report) => (
-        <Link key={report.id} href={`/projects/${report.projectId}?section=reports`}>
+        <a
+          key={report.id}
+          href={`/projects/${report.projectId}?section=reports`}
+          className="block h-full no-underline text-inherit"
+        >
           <Card className="h-full hover:border-copper/40 transition-colors">
             <CardContent className="p-5 space-y-2">
               <div className="flex items-start gap-2">
@@ -58,7 +61,7 @@ export function GlobalReportsPageContent({ reports }: GlobalReportsPageContentPr
               </div>
             </CardContent>
           </Card>
-        </Link>
+        </a>
       ))}
     </div>
   );

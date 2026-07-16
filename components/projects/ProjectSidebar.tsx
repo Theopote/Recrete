@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -67,11 +66,11 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
           const isActive = currentSection === section.id;
 
           return (
-            <Link
+            <a
               key={section.id}
               href={href}
               className={cn(
-                "flex items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium transition-colors",
+                "flex items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium transition-colors no-underline",
                 isActive
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -79,7 +78,7 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
             >
               <section.icon className="h-3.5 w-3.5" />
               {navLabel(locale, PROJECT_SECTION_LABELS[section.id])}
-            </Link>
+            </a>
           );
         })}
       </nav>

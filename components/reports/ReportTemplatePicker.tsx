@@ -5,7 +5,7 @@ import { pickLocaleText } from "@/lib/i18n/locale";
 import { REPORT_TEMPLATE_CATALOG } from "@/lib/ai/report-templates";
 import { useUIStore } from "@/lib/stores/ui-store";
 import type { ReportType } from "@/types";
-import { FileText } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 
 interface ReportTemplatePickerProps {
   value: ReportType;
@@ -36,17 +36,26 @@ export function ReportTemplatePicker({ value, onChange, className }: ReportTempl
           <button
             key={template.type}
             type="button"
+            aria-pressed={selected}
+            data-selected={selected ? "true" : "false"}
             onClick={() => onChange(template.type)}
             className={cn(
-              "text-left rounded-lg border p-3 transition-colors",
+              "relative text-left rounded-lg border p-3 transition-all cursor-pointer",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/50",
               selected
-                ? "border-copper bg-copper/5 ring-1 ring-copper/30"
-                : "hover:border-copper/30"
+                ? "border-copper bg-copper/10 ring-2 ring-copper/40 shadow-sm"
+                : "hover:border-copper/40 hover:bg-muted/30 active:scale-[0.99]"
             )}
           >
+            {selected && (
+              <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 rounded-full bg-copper/15 px-1.5 py-0.5 text-[9px] font-medium text-copper">
+                <Check className="h-2.5 w-2.5" />
+                {locale === "zh" ? "已选" : "Selected"}
+              </span>
+            )}
             <div className="flex items-start gap-2">
               <FileText className="h-4 w-4 text-copper shrink-0 mt-0.5" />
-              <div className="min-w-0">
+              <div className="min-w-0 pr-10">
                 <p className="text-xs font-medium">{title}</p>
                 <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
                   {description}

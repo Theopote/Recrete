@@ -140,15 +140,31 @@ export function exportReportToPdf(title: string, markdown: string, projectName?:
 </body>
 </html>`;
 
-  const win = window.open("", "_blank");
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+
   if (!win) {
-    alert("Please allow pop-ups to export PDF.");
+    downloadBlob(blob, `${sanitizeReportFilename(title)}.html`);
+    URL.revokeObjectURL(url);
+    alert(
+      "Pop-ups are blocked. An HTML file was downloaded — open it and use Print → Save as PDF.\n\n弹窗被拦截。已下载 HTML 文件，打开后使用「打印 → 另存为 PDF」。"
+    );
     return;
   }
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 400);
+
+  const triggerPrint = () => {
+    try {
+      win.focus();
+      win.print();
+    } catch {
+      // Window may have been closed before print.
+    }
+  };
+
+  win.addEventListener("load", triggerPrint);
+  window.setTimeout(triggerPrint, 800);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function escapeHtml(text: string): string {
