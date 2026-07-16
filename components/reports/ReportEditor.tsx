@@ -3,9 +3,10 @@
 import ReactMarkdown from "react-markdown";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Save, Eye, Edit3, FileDown, Download } from "lucide-react";
+import { Save, Eye, Edit3, FileDown, Download, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { exportReportToPdf, downloadMarkdown } from "@/lib/reports/export-pdf";
+import { exportReportToDocx } from "@/lib/reports/export-docx";
 import { useLocale } from "@/lib/i18n/use-locale";
 
 interface ReportEditorProps {
@@ -31,6 +32,7 @@ export function ReportEditor({
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
   const [saving, setSaving] = useState(false);
+  const [exportingWord, setExportingWord] = useState(false);
 
   useEffect(() => {
     setEditedContent(content);
@@ -56,6 +58,18 @@ export function ReportEditor({
     setIsEditing(false);
   };
 
+  const handleExportWord = async () => {
+    setExportingWord(true);
+    try {
+      await exportReportToDocx(title, editedContent, projectName);
+    } catch (error) {
+      console.error("Word export failed:", error);
+      alert(t("Word export failed. Please try again.", "Word 导出失败，请重试。"));
+    } finally {
+      setExportingWord(false);
+    }
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       <div className="flex items-center justify-between border-b px-4 py-3 gap-2 flex-wrap">
@@ -67,6 +81,15 @@ export function ReportEditor({
             onClick={() => exportReportToPdf(title, editedContent, projectName)}
           >
             <FileDown className="h-3.5 w-3.5 mr-1" /> {t("Export PDF", "导出 PDF")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportWord}
+            disabled={exportingWord}
+          >
+            <FileText className="h-3.5 w-3.5 mr-1" />
+            {exportingWord ? t("Exporting...", "导出中...") : t("Export Word", "导出 Word")}
           </Button>
           <Button
             variant="outline"
