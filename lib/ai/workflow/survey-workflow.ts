@@ -122,7 +122,7 @@ export async function runSurveyFinalizeWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId, "survey_analysis");
   }
 
   return {

@@ -4,6 +4,7 @@ import { Bell, Plus, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { GlobalSearch } from "./GlobalSearch";
+import { LanguageToggle } from "./LanguageToggle";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { useSession, signOut } from "next-auth/react";
 import { getInitials } from "@/lib/utils";
@@ -31,6 +32,8 @@ export function TopBar({ title, subtitle, showNewProject = false, showAiToggle =
 
       <div className="flex items-center gap-2 md:gap-3 shrink-0">
         <GlobalSearch />
+
+        <LanguageToggle />
 
         {showAiToggle && (
           <Button

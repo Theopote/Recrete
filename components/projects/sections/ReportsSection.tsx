@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { ReportEditor } from "@/components/reports/ReportEditor";
+import { ReportTemplatePicker } from "@/components/reports/ReportTemplatePicker";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { reportTypeLabels } from "@/lib/utils/labels";
+import { reportTypeLabels, reportTypeLabelsZh } from "@/lib/utils/labels";
+import { pickLocaleText } from "@/lib/i18n/locale";
+import { useUIStore } from "@/lib/stores/ui-store";
 import type { ProjectWithRelations, Report, ReportType } from "@/types";
 import { FileText, Sparkles } from "lucide-react";
 import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
@@ -19,11 +21,15 @@ interface ReportsSectionProps {
 }
 
 export function ReportsSection({ project: initialProject }: ReportsSectionProps) {
+  const locale = useUIStore((s) => s.locale);
   const [reports, setReports] = useState(initialProject.reports ?? []);
   const [selectedReport, setSelectedReport] = useState<Report | null>(reports[0] ?? null);
   const [reportType, setReportType] = useState<ReportType>("existing_condition_report");
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
+
+  const reportLabel = (type: ReportType) =>
+    pickLocaleText(locale, reportTypeLabels[type], reportTypeLabelsZh[type]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -43,7 +49,10 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
         setAiError(parseAIErrorResponse(data));
       }
     } catch {
-      setAiError({ message: "网络异常，请稍后重试。", retryable: true });
+      setAiError({
+        message: pickLocaleText(locale, "Network error. Please try again.", "网络异常，请稍后重试。"),
+        retryable: true,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -60,27 +69,27 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
     <div className="space-y-6">
       <SectionHeader
         title="Reports"
+        titleZh="报告中心"
         description="Generate structured Markdown reports from project data"
+        descriptionZh="基于项目数据生成结构化 Markdown 报告"
         action={
           <RoleGate action="publish_report">
-            <div className="flex gap-2">
-              <Select
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value as ReportType)}
-                className="w-56 h-8 text-xs"
-              >
-                {Object.entries(reportTypeLabels).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </Select>
-              <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                {isGenerating ? "Generating..." : "Generate Report"}
-              </Button>
-            </div>
+            <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              {isGenerating
+                ? pickLocaleText(locale, "Generating...", "生成中...")
+                : pickLocaleText(locale, "Generate Report", "生成报告")}
+            </Button>
           </RoleGate>
         }
       />
+
+      <div className="space-y-2">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {pickLocaleText(locale, "Report Template", "报告模板")}
+        </h3>
+        <ReportTemplatePicker value={reportType} onChange={setReportType} />
+      </div>
 
       {aiError && (
         <AIErrorBanner
@@ -94,7 +103,7 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="space-y-2">
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
-            Report Archive
+            {pickLocaleText(locale, "Report Archive", "报告归档")}
           </h3>
           {reports.length > 0 ? (
             reports.map((report) => (
@@ -109,12 +118,14 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
               >
                 <p className="text-xs font-medium truncate">{report.title}</p>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  {reportTypeLabels[report.type]} · {formatDate(report.createdAt)}
+                  {reportLabel(report.type)} · {formatDate(report.createdAt)}
                 </p>
               </button>
             ))
           ) : (
-            <p className="text-xs text-muted-foreground">No reports generated yet</p>
+            <p className="text-xs text-muted-foreground">
+              {pickLocaleText(locale, "No reports generated yet", "尚未生成报告")}
+            </p>
           )}
         </div>
 
@@ -131,9 +142,16 @@ export function ReportsSection({ project: initialProject }: ReportsSectionProps)
           ) : (
             <EmptyState
               icon={FileText}
-              title="No report selected"
-              description="Generate a report or select one from the archive to view."
-              action={{ label: "Generate Report", onClick: handleGenerate }}
+              title={pickLocaleText(locale, "No report selected", "未选择报告")}
+              description={pickLocaleText(
+                locale,
+                "Generate a report or select one from the archive to view.",
+                "生成报告或从归档中选择一份查看。"
+              )}
+              action={{
+                label: pickLocaleText(locale, "Generate Report", "生成报告"),
+                onClick: handleGenerate,
+              }}
             />
           )}
         </div>

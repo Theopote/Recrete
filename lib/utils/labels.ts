@@ -127,6 +127,16 @@ export const reportTypeLabels: LabelMap<ReportType> = {
   design_meeting_summary: "Design Meeting Summary",
 };
 
+export const reportTypeLabelsZh: LabelMap<ReportType> = {
+  existing_condition_report: "现状调研报告",
+  diagnosis_report: "建筑诊断报告",
+  renovation_strategy_report: "改造策略报告",
+  owner_presentation: "业主汇报提纲",
+  government_submission: "政府报建草案",
+  site_issue_report: "现场问题报告",
+  design_meeting_summary: "设计会议纪要",
+};
+
 export const insightTypeLabels: Record<AIInsightType, string> = {
   missing_info: "Missing Info",
   risk: "Risk",

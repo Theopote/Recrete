@@ -90,7 +90,7 @@ export async function runReportWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId, "report_generation");
   }
 
   return { report, analysisRun, buildingMemory };

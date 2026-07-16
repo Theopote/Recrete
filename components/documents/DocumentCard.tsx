@@ -20,9 +20,21 @@ interface DocumentCardProps {
   onPreview?: (document: DocumentAsset) => void;
   onAnalyzed?: (document: DocumentAsset) => void;
   onDeleted?: (documentId: string) => void;
+  batchMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (documentId: string) => void;
 }
 
-export function DocumentCard({ document, projectId, onPreview, onAnalyzed, onDeleted }: DocumentCardProps) {
+export function DocumentCard({
+  document,
+  projectId,
+  onPreview,
+  onAnalyzed,
+  onDeleted,
+  batchMode,
+  selected,
+  onToggleSelect,
+}: DocumentCardProps) {
   const router = useRouter();
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -96,12 +108,29 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed, onDel
     <Card
       className={cn(
         "group hover:border-copper/30 transition-colors",
-        previewable && onPreview && "cursor-pointer"
+        previewable && onPreview && !batchMode && "cursor-pointer",
+        selected && "border-copper bg-copper/5"
       )}
-      onClick={() => previewable && onPreview?.(document)}
+      onClick={() => {
+        if (batchMode) {
+          onToggleSelect?.(document.id);
+          return;
+        }
+        if (previewable && onPreview) onPreview(document);
+      }}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
+          {batchMode && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect?.(document.id)}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1 h-4 w-4 rounded border-muted-foreground/40 accent-copper"
+              aria-label={`Select ${document.name}`}
+            />
+          )}
           <div className="rounded-md bg-muted p-2">
             <Icon className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -168,6 +197,7 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed, onDel
                     size="sm"
                     className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                     onClick={handleDelete}
+                    disabled={batchMode}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>

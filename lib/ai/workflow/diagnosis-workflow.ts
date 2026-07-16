@@ -175,7 +175,7 @@ export async function runDiagnosisWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId, "diagnosis_generation");
   }
 
   return {
