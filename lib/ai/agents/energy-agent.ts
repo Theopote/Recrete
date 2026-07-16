@@ -1,4 +1,5 @@
 import type { DiagnosisItem, ProjectWithRelations } from "@/types";
+import { bi, type BilingualString } from "@/lib/i18n/bilingual";
 
 export interface EnergyAnalysisInput {
   annualEnergyKwh?: number;
@@ -55,8 +56,8 @@ export interface EnergyAnalysisResult {
   retrofitMeasures: GreenRetrofitMeasure[];
   recommendedBundle: GreenRetrofitMeasure[];
   roi: EnergyRoiResult;
-  findings: string[];
-  recommendations: string[];
+  findings: BilingualString[];
+  recommendations: BilingualString[];
 }
 
 function baselineEuiForProject(project: ProjectWithRelations): number {
@@ -298,22 +299,45 @@ export class EnergyAgent {
       input
     );
 
-    const findings: string[] = [
-      `Estimated EUI ${simulation.benchmarkComparison.currentEui} kWh/m²·a (${simulation.rating})`,
-      `Annual consumption ~${simulation.estimatedAnnualKwh.toLocaleString()} kWh`,
-      `Gap vs climate benchmark: ${simulation.benchmarkComparison.gapPercent > 0 ? "+" : ""}${simulation.benchmarkComparison.gapPercent}%`,
+    const findings: BilingualString[] = [
+      bi(
+        `Estimated EUI ${simulation.benchmarkComparison.currentEui} kWh/m²·a (${simulation.rating})`,
+        `估算 EUI ${simulation.benchmarkComparison.currentEui} kWh/m²·a（${simulation.rating}）`
+      ),
+      bi(
+        `Annual consumption ~${simulation.estimatedAnnualKwh.toLocaleString()} kWh`,
+        `年能耗约 ${simulation.estimatedAnnualKwh.toLocaleString()} kWh`
+      ),
+      bi(
+        `Gap vs climate benchmark: ${simulation.benchmarkComparison.gapPercent > 0 ? "+" : ""}${simulation.benchmarkComparison.gapPercent}%`,
+        `与气候区基准差距：${simulation.benchmarkComparison.gapPercent > 0 ? "+" : ""}${simulation.benchmarkComparison.gapPercent}%`
+      ),
     ];
 
     if (simulation.rating === "poor") {
-      findings.push("Building performs significantly below current energy code expectations.");
+      findings.push(
+        bi(
+          "Building performs significantly below current energy code expectations.",
+          "建筑能效明显低于现行节能规范要求。"
+        )
+      );
     }
 
-    const recommendations = [
-      ...recommendedBundle.map(
-        (m) => `Prioritize ${m.nameZh} — est. ${m.estimatedSavingsPercent}% energy reduction`
+    const recommendations: BilingualString[] = [
+      ...recommendedBundle.map((m) =>
+        bi(
+          `Prioritize ${m.name} — est. ${m.estimatedSavingsPercent}% energy reduction`,
+          `优先实施 ${m.nameZh} — 预计节能 ${m.estimatedSavingsPercent}%`
+        )
       ),
-      `Bundle payback ~${roi.simplePaybackYears} years; 10-year ROI ${roi.roiPercent10Year}%`,
-      "Commission formal energy audit and dynamic simulation (e.g. EnergyPlus) before design decisions.",
+      bi(
+        `Bundle payback ~${roi.simplePaybackYears} years; 10-year ROI ${roi.roiPercent10Year}%`,
+        `组合方案回收期约 ${roi.simplePaybackYears} 年；10 年 ROI ${roi.roiPercent10Year}%`
+      ),
+      bi(
+        "Commission formal energy audit and dynamic simulation (e.g. EnergyPlus) before design decisions.",
+        "方案决策前建议委托正式能耗审计与动态模拟（如 EnergyPlus）。"
+      ),
     ];
 
     return {

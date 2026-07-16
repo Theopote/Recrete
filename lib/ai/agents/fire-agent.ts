@@ -1,4 +1,5 @@
 import type { ProjectWithRelations, DiagnosisItem } from "@/types";
+import { bi, type BilingualString } from "@/lib/i18n/bilingual";
 
 export interface FireAnalysisInput {
   occupantLoad?: number;
@@ -11,8 +12,8 @@ export interface FireAnalysisInput {
 export interface FireAnalysisResult {
   egressRating: "adequate" | "marginal" | "insufficient" | "unknown";
   compartmentRating: "compliant" | "non_compliant" | "requires_verification";
-  findings: string[];
-  recommendations: string[];
+  findings: BilingualString[];
+  recommendations: BilingualString[];
   evacuationWidthRequired: number;
 }
 
@@ -40,28 +41,46 @@ export class FireProtectionAgent {
       compartmentRating = effectiveArea <= maxCompartment ? "compliant" : "non_compliant";
     }
 
-    const findings: string[] = [
-      `Target occupancy change to ${project.targetFunction} requires fire engineering review per GB 50016.`,
+    const findings: BilingualString[] = [
+      bi(
+        `Target occupancy change to ${project.targetFunction} requires fire engineering review per GB 50016.`,
+        `目标功能变更为「${project.targetFunction}」，须按 GB 50016 进行消防专项复核。`
+      ),
     ];
 
     if (input.travelDistance && input.travelDistance > 45) {
-      findings.push(`Travel distance ${input.travelDistance}m may exceed allowable egress path length.`);
+      findings.push(
+        bi(
+          `Travel distance ${input.travelDistance}m may exceed allowable egress path length.`,
+          `疏散距离 ${input.travelDistance}m 可能超过规范允许的最大疏散路径长度。`
+        )
+      );
     }
     if (input.occupantLoad && input.stairWidth) {
       const capacity = input.stairWidth * 200;
       if (input.occupantLoad > capacity) {
-        findings.push(`Occupant load ${input.occupantLoad} may exceed stair capacity ~${capacity}.`);
+        findings.push(
+          bi(
+            `Occupant load ${input.occupantLoad} may exceed stair capacity ~${capacity}.`,
+            `人员荷载 ${input.occupantLoad} 可能超过楼梯通行能力（约 ${capacity} 人）。`
+          )
+        );
       }
     }
 
-    const recommendations = [
-      "Verify fire compartment boundaries on each floor plate.",
-      "Measure all egress stair widths and travel distances.",
+    const recommendations: BilingualString[] = [
+      bi("Verify fire compartment boundaries on each floor plate.", "逐层核实防火分区边界。"),
+      bi("Measure all egress stair widths and travel distances.", "测量所有疏散楼梯宽度与疏散距离。"),
       ...(compartmentRating === "non_compliant"
-        ? ["Subdivide floor plate or provide engineered smoke control / sprinkler compensation."]
+        ? [
+            bi(
+              "Subdivide floor plate or provide engineered smoke control / sprinkler compensation.",
+              "划分防火分区，或采用经设计的防烟措施 / 喷淋补偿方案。"
+            ),
+          ]
         : []),
       ...(egressRating === "insufficient"
-        ? ["Widen stairs or provide additional egress routes."]
+        ? [bi("Widen stairs or provide additional egress routes.", "加宽楼梯或增设疏散通道。")]
         : []),
     ];
 
