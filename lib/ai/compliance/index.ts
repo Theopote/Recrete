@@ -29,5 +29,14 @@ export {
   mergeMeasurements,
   countMeasurementCompleteness,
   stripEmptyMeasurements,
+  buildMeasurementCoverage,
+  extractHistoryFallback,
+  listMissingMeasurementFields,
+  MEASUREMENT_FIELD_LABELS,
+  RULE_MEASUREMENT_DEPENDENCIES,
 } from "./measurements";
-export type { ComplianceMeasurementKey, MeasurementCompleteness } from "./measurements";
+export type {
+  ComplianceMeasurementKey,
+  MeasurementCompleteness,
+  MeasurementCoverage,
+} from "./measurements";

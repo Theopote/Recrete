@@ -88,6 +88,44 @@ export function mergeMeasurements(
   return merged;
 }
 
+export interface MeasurementCoverage {
+  fieldsFilled: number;
+  fieldsTotal: number;
+  dataDependentRules: number;
+  dataDependentRulesResolved: number;
+  missingFields: ComplianceMeasurementKey[];
+}
+
+export const RULE_MEASUREMENT_DEPENDENCIES: Partial<
+  Record<string, readonly ComplianceMeasurementKey[]>
+> = {
+  "ceiling-height": ["ceilingHeight"],
+  "fire-compartment-area": ["fireCompartmentArea"],
+  "evacuation-stair-width": ["stairWidth"],
+  "evacuation-travel-distance": ["travelDistance"],
+  "concrete-carbonation": ["carbonationDepth"],
+  "floor-live-load": ["existingLoadKN"],
+  "accessible-entrance": ["hasAccessibleEntrance"],
+  "window-u-value": ["windowUValue"],
+};
+
+export const MEASUREMENT_FIELD_LABELS: Record<
+  ComplianceMeasurementKey,
+  { en: string; zh: string }
+> = {
+  ceilingHeight: { en: "Ceiling height", zh: "房间净高" },
+  stairWidth: { en: "Stair clear width", zh: "疏散楼梯净宽" },
+  fireCompartmentArea: { en: "Fire compartment area", zh: "防火分区面积" },
+  hasAccessibleEntrance: { en: "Accessible entrance", zh: "无障碍入口" },
+  windowUValue: { en: "Window U-value", zh: "外窗传热系数" },
+  carbonationDepth: { en: "Carbonation depth", zh: "碳化深度" },
+  coverThickness: { en: "Cover thickness", zh: "保护层厚度" },
+  existingLoadKN: { en: "Existing live load", zh: "现有活荷载" },
+  targetLoadKN: { en: "Target live load", zh: "目标活荷载" },
+  travelDistance: { en: "Travel distance", zh: "疏散距离" },
+  hasSprinkler: { en: "Sprinkler system", zh: "喷淋系统" },
+};
+
 export function stripEmptyMeasurements(
   measurements: ComplianceMeasurements
 ): ComplianceMeasurements {
@@ -99,4 +137,50 @@ export function stripEmptyMeasurements(
     }
   }
   return result;
+}
+
+export function listMissingMeasurementFields(
+  measurements: ComplianceMeasurements = {}
+): ComplianceMeasurementKey[] {
+  return COMPLIANCE_MEASUREMENT_KEYS.filter(
+    (key) => !isMeasurementValueSet(key, measurements[key])
+  );
+}
+
+export function extractHistoryFallback(
+  stored: ComplianceMeasurements,
+  history: ComplianceMeasurements = {}
+): ComplianceMeasurements {
+  const fallback: ComplianceMeasurements = {};
+  for (const key of COMPLIANCE_MEASUREMENT_KEYS) {
+    if (
+      !isMeasurementValueSet(key, stored[key]) &&
+      isMeasurementValueSet(key, history[key])
+    ) {
+      fallback[key] = history[key];
+    }
+  }
+  return fallback;
+}
+
+export function buildMeasurementCoverage(
+  checks: Array<{ ruleId: string; status: string }>,
+  measurements: ComplianceMeasurements = {}
+): MeasurementCoverage {
+  const completeness = countMeasurementCompleteness(measurements);
+  const dataDependentRuleIds = new Set(Object.keys(RULE_MEASUREMENT_DEPENDENCIES));
+  const applicableDataRules = checks.filter((check) =>
+    dataDependentRuleIds.has(check.ruleId)
+  );
+  const resolved = applicableDataRules.filter(
+    (check) => check.status !== "requires_verification"
+  );
+
+  return {
+    fieldsFilled: completeness.filled,
+    fieldsTotal: completeness.total,
+    dataDependentRules: applicableDataRules.length,
+    dataDependentRulesResolved: resolved.length,
+    missingFields: listMissingMeasurementFields(measurements),
+  };
 }

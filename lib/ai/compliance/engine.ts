@@ -9,6 +9,7 @@ import {
   getRulesForScenarios,
   getComplianceChecklist,
 } from "./rules";
+import { buildMeasurementCoverage } from "./measurements";
 import type {
   ComplianceCategory,
   ComplianceCheck,
@@ -193,6 +194,7 @@ export function runComplianceEngine(
     criticalIssues,
     recommendations,
     summary: buildSummary(checks),
+    measurementCoverage: buildMeasurementCoverage(checks, ctx.measurements),
   };
 }
 

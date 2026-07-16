@@ -10,6 +10,7 @@ import {
   updateBuildingMemory,
 } from "@/lib/db/repository";
 import { upsertDrawingAsset } from "@/lib/db/drawing-assets";
+import { syncMeasurementsFromDrawings } from "@/lib/building-condition/sync-drawing-measurements";
 import { analyzeDocumentAsset } from "@/lib/ai/document-analysis-pipeline";
 import { buildDrawingKnowledgeGraph } from "@/lib/ai/knowledge/drawing-knowledge-graph";
 import { runConflictDetectionWorkflow } from "./conflict-workflow";
@@ -158,6 +159,14 @@ export async function runDocumentIngestWorkflow(
         confidence: page.confidence,
       });
     }
+
+    await syncMeasurementsFromDrawings(projectId, {
+      drawings: pages.map((page) => page.drawing),
+      drawingLabels: pages.map(
+        (page) =>
+          `${page.drawing.drawingType} p${page.pageNumber} (${doc.name})`
+      ),
+    });
   }
 
   const evidence: SourceEvidence[] = [];

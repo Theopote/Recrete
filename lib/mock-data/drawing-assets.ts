@@ -43,10 +43,19 @@ export const mockDrawingAssets: DrawingAssetRecord[] = [
           function: "circulation",
           location: { x: 300, y: 120, width: 24, height: 260 },
         },
+        {
+          id: "R104",
+          label: "疏散楼梯 Stair",
+          area: 12.4,
+          function: "circulation",
+          dimensions: { width: 1.2, height: 4.5 },
+          location: { x: 40, y: 360, width: 90, height: 120 },
+        },
       ],
       dimensions: [
         { value: 6.5, unit: "m", type: "length", location: { x: 80, y: 90, width: 220, height: 18 } },
         { value: 7.0, unit: "m", type: "width", location: { x: 55, y: 120, width: 18, height: 260 } },
+        { value: 1.2, unit: "m", type: "length", location: { x: 40, y: 350, width: 90, height: 14 } },
       ],
       annotations: [
         {
@@ -58,6 +67,16 @@ export const mockDrawingAssets: DrawingAssetRecord[] = [
           text: "主入口 Main Entry",
           type: "label",
           location: { x: 180, y: 400, width: 80, height: 24 },
+        },
+        {
+          text: "防火分区面积 1850 m²",
+          type: "note",
+          location: { x: 360, y: 40, width: 160, height: 24 },
+        },
+        {
+          text: "疏散走道至出口距离 28 m",
+          type: "note",
+          location: { x: 300, y: 380, width: 180, height: 24 },
         },
       ],
       structuralElements: [
@@ -156,6 +175,16 @@ export const mockDrawingAssets: DrawingAssetRecord[] = [
           type: "note",
           location: { x: 40, y: 380, width: 240, height: 30 },
         },
+        {
+          text: "活荷载 2.0 kN/m²",
+          type: "specification",
+          location: { x: 40, y: 340, width: 160, height: 24 },
+        },
+        {
+          text: "保护层 25 mm",
+          type: "specification",
+          location: { x: 40, y: 310, width: 120, height: 24 },
+        },
       ],
       structuralElements: [
         {
@@ -212,11 +241,47 @@ export const mockDrawingAssets: DrawingAssetRecord[] = [
           type: "note",
           location: { x: 80, y: 300, width: 140, height: 50 },
         },
+        {
+          text: "全楼喷淋系统 sprinkler system",
+          type: "specification",
+          location: { x: 220, y: 60, width: 180, height: 24 },
+        },
       ],
       structuralElements: [],
       extractedText: ["MEP As-Built", "VRF 系统 2003"],
       confidence: 0.74,
       summary: "机电综合平面图（2003 年改造部分）。识别空调机房、配电间；配电容量可能不满足现行负荷需求。",
+    },
+  },
+  {
+    id: "drawing-demo-section-1",
+    documentId: "doc-1",
+    projectId: "proj-demo",
+    pageNumber: 3,
+    drawingType: "section",
+    scale: "1:50",
+    modelName: "vision-mock",
+    confidence: 0.81,
+    createdAt: daysAgo(38),
+    updatedAt: daysAgo(38),
+    analysisResult: {
+      drawingType: "section",
+      scale: "1:50",
+      rooms: [],
+      dimensions: [
+        { value: 2.9, unit: "m", type: "height", location: { x: 180, y: 120, width: 120, height: 18 } },
+      ],
+      annotations: [
+        {
+          text: "办公室净高 2.9 m",
+          type: "label",
+          location: { x: 160, y: 100, width: 140, height: 24 },
+        },
+      ],
+      structuralElements: [],
+      extractedText: ["剖面图 Section A-A", "净高 2.9m"],
+      confidence: 0.81,
+      summary: "标准层剖面。识别办公室净高 2.9 m。",
     },
   },
 ];

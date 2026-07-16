@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectWithRelations } from "@/types";
-import type { ProjectSiteMeasurementsDto } from "@/types/site-measurements";
+import { MEASUREMENT_FIELD_LABELS, mergeMeasurements } from "@/lib/ai/compliance/measurements";
+import type {
+  ProjectSiteMeasurementsDto,
+  ProjectSiteMeasurementsResponse,
+} from "@/types/site-measurements";
 import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Landmark } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { BilingualString } from "@/lib/i18n/bilingual";
@@ -52,6 +56,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
 
   const [structuralInput, setStructuralInput] = useState({
     carbonationDepth: "",
+    coverThickness: "",
     existingLoad: "",
     targetLoad: "",
   });
@@ -123,11 +128,12 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     (async () => {
       const res = await fetch(`/api/projects/${project.id}/site-measurements`);
       if (!res.ok || cancelled) return;
-      const data = (await res.json()) as ProjectSiteMeasurementsDto;
-      const m = data.measurements;
+      const data = (await res.json()) as ProjectSiteMeasurementsResponse;
+      const m = mergeMeasurements(data.historyFallback ?? {}, data.measurements);
       setSiteMeasurementCompleteness(data.completeness);
       setStructuralInput({
         carbonationDepth: m.carbonationDepth?.toString() ?? "",
+        coverThickness: m.coverThickness?.toString() ?? "",
         existingLoad: m.existingLoadKN?.toString() ?? "",
         targetLoad: m.targetLoadKN?.toString() ?? "",
       });
@@ -172,9 +178,32 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const selectedBimModel =
     bimModels.find((model) => model.id === selectedBimModelId) ?? null;
 
+  const parseOptionalNum = (value: string) => {
+    if (!value.trim()) return undefined;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
+  };
+
+  const syncSiteMeasurements = async (updates: Record<string, unknown>) => {
+    const res = await fetch(`/api/projects/${project.id}/site-measurements`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...updates, replace: false }),
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as ProjectSiteMeasurementsDto;
+    setSiteMeasurementCompleteness(data.completeness);
+  };
+
   const runStructural = async () => {
     setStructuralLoading(true);
     try {
+      await syncSiteMeasurements({
+        carbonationDepth: parseOptionalNum(structuralInput.carbonationDepth),
+        coverThickness: parseOptionalNum(structuralInput.coverThickness),
+        existingLoadKN: parseOptionalNum(structuralInput.existingLoad),
+        targetLoadKN: parseOptionalNum(structuralInput.targetLoad),
+      });
       const res = await fetch(`/api/projects/${project.id}/experts/structural`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -222,6 +251,16 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     setComplianceLoading(true);
     try {
       if (!complianceMeta) await loadComplianceMeta();
+      await syncSiteMeasurements({
+        stairWidth: parseOptionalNum(fireInput.stairWidth),
+        travelDistance: parseOptionalNum(fireInput.travelDistance),
+        hasSprinkler: fireInput.hasSprinkler,
+        windowUValue: parseOptionalNum(energyInput.windowUValue),
+        carbonationDepth: parseOptionalNum(structuralInput.carbonationDepth),
+        coverThickness: parseOptionalNum(structuralInput.coverThickness),
+        existingLoadKN: parseOptionalNum(structuralInput.existingLoad),
+        targetLoadKN: parseOptionalNum(structuralInput.targetLoad),
+      });
       const res = await fetch(`/api/projects/${project.id}/experts/compliance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -241,6 +280,11 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const runFire = async () => {
     setFireLoading(true);
     try {
+      await syncSiteMeasurements({
+        stairWidth: parseOptionalNum(fireInput.stairWidth),
+        travelDistance: parseOptionalNum(fireInput.travelDistance),
+        hasSprinkler: fireInput.hasSprinkler,
+      });
       const res = await fetch(`/api/projects/${project.id}/experts/fire`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -297,6 +341,9 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const runEnergy = async () => {
     setEnergyLoading(true);
     try {
+      await syncSiteMeasurements({
+        windowUValue: parseOptionalNum(energyInput.windowUValue),
+      });
       const res = await fetch(`/api/projects/${project.id}/experts/energy`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -602,6 +649,13 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       nonCompliant: number;
       requiresVerification: number;
     };
+    measurementCoverage?: {
+      fieldsFilled: number;
+      fieldsTotal: number;
+      dataDependentRules: number;
+      dataDependentRulesResolved: number;
+      missingFields: string[];
+    };
     applicableCodes?: Array<{ code: string; nameZh: string; category: string }>;
     checks?: Array<{
       ruleId: string;
@@ -663,6 +717,11 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           onClick={() => {
             setActiveTab("compliance");
             if (!complianceMeta) void loadComplianceMeta();
+            void fetch(`/api/projects/${project.id}/site-measurements`)
+              .then((res) => (res.ok ? res.json() : null))
+              .then((data: ProjectSiteMeasurementsDto | null) => {
+                if (data) setSiteMeasurementCompleteness(data.completeness);
+              });
           }}
         >
           <ShieldCheck className="h-3.5 w-3.5" /> {t("Compliance", "合规")}
@@ -718,7 +777,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                   <Label className="text-xs">{t("Carbonation depth (mm)", "碳化深度 (mm)")}</Label>
                   <Input
@@ -731,10 +790,21 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">{t("Existing load (kg/m²)", "现有荷载 (kg/m²)")}</Label>
+                  <Label className="text-xs">{t("Cover thickness (mm)", "保护层厚度 (mm)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
-                    placeholder={t("e.g. 350", "如 350")}
+                    placeholder={t("e.g. 25", "如 25")}
+                    value={structuralInput.coverThickness}
+                    onChange={(e) =>
+                      setStructuralInput((s) => ({ ...s, coverThickness: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">{t("Existing load (kN/m²)", "现有荷载 (kN/m²)")}</Label>
+                  <Input
+                    className="h-8 text-xs mt-1"
+                    placeholder={t("e.g. 2.0", "如 2.0")}
                     value={structuralInput.existingLoad}
                     onChange={(e) =>
                       setStructuralInput((s) => ({ ...s, existingLoad: e.target.value }))
@@ -742,10 +812,10 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">{t("Target load (kg/m²)", "目标荷载 (kg/m²)")}</Label>
+                  <Label className="text-xs">{t("Target load (kN/m²)", "目标荷载 (kN/m²)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
-                    placeholder={t("e.g. 500", "如 500")}
+                    placeholder={t("e.g. 3.5", "如 3.5")}
                     value={structuralInput.targetLoad}
                     onChange={(e) =>
                       setStructuralInput((s) => ({ ...s, targetLoad: e.target.value }))
@@ -753,6 +823,12 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                {t(
+                  "Values sync to project site measurements when you run the assessment.",
+                  "运行评估时会同步写入项目现场测量数据。"
+                )}
+              </p>
               <Button variant="copper" size="sm" onClick={runStructural} disabled={structuralLoading}>
                 {structuralLoading ? (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -1004,6 +1080,31 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   </div>
                 )}
 
+                {report.measurementCoverage && (
+                  <div className="rounded-md border border-copper/30 bg-copper/5 p-3 text-xs space-y-2">
+                    <p className="font-medium">
+                      {t(
+                        `Measurement data: ${report.measurementCoverage.fieldsFilled}/${report.measurementCoverage.fieldsTotal} fields · ${report.measurementCoverage.dataDependentRulesResolved}/${report.measurementCoverage.dataDependentRules} measurable rules resolved`,
+                        `测量数据：${report.measurementCoverage.fieldsFilled}/${report.measurementCoverage.fieldsTotal} 项 · ${report.measurementCoverage.dataDependentRulesResolved}/${report.measurementCoverage.dataDependentRules} 条可量化规则已判定`
+                      )}
+                    </p>
+                    {report.measurementCoverage.missingFields.length > 0 && (
+                      <p className="text-muted-foreground">
+                        {t("Missing fields", "缺失字段")}:{" "}
+                        {report.measurementCoverage.missingFields
+                          .map((key) => {
+                            const label =
+                              MEASUREMENT_FIELD_LABELS[
+                                key as keyof typeof MEASUREMENT_FIELD_LABELS
+                              ];
+                            return label ? t(label.en, label.zh) : key;
+                          })
+                          .join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {report.checks && (
                   <div className="space-y-2">
                     {report.checks.map((c) => (
@@ -1097,6 +1198,12 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 <input type="checkbox" checked={fireInput.hasSprinkler} onChange={(e) => setFireInput((s) => ({ ...s, hasSprinkler: e.target.checked }))} />
                 {t("Sprinkler system present", "设有喷淋系统")}
               </label>
+              <p className="text-[10px] text-muted-foreground">
+                {t(
+                  "Stair width, travel distance, and sprinkler sync to project measurements.",
+                  "楼梯宽度、疏散距离与喷淋状态会同步至项目测量数据。"
+                )}
+              </p>
               <Button variant="copper" size="sm" onClick={runFire} disabled={fireLoading}>
                 {fireLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
                 {t("Run Fire Analysis", "运行消防分析")}

@@ -10,6 +10,12 @@ export interface ProjectSiteMeasurementsDto {
   completeness: MeasurementCompleteness;
 }
 
+export interface ProjectSiteMeasurementsResponse extends ProjectSiteMeasurementsDto {
+  historyFallback: ComplianceMeasurements;
+  historyRunId: string | null;
+  historyRunCreatedAt: Date | null;
+}
+
 export interface UpdateProjectSiteMeasurementsInput {
   measurements?: ComplianceMeasurements;
   notes?: string | null;

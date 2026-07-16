@@ -4,6 +4,7 @@ import { requireProjectAccess } from "@/lib/auth/authorize";
 import { parseMeasurementsFromBody } from "@/lib/ai/compliance/measurements";
 import {
   getProjectSiteMeasurements,
+  getProjectSiteMeasurementsWithFallback,
   updateProjectSiteMeasurements,
 } from "@/lib/db/site-measurements-store";
 
@@ -15,7 +16,7 @@ export async function GET(
   const access = await requireProjectAccess(projectId);
   if ("error" in access) return access.error;
 
-  const record = await getProjectSiteMeasurements(projectId);
+  const record = await getProjectSiteMeasurementsWithFallback(projectId);
   return NextResponse.json(record);
 }
 
@@ -33,7 +34,7 @@ export async function PATCH(
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const measurements = parseMeasurementsFromBody(body);
   const notes = body.notes !== undefined ? String(body.notes ?? "") || null : undefined;
-  const replace = body.replace !== false;
+  const replace = body.replace === true;
 
   const record = await updateProjectSiteMeasurements(
     projectId,

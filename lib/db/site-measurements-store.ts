@@ -1,15 +1,18 @@
 import { shouldUseDatabase } from "@/lib/db/resolve";
 import {
   countMeasurementCompleteness,
+  extractHistoryFallback,
   mergeMeasurements,
   stripEmptyMeasurements,
 } from "@/lib/ai/compliance/measurements";
 import type { ComplianceMeasurements } from "@/lib/ai/compliance/types";
 import type {
   ProjectSiteMeasurementsDto,
+  ProjectSiteMeasurementsResponse,
   UpdateProjectSiteMeasurementsInput,
 } from "@/types/site-measurements";
 import * as db from "@/lib/db/prisma-site-measurements";
+import { listComplianceRuns } from "@/lib/db/compliance-store";
 
 const memoryStore = new Map<string, ProjectSiteMeasurementsDto>();
 
@@ -75,10 +78,32 @@ export async function updateProjectSiteMeasurements(
   return upsertMemory(projectId, input, options?.replace);
 }
 
+export async function getProjectSiteMeasurementsWithFallback(
+  projectId: string
+): Promise<ProjectSiteMeasurementsResponse> {
+  const record = await getProjectSiteMeasurements(projectId);
+  const runs = await listComplianceRuns(projectId, 1);
+  const lastRun = runs[0];
+  const historyFallback = extractHistoryFallback(
+    record.measurements,
+    lastRun?.measurements ?? {}
+  );
+
+  return {
+    ...record,
+    historyFallback,
+    historyRunId: lastRun?.id ?? null,
+    historyRunCreatedAt: lastRun?.createdAt ?? null,
+  };
+}
+
 export async function resolveProjectMeasurements(
   projectId: string,
   overrides: ComplianceMeasurements = {}
 ): Promise<ComplianceMeasurements> {
   const stored = await getProjectSiteMeasurements(projectId);
-  return stripEmptyMeasurements(mergeMeasurements(stored.measurements, overrides));
+  const runs = await listComplianceRuns(projectId, 1);
+  const fromHistory = runs[0]?.measurements ?? {};
+  const base = mergeMeasurements(fromHistory, stored.measurements);
+  return stripEmptyMeasurements(mergeMeasurements(base, overrides));
 }

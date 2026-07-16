@@ -148,4 +148,19 @@ describe("compliance engine", () => {
       true
     );
   });
+
+  it("includes measurement coverage summary", () => {
+    const report = runComplianceEngine(demoProject(), {
+      measurements: {
+        stairWidth: 1.3,
+        ceilingHeight: 3.0,
+        hasAccessibleEntrance: true,
+      },
+    });
+
+    expect(report.measurementCoverage.fieldsFilled).toBe(3);
+    expect(report.measurementCoverage.fieldsTotal).toBe(11);
+    expect(report.measurementCoverage.dataDependentRules).toBeGreaterThan(0);
+    expect(report.measurementCoverage.missingFields).toContain("fireCompartmentArea");
+  });
 });

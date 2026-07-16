@@ -100,6 +100,7 @@ export interface ComplianceEngineReport {
     requiresVerification: number;
     byCategory: Record<ComplianceCategory, number>;
   };
+  measurementCoverage: import("./measurements").MeasurementCoverage;
 }
 
 export interface ComplianceEngineOptions {

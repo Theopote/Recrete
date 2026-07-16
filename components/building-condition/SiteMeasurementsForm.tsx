@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { ComplianceMeasurements } from "@/lib/ai/compliance/types";
-import type { ProjectSiteMeasurementsDto } from "@/types/site-measurements";
-import { ClipboardList, Loader2, Save } from "lucide-react";
+import { mergeMeasurements, MEASUREMENT_FIELD_LABELS } from "@/lib/ai/compliance/measurements";
+import type { ProjectSiteMeasurementsResponse } from "@/types/site-measurements";
+import type { DrawingMeasurementProvenance } from "@/types/drawing-measurements";
+import { ClipboardList, History, Loader2, Save, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SiteMeasurementsFormProps {
@@ -187,7 +189,18 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [completeness, setCompleteness] = useState({ filled: 0, total: 11, ratio: 0 });
+  const [historyFallback, setHistoryFallback] = useState<ComplianceMeasurements>({});
+  const [historyRunCreatedAt, setHistoryRunCreatedAt] = useState<Date | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [lastExtraction, setLastExtraction] = useState<DrawingMeasurementProvenance[] | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
+
+  const historyFieldCount = useMemo(
+    () => Object.keys(historyFallback).length,
+    [historyFallback]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -195,9 +208,13 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
     try {
       const res = await fetch(`/api/projects/${projectId}/site-measurements`);
       if (!res.ok) throw new Error("Failed to load measurements");
-      const data = (await res.json()) as ProjectSiteMeasurementsDto;
+      const data = (await res.json()) as ProjectSiteMeasurementsResponse;
       setForm(measurementsToForm(data.measurements, data.notes));
       setCompleteness(data.completeness);
+      setHistoryFallback(data.historyFallback ?? {});
+      setHistoryRunCreatedAt(
+        data.historyRunCreatedAt ? new Date(data.historyRunCreatedAt) : null
+      );
       setSavedAt(data.updatedAt ? new Date(data.updatedAt) : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Load failed");
@@ -223,8 +240,9 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "Save failed");
       }
-      const data = (await res.json()) as ProjectSiteMeasurementsDto;
+      const data = (await res.json()) as ProjectSiteMeasurementsResponse;
       setCompleteness(data.completeness);
+      setHistoryFallback(data.historyFallback ?? {});
       setSavedAt(new Date(data.updatedAt));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -237,6 +255,63 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
     () => Math.round(completeness.ratio * 100),
     [completeness.ratio]
   );
+
+  const importFromHistory = () => {
+    setForm((prev) =>
+      measurementsToForm(
+        mergeMeasurements(historyFallback, formToMeasurements(prev)),
+        prev.notes
+      )
+    );
+    setHistoryFallback({});
+  };
+
+  function formToMeasurements(formState: FormState): ComplianceMeasurements {
+    const payload = formToPayload(formState);
+    const result: ComplianceMeasurements = {};
+    if (payload.ceilingHeight != null) result.ceilingHeight = Number(payload.ceilingHeight);
+    if (payload.stairWidth != null) result.stairWidth = Number(payload.stairWidth);
+    if (payload.fireCompartmentArea != null) {
+      result.fireCompartmentArea = Number(payload.fireCompartmentArea);
+    }
+    if (payload.windowUValue != null) result.windowUValue = Number(payload.windowUValue);
+    if (payload.carbonationDepth != null) result.carbonationDepth = Number(payload.carbonationDepth);
+    if (payload.coverThickness != null) result.coverThickness = Number(payload.coverThickness);
+    if (payload.existingLoadKN != null) result.existingLoadKN = Number(payload.existingLoadKN);
+    if (payload.targetLoadKN != null) result.targetLoadKN = Number(payload.targetLoadKN);
+    if (payload.travelDistance != null) result.travelDistance = Number(payload.travelDistance);
+    result.hasAccessibleEntrance = formState.hasAccessibleEntrance;
+    result.hasSprinkler = formState.hasSprinkler;
+    return result;
+  }
+
+  const extractFromDrawings = async () => {
+    setExtracting(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/site-measurements/extract-from-drawings`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Extraction failed");
+      }
+      const data = (await res.json()) as {
+        record: ProjectSiteMeasurementsResponse;
+        extraction: { provenance: DrawingMeasurementProvenance[] };
+      };
+      setForm(measurementsToForm(data.record.measurements, data.record.notes));
+      setCompleteness(data.record.completeness);
+      setHistoryFallback(data.record.historyFallback ?? {});
+      setSavedAt(new Date(data.record.updatedAt));
+      setLastExtraction(data.extraction.provenance);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Extraction failed");
+    } finally {
+      setExtracting(false);
+    }
+  };
 
   const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -253,8 +328,8 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               {t(
-                "Enter field survey values used by compliance checks and expert agents.",
-                "录入现场测量值，供合规检查与专家 Agent 使用。"
+                "Enter field survey values used by compliance checks and expert agents. Values can also be extracted automatically when drawings are analyzed.",
+                "录入现场测量值，供合规检查与专家 Agent 使用。上传图纸分析后也会自动提取并合并。"
               )}
             </p>
           </div>
@@ -288,6 +363,63 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
           </div>
         ) : (
           <>
+            {historyFieldCount > 0 && (
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs space-y-2">
+                <p className="font-medium flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5" />
+                  {t(
+                    `${historyFieldCount} fields available from last compliance run`,
+                    `上次合规检查有 ${historyFieldCount} 项可回填`
+                  )}
+                </p>
+                {historyRunCreatedAt && (
+                  <p className="text-muted-foreground">
+                    {t("Run date", "运行时间")}: {historyRunCreatedAt.toLocaleString()}
+                  </p>
+                )}
+                <p className="text-muted-foreground">
+                  {Object.keys(historyFallback)
+                    .map((key) => {
+                      const label =
+                        MEASUREMENT_FIELD_LABELS[
+                          key as keyof typeof MEASUREMENT_FIELD_LABELS
+                        ];
+                      return label ? t(label.en, label.zh) : key;
+                    })
+                    .join(" · ")}
+                </p>
+                <Button variant="outline" size="sm" onClick={importFromHistory}>
+                  {t("Import into form", "导入到表单")}
+                </Button>
+              </div>
+            )}
+
+            {lastExtraction && lastExtraction.length > 0 && (
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs space-y-2">
+                <p className="font-medium flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {t(
+                    `Extracted ${lastExtraction.length} fields from drawings`,
+                    `已从图纸提取 ${lastExtraction.length} 项`
+                  )}
+                </p>
+                <ul className="text-muted-foreground space-y-1">
+                  {lastExtraction.map((item) => {
+                    const label =
+                      MEASUREMENT_FIELD_LABELS[
+                        item.field as keyof typeof MEASUREMENT_FIELD_LABELS
+                      ];
+                    return (
+                      <li key={item.field}>
+                        • {label ? t(label.en, label.zh) : item.field}:{" "}
+                        {String(item.value)} ({item.source}, {Math.round(item.confidence * 100)}%)
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
             {FIELD_GROUPS.map((group) => (
               <div key={group.id}>
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
@@ -344,8 +476,8 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
 
             {error && <p className="text-xs text-destructive">{error}</p>}
 
-            <div className="flex items-center gap-2">
-              <Button variant="copper" size="sm" onClick={save} disabled={saving}>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="copper" size="sm" onClick={save} disabled={saving || extracting}>
                 {saving ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
                 ) : (
@@ -353,7 +485,20 @@ export function SiteMeasurementsForm({ projectId }: SiteMeasurementsFormProps) {
                 )}
                 {t("Save Measurements", "保存测量数据")}
               </Button>
-              <Button variant="ghost" size="sm" onClick={load} disabled={loading || saving}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={extractFromDrawings}
+                disabled={loading || saving || extracting}
+              >
+                {extracting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {t("Extract from Drawings", "从图纸提取")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={load} disabled={loading || saving || extracting}>
                 {t("Reload", "重新加载")}
               </Button>
             </div>

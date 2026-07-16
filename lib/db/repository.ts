@@ -268,6 +268,7 @@ export {
 } from "@/lib/db/mep-clash-store";
 export {
   getProjectSiteMeasurements,
+  getProjectSiteMeasurementsWithFallback,
   updateProjectSiteMeasurements,
   resolveProjectMeasurements,
   resetSiteMeasurementsStore,
