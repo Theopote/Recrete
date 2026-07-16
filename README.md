@@ -62,13 +62,17 @@ Compared across cost, schedule, risk, design value, feasibility, construction di
 - **Project workspace** — overview, building profile, documents, timeline
 - **Survey Intelligence** — site survey analysis
 - **AI Diagnosis** — building condition assessment with severity tracking
-- **Strategy Lab** — AI strategy generation and side-by-side comparison
+- **Expert Agents** — structural, MEP, fire, energy, heritage, compliance, cost
+- **Strategy Lab** — AI strategy generation, evidence linking, and side-by-side comparison
+- **BIM Viewer** — IFC/GLTF viewing, spatial analytics, MEP clash detection
 - **Cost & Risk** — project-level risk and cost signals
 - **Issues** — site issue tracker
-- **Reports** — Markdown report editor and export
+- **Reports** — Markdown editor; export to PDF and DOCX
 - **Knowledge Base** — renovation reference articles
 - **AI Assistant** — project-aware copilot sidebar
+- **Bilingual UI** — zh/en toggle across dashboard and project sections
 - **Streaming AI create** — SSE-based step-by-step creation UI
+- **Trial feedback** — in-app widget for firm pilot feedback (optional)
 
 ---
 
@@ -161,7 +165,13 @@ AI_SERVICE="mock"
 | `DATABASE_URL` | PostgreSQL connection string |
 | `NEXTAUTH_URL` | App URL for NextAuth |
 | `NEXTAUTH_SECRET` | Session encryption secret (change in production) |
-| `AI_SERVICE` | `mock` (default) or `openai` |
+| `AI_SERVICE` | `mock` (default), `openai`, or `auto` |
+| `STORAGE_PROVIDER` | `local` (dev) or `s3` (production — Cloudflare R2) |
+| `S3_BUCKET`, `S3_*` | S3-compatible object storage credentials |
+| `REDIS_URL` | Optional BullMQ worker for multi-instance jobs |
+| `PINECONE_API_KEY` | Optional vector search (falls back to local TF-IDF) |
+| `DOCUMENT_ANALYSIS_MAX_PAGES` | PDF page limit for analysis (default `8`) |
+| `NEXT_PUBLIC_TRIAL_FEEDBACK` | Set to `"true"` to show trial feedback widget |
 | `JOB_RUNNER_SECRET` | Secret for internal job runner API |
 | `SMTP_HOST` | SMTP server for password reset emails (optional in dev) |
 | `SMTP_PORT` | SMTP port (default `587`) |
@@ -194,7 +204,8 @@ npm run db:seed
 USE_DATABASE=true npm run db:verify
 ```
 
-Deploy to Vercel + hosted Postgres + Cloudflare R2: see [docs/deployment.md](docs/deployment.md).
+Deploy to Vercel + hosted Postgres + Cloudflare R2: see [docs/deployment.md](docs/deployment.md).  
+Documentation index and trial materials: [docs/README.md](docs/README.md) · [docs/trial/](docs/trial/).
 
 One-time production init after Neon is configured:
 
@@ -280,11 +291,15 @@ components/
   strategies/           Strategy cards and comparison table
 lib/
   ai/                   AI agents, mock/OpenAI providers, prompts
+  bim/                  IFC/DWG processing, spatial analytics, MEP clash
   db/                   Repository (mock + Prisma), mappers
+  i18n/                 Bilingual UI (zh/en)
   mock-data/            Demo seed data
+  reports/              PDF and DOCX export
   stores/               Zustand client state
 prisma/                 Schema and seed script
 types/                  Shared TypeScript types
+docs/                   Deployment, trial guides, architecture notes
 ```
 
 ---

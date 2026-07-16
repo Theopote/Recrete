@@ -124,10 +124,10 @@ async function main() {
   console.log(`\nResult: ${passed} passed, ${failed} failed`);
   if (failed > 0) {
     console.log("\nFix blockers above before inviting the pilot firm.");
-    console.log("See docs/trial-pilot-guide.md and docs/trial-observer-playbook.md");
+    console.log("See docs/trial/pilot-guide.md and docs/trial/observer-playbook.md");
     process.exit(1);
   }
-  console.log("\nReady for pilot onboarding. Share docs/trial-pilot-guide.md with the firm.");
+  console.log("\nReady for pilot onboarding. Share docs/trial/pilot-guide.md with the firm.");
 }
 
 main().catch((error) => {

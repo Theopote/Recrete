@@ -43,8 +43,8 @@
 
 ## 本月（第 6 个月）应该做的
 
-1. 按 [feedback-triage-workflow.md](./feedback-triage-workflow.md) 修 **P0/P1 真实反馈**
-2. 用 [second-firm-intro.md](./second-firm-intro.md) 准备第二家材料
+1. 按 [trial/feedback-triage.md](./trial/feedback-triage.md) 修 **P0/P1 真实反馈**
+2. 用 [trial/second-firm-intro.md](./trial/second-firm-intro.md) 准备第二家材料
 3. 保持轻量 smoke，不扩测试体系
 4. 仅当试用暴露 **多实例/队列** 阻塞时，优先 `REDIS_URL` + worker，而非一口气上阶段二全套
 

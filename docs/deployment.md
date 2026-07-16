@@ -72,7 +72,7 @@ npx vercel
 | `JOB_RUNNER_SECRET` | 随机字符串 | 内部任务 API |
 | `STORAGE_PROVIDER` | `s3` | 生产必须 |
 | `S3_*` | 见上节 | Cloudflare R2 |
-| `AI_SERVICE` | `mock` 或 `openai` | 试用阶段可用 `mock` |
+| `AI_SERVICE` | `mock`、`openai` 或 `auto` | `auto`：有 Key 时用 OpenAI，否则 mock |
 
 生成 `NEXTAUTH_SECRET`：
 
@@ -135,4 +135,4 @@ USE_DATABASE=true DATABASE_URL="..." npm run db:seed
 Neon 免费档有休眠；首次请求可能慢 1–2 秒，可升级或保持 ping。
 
 **试用反馈**  
-试用期间保持 `NEXT_PUBLIC_TRIAL_FEEDBACK=true`；详见 `docs/trial-pilot-guide.md`。
+试用期间保持 `NEXT_PUBLIC_TRIAL_FEEDBACK=true`；详见 [docs/trial/pilot-guide.md](./trial/pilot-guide.md)。

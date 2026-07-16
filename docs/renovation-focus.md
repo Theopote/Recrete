@@ -42,11 +42,12 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 | 全局列表页 | `app/survey`, `app/strategies` 等 | 工作在项目内完成 |
 | 知识库文章 CMS | `app/knowledge` | 弱耦合生成 |
 | 材料价/成本记录后台 | `app/knowledge/cost-*` | P1 再接入估算 |
-| BIM Viewer 深度 | `BimViewerSection` | 未 wired 到方案内容 |
+| BIM Viewer 深度 | `BimViewerSection` | 持久化与 MEP 碰撞已有；与方案内容深度关联待 P1 |
 | 协作/评审流程扩展 | `CollaborationSection` | 轻量留言够用 |
-| 试用反馈/第二家邮件 | `docs/trial-*` | 运营材料，非产品核心 |
 | 正式 RBAC / 邀请流 | 阶段四 | 用户量 &lt; 3 家不需要 |
 | Pinecone / 完整 E2E 测试 | 阶段二/三 | smoke:core 够用 |
+
+> **试用运营文档**（`docs/trial/`）与产品能力分开管理：第二家试用前仍需维护，见 [docs/README.md](./README.md) 与 [trial/README.md](./trial/README.md)。
 
 ## 验收标准（改造能力）
 
@@ -81,4 +82,4 @@ components/projects/sections/StrategiesSection.tsx
 
 ---
 
-*文档版本：建筑改造能力聚焦 · 2026-07*
+*文档版本：建筑改造能力聚焦 · 2026-07 · 与试用运营文档并行维护*

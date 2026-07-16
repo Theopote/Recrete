@@ -141,7 +141,7 @@ export function formatTriageReport(
   lines.push(
     "## 下一步",
     "",
-    "1. 将 P0 项录入 `docs/trial-fix-backlog.md` 并分配修复批次",
+    "1. 将 P0 项录入 `docs/trial/fix-backlog.md` 并分配修复批次",
     "2. 与观察手册中的会话记录交叉核对",
     "3. 修完一批后跑 `npm run smoke:core` + `npm run smoke:trial-prep`",
     ""
