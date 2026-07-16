@@ -9,7 +9,7 @@ import type {
   Report,
   User,
 } from "@/types";
-import type { BuildingMemory, AIInsight, AITask } from "@/types/ai";
+import type { BuildingMemory, AIInsight, AITask, SourceEvidence } from "@/types/ai";
 import type {
   Project as PrismaProject,
   Building as PrismaBuilding,
@@ -169,9 +169,24 @@ type ProjectExtended = ProjectFull & {
     createdAt: Date;
     updatedAt: Date;
   }>;
+  sourceEvidence?: Array<{
+    id: string;
+    projectId: string;
+    sourceType: SourceEvidence["sourceType"];
+    sourceId: string | null;
+    documentId: string | null;
+    pageNumber: number | null;
+    locationLabel: string | null;
+    quote: string | null;
+    boundingBox: string | null;
+    confidence: number;
+    createdAt: Date;
+  }>;
 };
 
-export function mapProjectWithRelationsExtended(p: ProjectExtended): ProjectWithRelations {
+export function mapProjectWithRelationsExtended(p: ProjectExtended & {
+  evidence?: ProjectExtended["sourceEvidence"];
+}): ProjectWithRelations {
   return {
     ...mapProject(p),
     building: p.building ? mapBuilding(p.building) : null,
@@ -183,6 +198,7 @@ export function mapProjectWithRelationsExtended(p: ProjectExtended): ProjectWith
     documents: p.documents.map(mapDocument),
     insights: p.insights?.map((i) => ({ ...i })) ?? [],
     tasks: p.tasks?.map((t) => ({ ...t, dueDate: t.dueDate })) ?? [],
+    sourceEvidence: (p.sourceEvidence ?? p.evidence)?.map((e) => ({ ...e })) ?? [],
     diagnosis: p.diagnosis.map(mapDiagnosis),
     strategies: p.strategies.map(mapStrategy),
     issues: p.issues.map(mapIssue),

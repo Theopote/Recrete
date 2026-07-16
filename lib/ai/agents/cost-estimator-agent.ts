@@ -1,5 +1,5 @@
 import type { ProjectWithRelations, RenovationStrategy } from "@/types";
-import { renovationCases } from "../knowledge/case-library";
+import { allRenovationCases } from "../knowledge/case-library";
 import {
   findCostBenchmark,
   computeMaterialPriceMultiplier,
@@ -26,11 +26,78 @@ export interface CostEstimateResult {
   referenceCases: Array<{ id: string; title: string; costPerSqm?: number; outcome?: string }>;
   benchmark?: Pick<CostBenchmark, "id" | "region" | "sampleSize" | "updatedAt">;
   breakdown: Array<{ item: string; sharePercent: number }>;
+  wbsItems: WbsCostItem[];
   assumptions: string[];
 }
 
+export interface WbsCostItem {
+  code: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  sharePercent: number;
+}
+
+function buildWbsItems(
+  project: ProjectWithRelations,
+  strategyType: string,
+  estimatedTotalCost: number,
+  breakdown: Array<{ item: string; sharePercent: number }>
+): WbsCostItem[] {
+  const area = project.grossFloorArea;
+  return breakdown.map((row, index) => {
+    const totalCost = Math.round(estimatedTotalCost * (row.sharePercent / 100));
+    const unitCost = area > 0 ? Math.round(totalCost / area) : 0;
+    return {
+      code: `WBS-${String(index + 1).padStart(2, "0")}`,
+      name: row.item,
+      unit: "m²",
+      quantity: area,
+      unitCost,
+      totalCost,
+      sharePercent: row.sharePercent,
+    };
+  });
+}
+
+function buildCostBreakdown(strategyType: string) {
+  if (strategyType === "light_renewal") {
+    return [
+      { item: "拆除与清运", sharePercent: 8 },
+      { item: "装饰装修", sharePercent: 22 },
+      { item: "MEP 局部更新", sharePercent: 25 },
+      { item: "外立面整修", sharePercent: 18 },
+      { item: "结构局部修补", sharePercent: 7 },
+      { item: "消防与无障碍", sharePercent: 10 },
+      { item: "设计监理与不可预见费", sharePercent: 10 },
+    ];
+  }
+  if (strategyType === "deep_recreation") {
+    return [
+      { item: "拆除与结构改造", sharePercent: 12 },
+      { item: "结构加固与新建构件", sharePercent: 22 },
+      { item: "MEP 系统重建", sharePercent: 28 },
+      { item: "外立面与屋面", sharePercent: 15 },
+      { item: "室内装修与专项工程", sharePercent: 13 },
+      { item: "消防节能与智能化", sharePercent: 5 },
+      { item: "设计监理与不可预见费", sharePercent: 5 },
+    ];
+  }
+  return [
+    { item: "拆除与改造工程", sharePercent: 10 },
+    { item: "结构加固", sharePercent: 12 },
+    { item: "MEP 更换与扩容", sharePercent: 30 },
+    { item: "外立面与门窗", sharePercent: 18 },
+    { item: "室内装修", sharePercent: 20 },
+    { item: "消防无障碍与专项", sharePercent: 5 },
+    { item: "设计监理与不可预见费", sharePercent: 5 },
+  ];
+}
+
 function findReferenceCases(project: ProjectWithRelations, strategyType?: string) {
-  return renovationCases
+  return allRenovationCases
     .filter((c) => {
       const typeMatch = strategyType ? c.strategyType === strategyType : true;
       const locationMatch =
@@ -105,6 +172,9 @@ export class CostEstimatorAgent {
     const confidenceBase = references.length > 0 ? 0.78 : 0.62;
     const confidence = benchmark ? Math.min(0.92, confidenceBase + 0.08) : confidenceBase;
 
+    const breakdown = buildCostBreakdown(strategyType);
+    const wbsItems = buildWbsItems(project, strategyType, estimatedTotalCost, breakdown);
+
     return {
       currency: "CNY",
       unit: "sqm",
@@ -128,13 +198,8 @@ export class CostEstimatorAgent {
             updatedAt: benchmark.updatedAt,
           }
         : undefined,
-      breakdown: [
-        { item: "MEP replacement", sharePercent: strategyType === "light_renewal" ? 25 : 35 },
-        { item: "Envelope / facade", sharePercent: 20 },
-        { item: "Structural upgrades", sharePercent: strategyType === "deep_recreation" ? 22 : 12 },
-        { item: "Interior fit-out", sharePercent: 28 },
-        { item: "Soft costs & contingency", sharePercent: 15 },
-      ],
+      breakdown,
+      wbsItems,
       assumptions: [
         benchmark
           ? `Calibrated against regional benchmark (${benchmark.region}, n=${benchmark.sampleSize}, ${benchmark.updatedAt})`
@@ -143,6 +208,7 @@ export class CostEstimatorAgent {
         materialNote ? `Material index (${region}): ${materialNote}` : `Material price index applied (${region})`,
         `${contingency}% contingency for existing building unknowns`,
         `GFA ${project.grossFloorArea.toLocaleString()} sqm`,
+        `WBS 分项 ${wbsItems.length} 项，按策略类型 ${strategyType} 分配`,
         strategy ? `Strategy: ${strategy.name}` : `Strategy type: ${strategyType}`,
       ],
     };

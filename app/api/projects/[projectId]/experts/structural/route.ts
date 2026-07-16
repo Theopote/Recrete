@@ -31,6 +31,11 @@ export async function POST(
       corrosion: platform.structural.suggestStrengtheningMethods("corrosion"),
       seismic: platform.structural.suggestStrengtheningMethods("seismic"),
       crack: platform.structural.suggestStrengtheningMethods("crack"),
+      masonry_seismic: platform.structural.suggestStrengtheningMethods("masonry_seismic"),
+      settlement: platform.structural.suggestStrengtheningMethods("settlement"),
+      joint_strengthening: platform.structural.suggestStrengtheningMethods("joint_strengthening"),
+      precast_slab: platform.structural.suggestStrengtheningMethods("precast_slab"),
+      timber_protection: platform.structural.suggestStrengtheningMethods("timber_protection"),
     },
   });
 }

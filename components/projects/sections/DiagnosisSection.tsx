@@ -12,6 +12,8 @@ import { diagnosisCategoryLabels } from "@/lib/utils/labels";
 import type { DiagnosisItem, ProjectWithRelations } from "@/types";
 import { Sparkles, Stethoscope, Plus } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
+import { EvidenceTrail } from "@/components/diagnosis/EvidenceTrail";
+import type { SourceEvidence } from "@/types/ai";
 
 interface DiagnosisSectionProps {
   project: ProjectWithRelations;
@@ -24,6 +26,26 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DiagnosisItem | null>(null);
+
+  const projectEvidence = initialProject.sourceEvidence ?? [];
+  const documentNames = Object.fromEntries(
+    (initialProject.documents ?? []).map((d) => [d.id, d.name])
+  );
+
+  const evidenceForItem = (item: DiagnosisItem): SourceEvidence[] => {
+    if (projectEvidence.length === 0) return [];
+    const needle = item.evidence?.toLowerCase() ?? "";
+    return projectEvidence.filter((ev) => {
+      if (!needle) return false;
+      const quote = ev.quote?.toLowerCase() ?? "";
+      const label = ev.locationLabel?.toLowerCase() ?? "";
+      return (
+        (quote && needle.includes(quote.slice(0, 24))) ||
+        (label && needle.includes(label)) ||
+        (ev.documentId && needle.includes(ev.documentId))
+      );
+    });
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -107,6 +129,14 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         />
       )}
 
+      {projectEvidence.length > 0 && (
+        <EvidenceTrail
+          evidence={projectEvidence}
+          documentNames={documentNames}
+          maxItems={6}
+        />
+      )}
+
       <div className="flex flex-wrap gap-2">
         <CategoryPill label="All" count={items.length} active={activeCategory === "all"} onClick={() => setActiveCategory("all")} />
         {Object.entries(diagnosisCategoryLabels).map(([key, label]) => {
@@ -133,7 +163,12 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 {categoryItems.map((item) => (
-                  <DiagnosisCard key={item.id} item={item} onEdit={openEdit} />
+                  <DiagnosisCard
+                    key={item.id}
+                    item={item}
+                    relatedEvidence={evidenceForItem(item)}
+                    onEdit={openEdit}
+                  />
                 ))}
               </div>
             </div>
@@ -141,7 +176,12 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filtered.map((item) => (
-              <DiagnosisCard key={item.id} item={item} onEdit={openEdit} />
+              <DiagnosisCard
+                key={item.id}
+                item={item}
+                relatedEvidence={evidenceForItem(item)}
+                onEdit={openEdit}
+              />
             ))}
           </div>
         )

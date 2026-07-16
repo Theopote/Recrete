@@ -7,6 +7,10 @@ import { documentExtractor } from "./vision/document-extractor";
 import { photoDefectDetector } from "./vision/photo-detector";
 import { extractPdfText, readFileAsDataUrl } from "./vision/pdf-utils";
 import { readUploadBuffer } from "@/lib/storage/file-access";
+import {
+  buildTruncationNotice,
+  getMaxPdfPages,
+} from "@/lib/ai/document-analysis-limits";
 import { convertCadBufferToSvg } from "@/lib/bim/dwg-converter";
 import { analyzeDrawingFileWithOpenCv } from "./vision/opencv-analyzer";
 import { runDocumentSummaryChain } from "./langchain/chains";
@@ -159,7 +163,7 @@ async function analyzeMultiPageDrawingPdf(
   options: VisionAnalysisOptions,
   pdfText: Awaited<ReturnType<typeof extractPdfText>>
 ): Promise<PipelineResult> {
-  const maxPages = Math.min(pdfText.pageCount, 5);
+  const maxPages = Math.min(pdfText.pageCount, getMaxPdfPages());
   const drawingPages: DrawingPageResult[] = [];
 
   const imageData = await readFileAsDataUrl(doc.fileUrl, "application/pdf");
@@ -229,7 +233,7 @@ async function analyzeMultiPageDrawingPdf(
   return {
     documentId: doc.id,
     kind: "drawing",
-    aiSummary: `共 ${pdfText.pageCount} 页图纸，已分析 ${drawingPages.length} 页。\n${summaryLines.join("\n")}`,
+    aiSummary: `共 ${pdfText.pageCount} 页图纸，已分析 ${drawingPages.length} 页。${summaryLines.join("\n")}${buildTruncationNotice(pdfText.pageCount, drawingPages.length)}`,
     extractedText: JSON.stringify({ pageCount: pdfText.pageCount, pages: drawingPages.length }),
     confidence: drawingPages.reduce((s, p) => s + p.confidence, 0) / drawingPages.length,
     modelName: drawingAnalyzer.modelName,

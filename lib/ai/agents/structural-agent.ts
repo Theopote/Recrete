@@ -112,7 +112,15 @@ export class StructuralAgent {
       risks.push({
         issue: 'Masonry structure - seismic vulnerability',
         severity: 'high',
-        recommendation: 'Seismic assessment required. Consider adding reinforced concrete frame or steel bracing.'
+        recommendation: 'Seismic assessment required. Consider adding reinforced concrete frame or steel bracing.',
+      });
+    }
+
+    if (project.structureType.toLowerCase().includes('precast') || project.structureType.includes('预制')) {
+      risks.push({
+        issue: 'Precast slab system — connection and bearing capacity',
+        severity: 'medium',
+        recommendation: 'Verify slab bearing, tie reinforcement, and capacity for new live loads before function change.',
       });
     }
 
@@ -145,6 +153,10 @@ export class StructuralAgent {
     if (project.targetFunction !== project.currentFunction) {
       recommendations.push('Verify seismic requirements for new occupancy type');
       recommendations.push('Check foundation capacity for function change');
+    }
+
+    if (project.structureType.includes('砌体') || project.structureType.toLowerCase().includes('masonry')) {
+      recommendations.push('Evaluate masonry seismic strengthening: RC shear walls, mesh mortar jacket, or external bracing.');
     }
 
     return {
@@ -227,12 +239,24 @@ export class StructuralAgent {
   }
 
   /**
-   * Suggest strengthening methods
+   * Suggest strengthening methods for common and complex renovation scenarios.
    */
   suggestStrengtheningMethods(
-    issue: 'insufficient_capacity' | 'corrosion' | 'seismic' | 'crack'
-  ): Array<{ method: string; pros: string[]; cons: string[]; costLevel: 'low' | 'medium' | 'high' }> {
-    const methods = {
+    issue:
+      | "insufficient_capacity"
+      | "corrosion"
+      | "seismic"
+      | "crack"
+      | "masonry_seismic"
+      | "settlement"
+      | "joint_strengthening"
+      | "precast_slab"
+      | "timber_protection"
+  ): Array<{ method: string; pros: string[]; cons: string[]; costLevel: "low" | "medium" | "high" }> {
+    const methods: Record<
+      Parameters<StructuralAgent["suggestStrengtheningMethods"]>[0],
+      Array<{ method: string; pros: string[]; cons: string[]; costLevel: "low" | "medium" | "high" }>
+    > = {
       insufficient_capacity: [
         {
           method: 'FRP (Fiber Reinforced Polymer) wrapping',
@@ -295,9 +319,109 @@ export class StructuralAgent {
           costLevel: 'low' as const
         },
       ],
+      masonry_seismic: [
+        {
+          method: '增设钢筋混凝土抗震墙 / RC shear wall addition',
+          pros: ['大幅提升抗侧刚度', '适用于砌体结构', '技术成熟'],
+          cons: ['占用使用面积', '需基础承载力复核', '施工干扰大'],
+          costLevel: 'high' as const,
+        },
+        {
+          method: '外包型钢构抗震加固 / External steel bracing',
+          pros: ['加固速度快', '对室内影响较小', '可部分外露为设计元素'],
+          cons: ['需防腐防火处理', '节点设计复杂', '外观干预明显'],
+          costLevel: 'medium' as const,
+        },
+        {
+          method: '面层钢筋网砂浆加固 / Mesh-reinforced mortar jacket',
+          pros: ['适合砌体墙面', '造价相对较低', '可局部实施'],
+          cons: ['增厚墙体', '需与原砌体可靠锚固', '耐久性依赖施工质量'],
+          costLevel: 'medium' as const,
+        },
+      ],
+      settlement: [
+        {
+          method: '注浆抬升 / Grouting and jacking',
+          pros: ['可控制抬升量', '对上部结构干扰小', '适合不均匀沉降'],
+          cons: ['需持续监测', '地质条件限制大', '专业队伍要求高'],
+          costLevel: 'high' as const,
+        },
+        {
+          method: '基础扩大与托换 / Foundation underpinning',
+          pros: ['从根本上提高承载', '适用于功能加重', '长期可靠'],
+          cons: ['造价高', '工期长', '需降水与支护'],
+          costLevel: 'high' as const,
+        },
+        {
+          method: '沉降缝与结构释放 / Differential settlement relief',
+          pros: ['减缓次生裂缝', '可结合功能重组', '实施灵活'],
+          cons: ['不提高承载力', '需防水处理', '需结构工程师复核'],
+          costLevel: 'low' as const,
+        },
+      ],
+      joint_strengthening: [
+        {
+          method: '梁柱节点外包钢板 / Steel jacket at beam-column joint',
+          pros: ['显著提高节点抗剪能力', '施工相对可控', '适合框架节点薄弱'],
+          cons: ['防火防腐要求高', '减少净高', '需精确放样'],
+          costLevel: 'medium' as const,
+        },
+        {
+          method: '节点增大截面 / Enlarged joint with high-strength concrete',
+          pros: ['整体性好', '耐火性能佳', '规范认可度高'],
+          cons: ['模板支护复杂', '增加自重', '占用空间'],
+          costLevel: 'medium' as const,
+        },
+        {
+          method: '体外预应力加固 / External post-tensioning',
+          pros: ['高效提升承载', '可主动改善挠度', '对使用影响小'],
+          cons: ['锚固区设计关键', '需长期监测', '造价较高'],
+          costLevel: 'high' as const,
+        },
+      ],
+      precast_slab: [
+        {
+          method: '预制板现浇叠合层 / Cast-in-place topping slab',
+          pros: ['形成整体楼板', '可提高承载与刚度', '适合功能加重'],
+          cons: ['增加楼面荷载', '需板端锚固', '湿作业量大'],
+          costLevel: 'medium' as const,
+        },
+        {
+          method: '板底粘钢或碳纤维加固 / Soffit steel/CFRP strengthening',
+          pros: ['不改室内净高', '施工速度快', '适合局部承载不足'],
+          cons: ['防火处理必须', '对潮湿环境敏感', '需封闭裂缝先行'],
+          costLevel: 'medium' as const,
+        },
+        {
+          method: '增设钢梁支承 / Supplementary steel beams under precast units',
+          pros: ['直接分担荷载', '可结合设备管线整合', '可分期实施'],
+          cons: ['降低净高', '需柱网协调', '外观需处理'],
+          costLevel: 'medium' as const,
+        },
+      ],
+      timber_protection: [
+        {
+          method: '可逆性支撑加固 / Reversible timber propping and bracing',
+          pros: ['符合文物保护原则', '可拆卸', '对原构件损伤小'],
+          cons: ['承载提升有限', '需定期维护', '不适合大跨度加重'],
+          costLevel: 'low' as const,
+        },
+        {
+          method: '隐蔽钢构件加固 / Concealed steel reinforcement',
+          pros: ['兼顾承载与外观', '可控制变形', '便于监测'],
+          cons: ['需专家论证', '施工精度高', '造价偏高'],
+          costLevel: 'high' as const,
+        },
+        {
+          method: '防腐防虫处理 / Conservation treatment (pest & moisture)',
+          pros: ['延长木构件寿命', '风险低', '可与其他修缮同步'],
+          cons: ['不解决结构不足', '需反复维护', '材料兼容性需评估'],
+          costLevel: 'low' as const,
+        },
+      ],
     };
 
-    return methods[issue] || [];
+    return methods[issue] ?? [];
   }
 }
 

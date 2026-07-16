@@ -213,14 +213,21 @@ export const renovationCases: RenovationCase[] = [
   },
 ];
 
+import { extendedRenovationCases } from "./case-library-extended";
+
+export const allRenovationCases: RenovationCase[] = [
+  ...renovationCases,
+  ...extendedRenovationCases,
+];
+
 export function getCaseById(id: string): RenovationCase | undefined {
-  return renovationCases.find((c) => c.id === id);
+  return allRenovationCases.find((c) => c.id === id);
 }
 
 export function getCasesByStrategyType(strategyType: string): RenovationCase[] {
-  return renovationCases.filter((c) => c.strategyType === strategyType);
+  return allRenovationCases.filter((c) => c.strategyType === strategyType);
 }
 
 export function getCasesByOutcome(outcome: CaseOutcome): RenovationCase[] {
-  return renovationCases.filter((c) => c.outcome === outcome);
+  return allRenovationCases.filter((c) => c.outcome === outcome);
 }

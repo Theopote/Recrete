@@ -275,6 +275,7 @@ export interface ProjectWithRelations extends Project {
   strategies?: RenovationStrategy[];
   issues?: SiteIssue[];
   reports?: Report[];
+  sourceEvidence?: import("@/types/ai").SourceEvidence[];
   collaboration?: import("@/types/collaboration").CollaborationSummary;
 }
 

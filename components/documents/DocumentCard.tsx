@@ -60,14 +60,14 @@ export function DocumentCard({ document, projectId, onPreview, onAnalyzed, onDel
 
       if (data.analysisTaskId) {
         setAnalyzeNotice("分析中…");
-        const result = await pollAnalysisTask(projectId, data.analysisTaskId, setAnalyzeNotice);
-        if (result === "completed") {
+        const outcome = await pollAnalysisTask(projectId, data.analysisTaskId, setAnalyzeNotice);
+        if (outcome.result === "completed") {
           router.refresh();
           onAnalyzed?.({ ...document, aiSummary: document.aiSummary ?? "分析完成" });
-        } else if (result === "failed") {
-          setAnalyzeError("分析失败，请重试。");
+        } else if (outcome.result === "failed") {
+          setAnalyzeError(outcome.error ?? "分析失败，请重试。");
         } else {
-          setAnalyzeError("分析超时，请稍后刷新页面。");
+          setAnalyzeError("分析超时。大文件建议拆分上传，或稍后刷新页面查看结果。");
         }
       } else if (data.document) {
         onAnalyzed?.(data.document);

@@ -10,15 +10,18 @@ import {
   getDiagnosisStatusColor,
 } from "@/lib/utils/labels";
 import { cn } from "@/lib/utils";
+import { EvidenceTrail, EngineerReviewBadge } from "@/components/diagnosis/EvidenceTrail";
 import type { DiagnosisItem } from "@/types";
+import type { SourceEvidence } from "@/types/ai";
 import { MapPin, Pencil } from "lucide-react";
 
 interface DiagnosisCardProps {
   item: DiagnosisItem;
+  relatedEvidence?: SourceEvidence[];
   onEdit?: (item: DiagnosisItem) => void;
 }
 
-export function DiagnosisCard({ item, onEdit }: DiagnosisCardProps) {
+export function DiagnosisCard({ item, relatedEvidence = [], onEdit }: DiagnosisCardProps) {
   return (
     <Card className="hover:border-copper/20 transition-colors group">
       <CardContent className="p-4 space-y-3">
@@ -36,6 +39,7 @@ export function DiagnosisCard({ item, onEdit }: DiagnosisCardProps) {
             <span className={cn("inline-flex rounded px-2 py-0.5 text-[10px] font-medium", getDiagnosisStatusColor(item.status))}>
               {diagnosisStatusLabels[item.status]}
             </span>
+            {item.requiresEngineerReview && <EngineerReviewBadge />}
             {onEdit && (
               <Button
                 variant="ghost"
@@ -50,6 +54,10 @@ export function DiagnosisCard({ item, onEdit }: DiagnosisCardProps) {
         </div>
 
         <p className="text-xs leading-relaxed text-foreground/80">{item.description}</p>
+
+        {relatedEvidence.length > 0 && (
+          <EvidenceTrail evidence={relatedEvidence} maxItems={3} />
+        )}
 
         {item.evidence && (
           <div className="rounded bg-muted/50 px-3 py-2">

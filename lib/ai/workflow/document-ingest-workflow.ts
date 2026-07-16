@@ -20,6 +20,29 @@ import {
   failDocumentAnalysisTask,
   updateDocumentAnalysisTask,
 } from "@/lib/ai/tasks/document-analysis-tasks";
+import {
+  formatAnalysisTimeoutError,
+  getDocumentAnalysisTimeoutMs,
+} from "@/lib/ai/document-analysis-limits";
+
+function withAnalysisTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  const timeoutMs = getDocumentAnalysisTimeoutMs();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(formatAnalysisTimeoutError(timeoutMs)));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 
 export interface DocumentIngestOptions {
   language?: "auto" | "zh" | "en";
@@ -76,11 +99,14 @@ export async function runDocumentIngestWorkflow(
 
   await touch("vision_analysis", 35, "Running vision / document analysis");
 
-  const analysis = await analyzeDocumentAsset(
-    projectId,
-    doc,
-    { language, includeOCR: true, extractTables: true, detectDefects: true },
-    buildingAge
+  const analysis = await withAnalysisTimeout(
+    analyzeDocumentAsset(
+      projectId,
+      doc,
+      { language, includeOCR: true, extractTables: true, detectDefects: true },
+      buildingAge
+    ),
+    doc.name
   );
 
   await touch("persisting", 70, "Saving analysis results and evidence");
@@ -191,10 +217,11 @@ export async function runDocumentIngestWorkflow(
   };
   } catch (error) {
     if (taskId) {
-      await failDocumentAnalysisTask(
-        taskId,
-        error instanceof Error ? error.message : "Document analysis failed"
-      );
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Document analysis failed";
+      await failDocumentAnalysisTask(taskId, message);
     }
     throw error;
   }

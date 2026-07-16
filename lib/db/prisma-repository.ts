@@ -83,6 +83,7 @@ export async function getProjectById(
       reports: { orderBy: { createdAt: "desc" } },
       insights: { orderBy: { createdAt: "desc" } },
       tasks: { orderBy: { createdAt: "desc" } },
+      evidence: { orderBy: { createdAt: "desc" } },
     },
   });
   return row ? mapProjectWithRelationsExtended(row) : null;

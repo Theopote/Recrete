@@ -308,6 +308,15 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     benchmark?: { region: string; sampleSize: number; updatedAt: string };
     referenceCases?: Array<{ title: string; costPerSqm?: number; outcome?: string }>;
     breakdown?: Array<{ item: string; sharePercent: number }>;
+    wbsItems?: Array<{
+      code: string;
+      name: string;
+      unit: string;
+      quantity: number;
+      unitCost: number;
+      totalCost: number;
+      sharePercent: number;
+    }>;
   } | undefined;
 
   const assessment = structuralResult?.assessment as {
@@ -325,6 +334,11 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     corrosion: "钢筋腐蚀",
     seismic: "抗震加固",
     crack: "裂缝处理",
+    masonry_seismic: "砌体抗震加固",
+    settlement: "地基不均匀沉降",
+    joint_strengthening: "梁柱节点加固",
+    precast_slab: "预制板结构改造",
+    timber_protection: "木结构保护性加固",
   };
 
   const report = complianceResult?.report as {
@@ -1087,6 +1101,17 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 <p className="text-muted-foreground">
                   Reference: {costEstimate.referenceCases.map((c) => `${c.title}${c.outcome === "failure" ? " ⚠" : ""}`).join("; ")}
                 </p>
+              )}
+              {costEstimate.wbsItems && costEstimate.wbsItems.length > 0 && (
+                <div className="space-y-1 pt-2 border-t">
+                  <p className="font-medium text-foreground">WBS 分项估算</p>
+                  {costEstimate.wbsItems.map((row) => (
+                    <div key={row.code} className="flex justify-between gap-2 text-muted-foreground">
+                      <span>{row.code} {row.name} ({row.sharePercent}%)</span>
+                      <span className="tabular-nums shrink-0">¥{row.totalCost.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent></Card>
           )}

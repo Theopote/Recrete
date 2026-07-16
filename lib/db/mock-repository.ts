@@ -84,6 +84,7 @@ export async function getProjectById(
     strategies: store.strategies.filter((s) => s.projectId === id),
     issues: store.issues.filter((i) => i.projectId === id),
     reports: store.reports.filter((r) => r.projectId === id),
+    sourceEvidence: store.evidence.filter((e) => e.projectId === id),
   };
 }
 

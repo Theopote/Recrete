@@ -56,14 +56,14 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
         if (doc.autoAnalysisQueued && doc.analysisTaskId) {
           setAnalysisNotice(`正在分析 ${doc.name}…`);
           void pollAnalysisTask(initialProject.id, doc.analysisTaskId, setAnalysisNotice).then(
-            (result) => {
-              if (result === "completed") {
+            (outcome) => {
+              if (outcome.result === "completed") {
                 setAnalysisNotice("AI 分析完成，Building Memory 已更新。");
                 router.refresh();
-              } else if (result === "timeout") {
-                setAnalysisNotice("分析耗时较长，请稍后刷新页面查看结果。");
-              } else if (result === "failed") {
-                setAnalysisNotice("分析失败，请重试。");
+              } else if (outcome.result === "timeout") {
+                setAnalysisNotice("分析耗时较长，大文件建议拆分上传，或稍后刷新页面。");
+              } else if (outcome.result === "failed") {
+                setAnalysisNotice(outcome.error ?? "分析失败，请重试。");
               }
             }
           );
