@@ -4,9 +4,11 @@ import { RiskBadge } from "@/components/app/RiskBadge";
 import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDialog";
 import { StrategyReviewThread } from "@/components/strategies/StrategyReviewThread";
 import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
+import { StrategyLinkedSources } from "@/components/strategies/StrategyLinkedSources";
 import { strategyTypeLabels } from "@/lib/utils/labels";
 import { cn, levelToPercent } from "@/lib/utils";
-import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
+import type { DiagnosisItem, RenovationStrategy, StrategyWithMetrics } from "@/types";
+import type { SourceEvidence } from "@/types/ai";
 import { Check, X, Star } from "lucide-react";
 
 interface StrategyCardProps {
@@ -14,10 +16,22 @@ interface StrategyCardProps {
   isRecommended?: boolean;
   projectId?: string;
   riskOptions?: string[];
+  diagnosis?: DiagnosisItem[];
+  evidence?: SourceEvidence[];
+  documentNames?: Record<string, string>;
   onRefined?: (strategy: StrategyWithMetrics) => void;
 }
 
-export function StrategyCard({ strategy, isRecommended, projectId, riskOptions, onRefined }: StrategyCardProps) {
+export function StrategyCard({
+  strategy,
+  isRecommended,
+  projectId,
+  riskOptions,
+  diagnosis = [],
+  evidence = [],
+  documentNames = {},
+  onRefined,
+}: StrategyCardProps) {
   return (
     <Card className={cn(isRecommended && "border-copper ring-1 ring-copper/20")}>
       <CardContent className="p-5 space-y-4">
@@ -102,6 +116,14 @@ export function StrategyCard({ strategy, isRecommended, projectId, riskOptions, 
             <p className="text-xs">{strategy.recommendationReason}</p>
           </div>
         )}
+
+        <StrategyLinkedSources
+          linkedDiagnosisIds={strategy.linkedDiagnosisIds}
+          linkedEvidenceIds={strategy.linkedEvidenceIds}
+          diagnosis={diagnosis}
+          evidence={evidence}
+          documentNames={documentNames}
+        />
 
         {projectId && (
           <StrategyReviewThread

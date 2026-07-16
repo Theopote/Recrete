@@ -223,10 +223,20 @@ export async function getCommandCenterData(organizationId: string) {
   return (await resolveDb()) ? db.getCommandCenterData(organizationId) : mock.getCommandCenterData(organizationId);
 }
 
-export async function updateBuildingMemory(projectId: string, organizationId: string) {
+export async function updateBuildingMemory(
+  projectId: string,
+  organizationId: string,
+  triggerType?: string
+) {
   return (await resolveDb())
-    ? db.updateBuildingMemory(projectId, organizationId)
-    : mock.updateBuildingMemory(projectId, organizationId);
+    ? db.updateBuildingMemory(projectId, organizationId, triggerType)
+    : mock.updateBuildingMemory(projectId, organizationId, triggerType);
+}
+
+export async function getBuildingMemoryHistory(projectId: string, limit = 10) {
+  return (await resolveDb())
+    ? db.getBuildingMemoryHistory(projectId, limit)
+    : mock.getBuildingMemoryHistory(projectId, limit);
 }
 
 export { updateProjectStatus } from "@/lib/db/project-costs";

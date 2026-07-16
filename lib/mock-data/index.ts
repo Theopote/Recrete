@@ -781,6 +781,7 @@ export type MockStore = {
   reports: Report[];
   conversations: AIConversation[];
   strategyVersions: import("@/types/ai").StrategyVersion[];
+  buildingMemoryHistory: import("@/types/ai").BuildingMemoryHistoryEntry[];
 };
 
 export function createMockStore(): MockStore {
@@ -799,6 +800,7 @@ export function createMockStore(): MockStore {
     reports: [...mockReports],
     conversations: [...mockConversations],
     strategyVersions: [],
+    buildingMemoryHistory: [],
   };
 }
 

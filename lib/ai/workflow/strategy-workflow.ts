@@ -9,7 +9,9 @@ import {
   updateBuildingMemory,
   addStrategyVersion,
   getStrategyVersions,
+  getProjectEvidence,
 } from "@/lib/db/repository";
+import { linkStrategiesToSources } from "@/lib/ai/strategy-evidence-linker";
 import { getAIPlatform } from "@/lib/ai";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 import { rankStrategies } from "@/lib/utils/strategy-ranking";
@@ -84,14 +86,40 @@ export async function runStrategyWorkflow(
   );
   const created = await replaceStrategies(projectId, strategies);
 
+  const evidence =
+    (project.sourceEvidence?.length ?? 0) > 0
+      ? project.sourceEvidence!
+      : await getProjectEvidence(projectId);
+  const sourceLinks = linkStrategiesToSources(created, project.diagnosis ?? [], evidence);
+
+  const linkedCreated: RenovationStrategy[] = [];
   for (const strategy of created) {
+    const link = sourceLinks.get(strategy.id);
+    if (!link) {
+      linkedCreated.push(strategy);
+      continue;
+    }
+    const updated = await updateStrategy(strategy.id, {
+      linkedDiagnosisIds: link.diagnosisIds,
+      linkedEvidenceIds: link.evidenceIds,
+    });
+    linkedCreated.push(
+      updated ?? {
+        ...strategy,
+        linkedDiagnosisIds: link.diagnosisIds,
+        linkedEvidenceIds: link.evidenceIds,
+      }
+    );
+  }
+
+  for (const strategy of linkedCreated) {
     await addStrategyVersion(projectId, strategy, {
       label: "Initial generation",
       changeSummary: "Strategy Lab batch generation",
     });
   }
 
-  const withMetrics = created.map((s) => ({
+  const withMetrics = linkedCreated.map((s) => ({
     ...s,
     metrics: computeStrategyMetrics(s, project, created),
   }));
@@ -110,7 +138,7 @@ export async function runStrategyWorkflow(
     })
     .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
 
-  const recommendation = await platform.strategy.recommendStrategy(project, created);
+  const recommendation = await platform.strategy.recommendStrategy(project, linkedCreated);
   let recommendationResult = null;
 
   if (recommendation) {
@@ -129,15 +157,15 @@ export async function runStrategyWorkflow(
     projectId,
     analysisType: "strategy_generation",
     inputSummary: `Strategy Lab — ambition: ${resolvedParams.designAmbition}, preservation: ${resolvedParams.preservationLevel}`,
-    outputSummary: `Generated ${created.length} strategies${recommendation ? `, recommended ${recommendation.strategyId}` : ""}`,
-    generatedItemCount: created.length + (recommendation ? 1 : 0),
+    outputSummary: `Generated ${linkedCreated.length} strategies${recommendation ? `, recommended ${recommendation.strategyId}` : ""}`,
+    generatedItemCount: linkedCreated.length + (recommendation ? 1 : 0),
     modelName: "recrete-strategy-v1",
     confidence: 0.88,
   });
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId, "strategy_generation");
   }
 
   return {
@@ -208,7 +236,7 @@ export async function runStrategyIterationWorkflow(
 
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
-    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId, "strategy_generation");
   }
 
   return { strategy, insight, analysisRun, buildingMemory, version, diffs };

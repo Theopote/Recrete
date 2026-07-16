@@ -9,7 +9,7 @@ import type {
   Report,
   User,
 } from "@/types";
-import type { BuildingMemory, AIInsight, AITask, SourceEvidence } from "@/types/ai";
+import type { BuildingMemory, AIInsight, AITask, SourceEvidence, BuildingMemoryHistoryEntry } from "@/types/ai";
 import type {
   Project as PrismaProject,
   Building as PrismaBuilding,
@@ -85,12 +85,18 @@ export function mapDiagnosis(d: PrismaDiagnosis): DiagnosisItem {
 }
 
 export function mapStrategy(s: PrismaStrategy): RenovationStrategy {
+  const ext = s as PrismaStrategy & {
+    linkedDiagnosisIds?: string[];
+    linkedEvidenceIds?: string[];
+  };
   return {
     ...s,
     designValueScore: s.designValueScore ?? undefined,
     feasibilityScore: s.feasibilityScore ?? undefined,
     preservationScore: s.preservationScore ?? undefined,
     recommendationReason: s.recommendationReason,
+    linkedDiagnosisIds: ext.linkedDiagnosisIds ?? [],
+    linkedEvidenceIds: ext.linkedEvidenceIds ?? [],
   };
 }
 
@@ -182,11 +188,23 @@ type ProjectExtended = ProjectFull & {
     confidence: number;
     createdAt: Date;
   }>;
+  analysisRuns?: Array<{
+    id: string;
+    projectId: string;
+    analysisType: import("@/types/ai").AIAnalysisRun["analysisType"];
+    inputSummary: string;
+    outputSummary: string;
+    generatedItemCount: number;
+    modelName: string;
+    confidence: number;
+    createdAt: Date;
+  }>;
+  buildingMemoryHistory?: BuildingMemoryHistoryEntry[];
 };
 
-export function mapProjectWithRelationsExtended(p: ProjectExtended & {
-  evidence?: ProjectExtended["sourceEvidence"];
-}): ProjectWithRelations {
+export function mapProjectWithRelationsExtended(
+  p: ProjectExtended & { evidence?: ProjectExtended["sourceEvidence"] }
+): ProjectWithRelations {
   return {
     ...mapProject(p),
     building: p.building ? mapBuilding(p.building) : null,
@@ -199,6 +217,8 @@ export function mapProjectWithRelationsExtended(p: ProjectExtended & {
     insights: p.insights?.map((i) => ({ ...i })) ?? [],
     tasks: p.tasks?.map((t) => ({ ...t, dueDate: t.dueDate })) ?? [],
     sourceEvidence: (p.sourceEvidence ?? p.evidence)?.map((e) => ({ ...e })) ?? [],
+    analysisRuns: p.analysisRuns?.map((r) => ({ ...r })) ?? [],
+    buildingMemoryHistory: p.buildingMemoryHistory?.map((h) => ({ ...h })) ?? [],
     diagnosis: p.diagnosis.map(mapDiagnosis),
     strategies: p.strategies.map(mapStrategy),
     issues: p.issues.map(mapIssue),

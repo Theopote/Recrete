@@ -84,6 +84,8 @@ export async function getProjectById(
       insights: { orderBy: { createdAt: "desc" } },
       tasks: { orderBy: { createdAt: "desc" } },
       evidence: { orderBy: { createdAt: "desc" } },
+      analysisRuns: { orderBy: { createdAt: "desc" }, take: 20 },
+      buildingMemoryHistory: { orderBy: { createdAt: "desc" }, take: 10 },
     },
   });
   return row ? mapProjectWithRelationsExtended(row) : null;
@@ -619,7 +621,11 @@ export async function getCommandCenterData(organizationId: string) {
   return mockCommandCenter(organizationId);
 }
 
-export async function updateBuildingMemory(projectId: string, organizationId: string) {
+export async function updateBuildingMemory(
+  projectId: string,
+  organizationId: string,
+  triggerType = "manual"
+) {
   const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
@@ -628,6 +634,20 @@ export async function updateBuildingMemory(projectId: string, organizationId: st
   );
   const updated = await computeBuildingMemory(project);
   const now = new Date();
+
+  const existing = await prisma.buildingMemory.findUnique({ where: { projectId } });
+  if (existing) {
+    await prisma.buildingMemoryHistory.create({
+      data: {
+        projectId,
+        summary: existing.summary,
+        knownFactsCount: existing.knownFacts.length,
+        missingInfoCount: existing.missingInformation.length,
+        keyRisksCount: existing.keyRisks.length,
+        triggerType,
+      },
+    });
+  }
 
   const memory = await prisma.buildingMemory.upsert({
     where: { projectId },
@@ -776,18 +796,87 @@ export async function addStrategyVersion(
   strategy: Parameters<typeof import("@/lib/db/mock-repository").addStrategyVersion>[1],
   meta?: Parameters<typeof import("@/lib/db/mock-repository").addStrategyVersion>[2]
 ) {
-  const { addStrategyVersion: mockAdd } = await import("@/lib/db/mock-repository");
-  return mockAdd(projectId, strategy, meta);
+  const latest = await prisma.strategyVersion.findFirst({
+    where: { strategyId: strategy.id },
+    orderBy: { versionNumber: "desc" },
+  });
+  const versionNumber = (latest?.versionNumber ?? 0) + 1;
+
+  const created = await prisma.strategyVersion.create({
+    data: {
+      projectId,
+      strategyId: strategy.id,
+      versionNumber,
+      label: meta?.label ?? `v${versionNumber}`,
+      snapshot: strategy as object,
+      instruction: meta?.instruction ?? null,
+      changeSummary: meta?.changeSummary ?? null,
+    },
+  });
+
+  return {
+    id: created.id,
+    projectId: created.projectId,
+    strategyId: created.strategyId,
+    versionNumber: created.versionNumber,
+    label: created.label,
+    snapshot: strategy,
+    instruction: created.instruction,
+    changeSummary: created.changeSummary,
+    createdAt: created.createdAt,
+  };
 }
 
 export async function getStrategyVersions(strategyId: string) {
-  const { getStrategyVersions: mockGet } = await import("@/lib/db/mock-repository");
-  return mockGet(strategyId);
+  const rows = await prisma.strategyVersion.findMany({
+    where: { strategyId },
+    orderBy: { versionNumber: "desc" },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    projectId: row.projectId,
+    strategyId: row.strategyId,
+    versionNumber: row.versionNumber,
+    label: row.label,
+    snapshot: row.snapshot as RenovationStrategy,
+    instruction: row.instruction,
+    changeSummary: row.changeSummary,
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function getStrategyVersionById(versionId: string) {
-  const { getStrategyVersionById: mockGet } = await import("@/lib/db/mock-repository");
-  return mockGet(versionId);
+  const row = await prisma.strategyVersion.findUnique({ where: { id: versionId } });
+  if (!row) return null;
+  return {
+    id: row.id,
+    projectId: row.projectId,
+    strategyId: row.strategyId,
+    versionNumber: row.versionNumber,
+    label: row.label,
+    snapshot: row.snapshot as RenovationStrategy,
+    instruction: row.instruction,
+    changeSummary: row.changeSummary,
+    createdAt: row.createdAt,
+  };
+}
+
+export async function getBuildingMemoryHistory(projectId: string, limit = 10) {
+  const rows = await prisma.buildingMemoryHistory.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    projectId: row.projectId,
+    summary: row.summary,
+    knownFactsCount: row.knownFactsCount,
+    missingInfoCount: row.missingInfoCount,
+    keyRisksCount: row.keyRisksCount,
+    triggerType: row.triggerType,
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function getStrategiesWithMetrics(projectId: string): Promise<StrategyWithMetrics[]> {

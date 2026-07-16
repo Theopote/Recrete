@@ -362,6 +362,7 @@ model Project {
   issues          SiteIssue[]
   reports         Report[]
   strategyReviewComments StrategyReviewComment[]
+  strategyVersions       StrategyVersion[]
   aiConversations AIConversation[]
   costRecords     ProjectCostRecord[]
   bimModels       BimModel[]
@@ -370,6 +371,7 @@ model Project {
   analysisTasks   DocumentAnalysisTaskRecord[]
   complianceRuns  ComplianceCheckRun[]
   complianceChecks ComplianceCheckRecord[]
+  buildingMemoryHistory BuildingMemoryHistory[]
 }
 
 model BuildingMemory {
@@ -389,6 +391,21 @@ model BuildingMemory {
   updatedAt            DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model BuildingMemoryHistory {
+  id                String   @id @default(cuid())
+  projectId         String
+  summary           String   @db.Text
+  knownFactsCount   Int      @default(0)
+  missingInfoCount  Int      @default(0)
+  keyRisksCount     Int      @default(0)
+  triggerType       String   @default("manual")
+  createdAt         DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
 }
 
 model AIInsight {
@@ -539,11 +556,32 @@ model RenovationStrategy {
   pros                 String[]
   cons                 String[]
   recommendationReason String?
+  linkedDiagnosisIds   String[]          @default([])
+  linkedEvidenceIds    String[]          @default([])
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
 
   project          Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reviewComments   StrategyReviewComment[]
+  versions         StrategyVersion[]
+}
+
+model StrategyVersion {
+  id            String   @id @default(cuid())
+  projectId     String
+  strategyId    String
+  versionNumber Int
+  label         String
+  snapshot      Json
+  instruction   String?  @db.Text
+  changeSummary String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  project  Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  strategy RenovationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([strategyId, versionNumber])
+  @@index([strategyId])
 }
 
 model SiteIssue {

@@ -213,6 +213,8 @@ export interface RenovationStrategy {
   pros: string[];
   cons: string[];
   recommendationReason?: string | null;
+  linkedDiagnosisIds?: string[];
+  linkedEvidenceIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -276,6 +278,7 @@ export interface ProjectWithRelations extends Project {
   issues?: SiteIssue[];
   reports?: Report[];
   sourceEvidence?: import("@/types/ai").SourceEvidence[];
+  buildingMemoryHistory?: import("@/types/ai").BuildingMemoryHistoryEntry[];
   collaboration?: import("@/types/collaboration").CollaborationSummary;
 }
 

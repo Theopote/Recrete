@@ -8,6 +8,7 @@ import { DataConflictPanel } from "@/components/ai/DataConflictPanel";
 import { EmptyState } from "@/components/app/EmptyState";
 import type { ProjectWithRelations } from "@/types";
 import { Brain } from "lucide-react";
+import { BuildingMemoryHistoryPanel } from "@/components/ai/BuildingMemoryHistoryPanel";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface BuildingMemorySectionProps {
@@ -47,6 +48,10 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
       />
 
       <BuildingMemoryCard memory={memory} />
+
+      {(project.buildingMemoryHistory?.length ?? 0) > 0 && (
+        <BuildingMemoryHistoryPanel history={project.buildingMemoryHistory ?? []} />
+      )}
 
       <DataConflictPanel project={project} />
 

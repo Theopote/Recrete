@@ -131,9 +131,20 @@ export interface ProjectAIContext {
   buildingMemory?: BuildingMemory | null;
   insights: AIInsight[];
   tasks: AITask[];
-  analysisRuns: AIAnalysisRun[];
+  analysisRuns?: AIAnalysisRun[];
   evidence: SourceEvidence[];
   knowledgeSnippets?: KnowledgeSnippet[];
+}
+
+export interface BuildingMemoryHistoryEntry {
+  id: string;
+  projectId: string;
+  summary: string;
+  knownFactsCount: number;
+  missingInfoCount: number;
+  keyRisksCount: number;
+  triggerType: string;
+  createdAt: Date;
 }
 
 export interface KnowledgeSnippet {

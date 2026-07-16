@@ -196,7 +196,7 @@ export async function runDocumentIngestWorkflow(
   let buildingMemory: BuildingMemory | null | undefined;
   if (refreshBuildingMemory) {
     await touch("building_memory", 90, "Updating Building Memory");
-    buildingMemory = await updateBuildingMemory(projectId, organizationId);
+    buildingMemory = await updateBuildingMemory(projectId, organizationId, "document_analysis");
     await runConflictDetectionWorkflow(projectId, organizationId, {
       refreshBuildingMemory: false,
       persistInsights: true,

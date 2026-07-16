@@ -80,6 +80,10 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
     ...strategies.flatMap((s) => s.cons.slice(0, 2)),
   ].slice(0, 8);
 
+  const documentNames = Object.fromEntries(
+    (project.documents ?? []).map((d) => [d.id, d.name])
+  );
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -172,6 +176,9 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
               isRecommended={strategy.id === recommended?.id}
               projectId={project.id}
               riskOptions={riskOptions}
+              diagnosis={project.diagnosis ?? []}
+              evidence={project.sourceEvidence ?? []}
+              documentNames={documentNames}
               onRefined={handleRefined}
             />
           ))}

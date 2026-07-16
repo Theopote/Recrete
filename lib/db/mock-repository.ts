@@ -85,6 +85,9 @@ export async function getProjectById(
     issues: store.issues.filter((i) => i.projectId === id),
     reports: store.reports.filter((r) => r.projectId === id),
     sourceEvidence: store.evidence.filter((e) => e.projectId === id),
+    buildingMemoryHistory: store.buildingMemoryHistory
+      .filter((h) => h.projectId === id)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
   };
 }
 
@@ -721,7 +724,11 @@ export async function getCommandCenterData(organizationId: string) {
   };
 }
 
-export async function updateBuildingMemory(projectId: string, organizationId: string) {
+export async function updateBuildingMemory(
+  projectId: string,
+  organizationId: string,
+  triggerType = "manual"
+) {
   const project = await getProjectById(projectId, organizationId);
   if (!project) return null;
 
@@ -731,6 +738,19 @@ export async function updateBuildingMemory(projectId: string, organizationId: st
   const updated = await computeBuildingMemory(project);
   const now = new Date();
   const existing = store.buildingMemories.find((m) => m.projectId === projectId);
+
+  if (existing) {
+    store.buildingMemoryHistory.push({
+      id: generateId("bmh"),
+      projectId,
+      summary: existing.summary,
+      knownFactsCount: existing.knownFacts.length,
+      missingInfoCount: existing.missingInformation.length,
+      keyRisksCount: existing.keyRisks.length,
+      triggerType,
+      createdAt: now,
+    });
+  }
 
   const memory = {
     ...updated,
@@ -758,6 +778,13 @@ export async function updateBuildingMemory(projectId: string, organizationId: st
   });
 
   return memory;
+}
+
+export async function getBuildingMemoryHistory(projectId: string, limit = 10) {
+  return store.buildingMemoryHistory
+    .filter((h) => h.projectId === projectId)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, limit);
 }
 
 export async function getStrategiesWithMetrics(
