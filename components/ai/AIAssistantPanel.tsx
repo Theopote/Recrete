@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ASSISTANT_SUGGESTIONS } from "@/lib/ai/prompts";
+import { ASSISTANT_SUGGESTION_PAIRS } from "@/lib/ai/prompts";
 import { parseAIErrorResponse } from "@/lib/ai/client-messages";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { cn } from "@/lib/utils";
 import type { AIMessage } from "@/types";
 import type { KnowledgeSnippet, SourceEvidence } from "@/types/ai";
@@ -23,7 +24,14 @@ interface CopilotSources {
 
 type ChatMessage = AIMessage & { sources?: CopilotSources };
 
-const SOURCE_LABELS: Record<KnowledgeSnippet["sourceType"], string> = {
+const SOURCE_LABELS_EN: Record<KnowledgeSnippet["sourceType"], string> = {
+  case: "Case",
+  knowledge: "Knowledge",
+  code: "Code",
+  project_doc: "Document",
+};
+
+const SOURCE_LABELS_ZH: Record<KnowledgeSnippet["sourceType"], string> = {
   case: "案例",
   knowledge: "知识",
   code: "规范",
@@ -31,13 +39,22 @@ const SOURCE_LABELS: Record<KnowledgeSnippet["sourceType"], string> = {
 };
 
 export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistantPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
+  const { t, locale } = useLocale();
+  const sourceLabels = locale === "zh" ? SOURCE_LABELS_ZH : SOURCE_LABELS_EN;
+
+  const welcomeMessage = useMemo(
+    (): ChatMessage => ({
       role: "assistant",
-      content: `Hello! I'm your Recrete AI assistant for **${projectName}**. I can help with risks, missing information, strategy recommendations, and project planning. What would you like to know?`,
+      content: t(
+        `Hello! I'm your Recrete AI assistant for **${projectName}**. I can help with risks, missing information, strategy recommendations, and project planning. What would you like to know?`,
+        `你好！我是 Recrete 项目 **${projectName}** 的 AI 助手。我可以协助分析风险、缺失信息、方案建议与项目规划。你想了解什么？`
+      ),
       timestamp: new Date(),
-    },
-  ]);
+    }),
+    [t, projectName]
+  );
+
+  const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -45,6 +62,15 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].role === "assistant") {
+        return [welcomeMessage];
+      }
+      return prev;
+    });
+  }, [welcomeMessage]);
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || isLoading) return;
@@ -66,7 +92,7 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
         throw new Error(parsed.message);
       }
       if (!data.response) {
-        throw new Error("助手未返回有效内容，请稍后重试。");
+        throw new Error(t("Assistant returned no content. Please try again.", "助手未返回有效内容，请稍后重试。"));
       }
       setMessages((prev) => [
         ...prev,
@@ -85,7 +111,7 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
           content:
             error instanceof Error
               ? error.message
-              : "抱歉，请求失败，请稍后重试。",
+              : t("Sorry, the request failed. Please try again.", "抱歉，请求失败，请稍后重试。"),
           timestamp: new Date(),
         },
       ]);
@@ -102,8 +128,10 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
             <Sparkles className="h-4 w-4 text-copper" />
           </div>
           <div>
-            <p className="text-xs font-semibold">AI Copilot</p>
-            <p className="text-[10px] text-muted-foreground">Building Memory + RAG</p>
+            <p className="text-xs font-semibold">{t("AI Copilot", "AI 助手")}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {t("Building Memory + RAG", "建筑记忆 + RAG")}
+            </p>
           </div>
         </div>
         {onClose && (
@@ -142,7 +170,9 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
               <div className="whitespace-pre-wrap">{msg.content.replace(/\*\*(.*?)\*\*/g, "$1")}</div>
               {msg.role === "assistant" && msg.sources && (msg.sources.knowledge.length > 0 || msg.sources.evidence.length > 0) && (
                 <div className="mt-2 border-t border-border/60 pt-2 space-y-1">
-                  <p className="text-[10px] font-medium text-muted-foreground">RAG 引用</p>
+                  <p className="text-[10px] font-medium text-muted-foreground">
+                    {t("RAG sources", "RAG 引用")}
+                  </p>
                   <div className="flex flex-wrap gap-1">
                     {msg.sources.knowledge.slice(0, 4).map((k) => (
                       <span
@@ -150,7 +180,7 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
                         className="rounded bg-background/80 px-1.5 py-0.5 text-[9px] text-muted-foreground"
                         title={k.excerpt}
                       >
-                        [{SOURCE_LABELS[k.sourceType]}] {k.title.length > 18 ? `${k.title.slice(0, 18)}…` : k.title}
+                        [{sourceLabels[k.sourceType]}] {k.title.length > 18 ? `${k.title.slice(0, 18)}…` : k.title}
                       </span>
                     ))}
                     {msg.sources.evidence.slice(0, 2).map((e, idx) => (
@@ -159,7 +189,7 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
                         className="rounded bg-background/80 px-1.5 py-0.5 text-[9px] text-muted-foreground"
                         title={e.quote ?? undefined}
                       >
-                        [证据] {e.locationLabel ?? e.sourceType}
+                        [{t("Evidence", "证据")}] {e.locationLabel ?? e.sourceType}
                       </span>
                     ))}
                   </div>
@@ -174,7 +204,7 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
               <Bot className="h-3 w-3 text-copper animate-pulse" />
             </div>
             <div className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-              Analyzing project data...
+              {t("Analyzing project data...", "正在分析项目数据…")}
             </div>
           </div>
         )}
@@ -182,21 +212,24 @@ export function AIAssistantPanel({ projectId, projectName, onClose }: AIAssistan
 
       <div className="border-t p-3 space-y-2">
         <div className="flex flex-wrap gap-1">
-          {ASSISTANT_SUGGESTIONS.map((s) => (
+          {ASSISTANT_SUGGESTION_PAIRS.map((s) => {
+            const text = locale === "zh" ? s.zh : s.en;
+            return (
             <button
-              key={s}
-              onClick={() => sendMessage(s)}
+              key={s.en}
+              onClick={() => sendMessage(text)}
               className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground hover:border-copper/40 hover:text-foreground transition-colors"
             >
-              {s.length > 28 ? s.slice(0, 28) + "…" : s}
+              {text.length > 28 ? text.slice(0, 28) + "…" : text}
             </button>
-          ))}
+            );
+          })}
         </div>
         <div className="flex gap-2">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about this project..."
+            placeholder={t("Ask about this project...", "询问本项目相关问题…")}
             className="min-h-[36px] max-h-24 text-xs resize-none"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {

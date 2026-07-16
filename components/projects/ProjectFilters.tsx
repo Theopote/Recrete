@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/select";
-import { projectStatusLabels, riskLevelLabels } from "@/lib/utils/labels";
+import {
+  projectStatusLabels,
+  projectStatusLabelsZh,
+  riskLevelLabels,
+  riskLevelLabelsZh,
+} from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface ProjectFiltersProps {
   buildingTypes: string[];
@@ -21,6 +27,7 @@ export function ProjectFilters({
   currentFilters,
 }: ProjectFiltersProps) {
   const router = useRouter();
+  const { t, label } = useLocale();
 
   const updateFilter = (key: string, value: string) => {
     const params = new URLSearchParams();
@@ -38,9 +45,11 @@ export function ProjectFilters({
         onChange={(e) => updateFilter("status", e.target.value)}
         className="w-40 h-8 text-xs"
       >
-        <option value="all">All Statuses</option>
-        {Object.entries(projectStatusLabels).map(([key, label]) => (
-          <option key={key} value={key}>{label}</option>
+        <option value="all">{t("All Statuses", "全部状态")}</option>
+        {Object.entries(projectStatusLabels).map(([key, enLabel]) => (
+          <option key={key} value={key}>
+            {label(projectStatusLabels, projectStatusLabelsZh, key as keyof typeof projectStatusLabels)}
+          </option>
         ))}
       </Select>
 
@@ -49,9 +58,11 @@ export function ProjectFilters({
         onChange={(e) => updateFilter("riskLevel", e.target.value)}
         className="w-40 h-8 text-xs"
       >
-        <option value="all">All Risk Levels</option>
-        {Object.entries(riskLevelLabels).map(([key, label]) => (
-          <option key={key} value={key}>{label}</option>
+        <option value="all">{t("All Risk Levels", "全部风险等级")}</option>
+        {Object.entries(riskLevelLabels).map(([key]) => (
+          <option key={key} value={key}>
+            {label(riskLevelLabels, riskLevelLabelsZh, key as keyof typeof riskLevelLabels)}
+          </option>
         ))}
       </Select>
 
@@ -60,7 +71,7 @@ export function ProjectFilters({
         onChange={(e) => updateFilter("buildingType", e.target.value)}
         className="w-48 h-8 text-xs"
       >
-        <option value="all">All Building Types</option>
+        <option value="all">{t("All Building Types", "全部建筑类型")}</option>
         {buildingTypes.map((type) => (
           <option key={type} value={type}>{type}</option>
         ))}
@@ -71,7 +82,7 @@ export function ProjectFilters({
         onChange={(e) => updateFilter("targetFunction", e.target.value)}
         className="w-48 h-8 text-xs"
       >
-        <option value="all">All Target Functions</option>
+        <option value="all">{t("All Target Functions", "全部目标功能")}</option>
         {targetFunctions.map((fn) => (
           <option key={fn} value={fn}>{fn}</option>
         ))}

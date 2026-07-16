@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { Upload, FileUp } from "lucide-react";
 
 interface UploadDropzoneProps {
@@ -12,6 +13,7 @@ interface UploadDropzoneProps {
 }
 
 export function UploadDropzone({ onUpload, accept, className, disabled }: UploadDropzoneProps) {
+  const { t } = useLocale();
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrop = useCallback(
@@ -49,9 +51,9 @@ export function UploadDropzone({ onUpload, accept, className, disabled }: Upload
           <Upload className="h-5 w-5 text-muted-foreground" />
         )}
       </div>
-      <p className="text-sm font-medium">Drop files here or click to upload</p>
+      <p className="text-sm font-medium">{t("Drop files here or click to upload", "拖放文件到此处，或点击上传")}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        PDF, DWG, images, and archives supported
+        {t("PDF, DWG, images, and archives supported", "支持 PDF、DWG、图片与压缩包")}
       </p>
     </label>
   );

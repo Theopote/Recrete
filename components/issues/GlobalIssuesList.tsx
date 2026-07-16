@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { IssueCard } from "@/components/issues/IssueCard";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { IssueWithProject } from "@/types";
 import { ExternalLink } from "lucide-react";
 
@@ -10,15 +11,16 @@ interface GlobalIssuesListProps {
 }
 
 export function GlobalIssuesList({ issues }: GlobalIssuesListProps) {
+  const { t } = useLocale();
   const openCount = issues.filter((i) => i.status === "open" || i.status === "in_progress").length;
   const urgentCount = issues.filter((i) => i.priority === "urgent" && i.status !== "closed").length;
 
   return (
     <div className="space-y-6">
       <div className="flex gap-4 text-xs">
-        <Stat label="Total Issues" value={issues.length} />
-        <Stat label="Open / In Progress" value={openCount} />
-        <Stat label="Urgent" value={urgentCount} highlight={urgentCount > 0} />
+        <Stat label={t("Total Issues", "问题总数")} value={issues.length} />
+        <Stat label={t("Open / In Progress", "待处理 / 进行中")} value={openCount} />
+        <Stat label={t("Urgent", "紧急")} value={urgentCount} highlight={urgentCount > 0} />
       </div>
 
       <div className="space-y-3">

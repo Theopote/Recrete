@@ -196,17 +196,19 @@ When answering, prefer retrieved knowledge and project evidence over general ass
   return `${base}${memorySection}${insightSection}${evidenceSection}${knowledgeSection}`;
 }
 
-export const ASSISTANT_SUGGESTIONS = [
-  "What are the main risks of this building?",
-  "What information is missing?",
-  "Which strategy is most feasible?",
-  "Show comparable renovation cases",
-  "Refine option 2 to be more ambitious",
-  "What should we do before schematic design?",
-  "List structural issues requiring engineer review.",
-  "Generate a client presentation outline.",
-  "Summarize this project for the owner.",
+export const ASSISTANT_SUGGESTION_PAIRS = [
+  { en: "What are the main risks of this building?", zh: "这栋建筑的主要风险有哪些？" },
+  { en: "What information is missing?", zh: "还缺少哪些关键信息？" },
+  { en: "Which strategy is most feasible?", zh: "哪个改造方案最可行？" },
+  { en: "Show comparable renovation cases", zh: "有哪些可比的改造案例？" },
+  { en: "Refine option 2 to be more ambitious", zh: "把方案 2 改得更进取一些" },
+  { en: "What should we do before schematic design?", zh: "方案设计前还应完成哪些工作？" },
+  { en: "List structural issues requiring engineer review.", zh: "列出需要结构工程师复核的问题。" },
+  { en: "Generate a client presentation outline.", zh: "生成一份面向甲方的汇报提纲。" },
+  { en: "Summarize this project for the owner.", zh: "为业主总结本项目要点。" },
 ] as const;
+
+export const ASSISTANT_SUGGESTIONS = ASSISTANT_SUGGESTION_PAIRS.map((s) => s.en);
 
 export const CREATE_PROJECT_SUGGESTIONS = [
   "我有一栋 1986 年建成的混凝土框架办公楼，位于西安，原本是政府办公，现在想改成社区文化中心，预算有限，希望保留主体结构。",

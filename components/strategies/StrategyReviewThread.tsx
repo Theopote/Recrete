@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { MessageSquare, Send } from "lucide-react";
 
 interface TeamMember {
@@ -32,6 +33,7 @@ export function StrategyReviewThread({
   strategyId,
   riskOptions = [],
 }: StrategyReviewThreadProps) {
+  const { t } = useLocale();
   const [comments, setComments] = useState<StrategyReviewComment[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [content, setContent] = useState("");
@@ -99,7 +101,7 @@ export function StrategyReviewThread({
     <div className="rounded-md border bg-muted/20 p-3 space-y-3">
       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <MessageSquare className="h-3.5 w-3.5" />
-        方案评审留言
+        {t("Strategy review comments", "方案评审留言")}
       </div>
 
       {comments.length > 0 && (
@@ -110,7 +112,7 @@ export function StrategyReviewThread({
                 <span className="font-medium">{c.authorName}</span>
                 {c.riskTag && (
                   <span className="text-[10px] text-amber-600 truncate max-w-[50%]">
-                    关联：{c.riskTag}
+                    {t("Linked", "关联")}：{c.riskTag}
                   </span>
                 )}
               </div>
@@ -127,7 +129,7 @@ export function StrategyReviewThread({
             onChange={(e) => setRiskTag(e.target.value)}
             className="h-8 w-44 text-xs"
           >
-            <option value="">关联风险点（可选）</option>
+            <option value="">{t("Link risk (optional)", "关联风险点（可选）")}</option>
             {riskOptions.map((risk) => (
               <option key={risk} value={risk}>
                 {risk.length > 28 ? `${risk.slice(0, 28)}…` : risk}
@@ -141,7 +143,7 @@ export function StrategyReviewThread({
             onChange={(e) => setMentionId(e.target.value)}
             className="h-8 w-40 text-xs"
           >
-            <option value="">@ 同事（可选）</option>
+            <option value="">{t("@ colleague (optional)", "@ 同事（可选）")}</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -155,7 +157,10 @@ export function StrategyReviewThread({
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="结构、甲方或设计同事可在此讨论本方案…"
+          placeholder={t(
+            "Structural, client, or design colleagues can discuss this strategy here…",
+            "结构、甲方或设计同事可在此讨论本方案…"
+          )}
           className="min-h-[56px] text-xs resize-none"
         />
         <Button

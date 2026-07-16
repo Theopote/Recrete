@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { Wand2, Loader2, X } from "lucide-react";
 import type { StrategyWithMetrics } from "@/types";
 
@@ -17,6 +18,7 @@ export function StrategyRefineDialog({
   strategy,
   onRefined,
 }: StrategyRefineDialogProps) {
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export function StrategyRefineDialog({
   if (!open) {
     return (
       <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => setOpen(true)}>
-        <Wand2 className="h-3 w-3 mr-1" /> Refine
+        <Wand2 className="h-3 w-3 mr-1" /> {t("Refine", "迭代优化")}
       </Button>
     );
   }
@@ -56,7 +58,9 @@ export function StrategyRefineDialog({
   return (
     <div className="w-full mt-2 p-3 rounded-md border bg-muted/40 space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-medium">Refine: {strategy.name}</p>
+        <p className="text-[10px] font-medium">
+          {t("Refine", "迭代优化")}: {strategy.name}
+        </p>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setOpen(false)}>
           <X className="h-3 w-3" />
         </Button>
@@ -64,12 +68,15 @@ export function StrategyRefineDialog({
       <Textarea
         value={instruction}
         onChange={(e) => setInstruction(e.target.value)}
-        placeholder="e.g. Make the facade more ambitious and add rooftop program"
+        placeholder={t(
+          "e.g. Make the facade more ambitious and add rooftop program",
+          "例如：立面改造更进取，并增加屋顶活动空间"
+        )}
         className="text-xs min-h-[64px]"
       />
       <Button variant="copper" size="sm" onClick={handleRefine} disabled={loading || !instruction.trim()}>
         {loading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : null}
-        Apply iteration
+        {t("Apply iteration", "应用迭代")}
       </Button>
     </div>
   );

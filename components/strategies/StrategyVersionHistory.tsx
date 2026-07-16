@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useLocale } from "@/lib/i18n/use-locale";
 import type { StrategyVersion } from "@/types/ai";
 import type { StrategyFieldDiff } from "@/lib/utils/strategy-diff";
 import { History } from "lucide-react";
@@ -12,6 +13,7 @@ interface StrategyVersionHistoryProps {
 }
 
 export function StrategyVersionHistory({ projectId, strategyId }: StrategyVersionHistoryProps) {
+  const { t } = useLocale();
   const [versions, setVersions] = useState<StrategyVersion[]>([]);
   const [diffs, setDiffs] = useState<StrategyFieldDiff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export function StrategyVersionHistory({ projectId, strategyId }: StrategyVersio
   }, [projectId, strategyId]);
 
   if (loading) {
-    return <p className="text-[10px] text-muted-foreground">Loading version history…</p>;
+    return <p className="text-[10px] text-muted-foreground">{t("Loading version history…", "加载版本历史…")}</p>;
   }
 
   if (versions.length === 0) {
@@ -65,24 +67,26 @@ export function StrategyVersionHistory({ projectId, strategyId }: StrategyVersio
   return (
     <div className="mt-3 pt-3 border-t space-y-2">
       <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-        <History className="h-3 w-3" /> Version history
+        <History className="h-3 w-3" /> {t("Version history", "版本历史")}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {versions.slice(0, 4).map((v) => (
           <Badge key={v.id} variant="outline" className="text-[10px] font-normal">
             {v.label}
-            {v.instruction ? " · iterated" : ""}
+            {v.instruction ? ` · ${t("iterated", "已迭代")}` : ""}
           </Badge>
         ))}
       </div>
       {versions[0]?.changeSummary && (
-        <p className="text-[10px] text-muted-foreground">Latest: {versions[0].changeSummary}</p>
+        <p className="text-[10px] text-muted-foreground">
+          {t("Latest", "最新")}: {versions[0].changeSummary}
+        </p>
       )}
       {diffs.length > 0 && (
         <ul className="space-y-1">
           {diffs.slice(0, 4).map((d) => (
             <li key={d.field} className="text-[10px] text-muted-foreground">
-              <span className="font-medium text-foreground">{d.field}</span> changed
+              <span className="font-medium text-foreground">{d.field}</span> {t("changed", "已变更")}
             </li>
           ))}
         </ul>
