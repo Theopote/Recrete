@@ -10,6 +10,7 @@ import {
   TableRow,
   TextRun,
   WidthType,
+  type IParagraphOptions,
 } from "docx";
 import { downloadBlob, sanitizeReportFilename } from "@/lib/reports/report-filename";
 
@@ -47,7 +48,7 @@ export function parseInlineTextRuns(text: string): TextRun[] {
   return runs;
 }
 
-function paragraphFromText(text: string, options?: Partial<Paragraph>): Paragraph {
+function paragraphFromText(text: string, options?: Omit<IParagraphOptions, "children">): Paragraph {
   return new Paragraph({
     ...options,
     children: parseInlineTextRuns(text),

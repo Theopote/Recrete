@@ -1,4 +1,25 @@
-import * as WebIFC from "web-ifc";
+import {
+  IFCBEAM,
+  IFCCABLECARRIERFITTING,
+  IFCCABLECARRIERSEGMENT,
+  IFCCOLUMN,
+  IFCDISTRIBUTIONCHAMBERELEMENT,
+  IFCDISTRIBUTIONFLOWELEMENT,
+  IFCDUCTFITTING,
+  IFCDUCTSEGMENT,
+  IFCFLOWCONTROLLER,
+  IFCFLOWFITTING,
+  IFCFLOWMOVINGDEVICE,
+  IFCFLOWSEGMENT,
+  IFCFLOWTERMINAL,
+  IFCMEMBER,
+  IFCPIPEFITTING,
+  IFCPIPESEGMENT,
+  IFCSLAB,
+  IFCWALL,
+  IFCWALLSTANDARDCASE,
+  type IfcAPI,
+} from "web-ifc";
 import { computeExpressIdBbox3D } from "@/lib/bim/ifc-geometry";
 import type { BimBoundingBox3D, BimIfcDiscipline, BimIfcElement, BimPoint3D } from "@/types/bim";
 
@@ -27,34 +48,32 @@ type ElementTypeSpec = {
 };
 
 function resolveElementTypes(): ElementTypeSpec[] {
-  const w = WebIFC as Record<string, number>;
-  const specs: Array<[string, string, BimIfcDiscipline]> = [
-    ["IFCFLOWSEGMENT", "IfcFlowSegment", "hvac"],
-    ["IFCFLOWFITTING", "IfcFlowFitting", "hvac"],
-    ["IFCFLOWMOVINGDEVICE", "IfcFlowMovingDevice", "hvac"],
-    ["IFCFLOWCONTROLLER", "IfcFlowController", "hvac"],
-    ["IFCFLOWTERMINAL", "IfcFlowTerminal", "hvac"],
-    ["IFCDUCTSEGMENT", "IfcDuctSegment", "hvac"],
-    ["IFCDUCTFITTING", "IfcDuctFitting", "hvac"],
-    ["IFCPIPESEGMENT", "IfcPipeSegment", "plumbing"],
-    ["IFCPIPEFITTING", "IfcPipeFitting", "plumbing"],
-    ["IFCCABLECARRIERSEGMENT", "IfcCableCarrierSegment", "electrical"],
-    ["IFCCABLECARRIERFITTING", "IfcCableCarrierFitting", "electrical"],
-    ["IFCDISTRIBUTIONFLOWELEMENT", "IfcDistributionFlowElement", "other"],
-    ["IFCDISTRIBUTIONCHAMBERELEMENT", "IfcDistributionChamberElement", "other"],
-    ["IFCBEAM", "IfcBeam", "structure"],
-    ["IFCCOLUMN", "IfcColumn", "structure"],
-    ["IFCWALL", "IfcWall", "structure"],
-    ["IFCWALLSTANDARDCASE", "IfcWallStandardCase", "structure"],
-    ["IFCSLAB", "IfcSlab", "structure"],
-    ["IFCMEMBER", "IfcMember", "structure"],
+  const specs: Array<[number, string, BimIfcDiscipline]> = [
+    [IFCFLOWSEGMENT, "IfcFlowSegment", "hvac"],
+    [IFCFLOWFITTING, "IfcFlowFitting", "hvac"],
+    [IFCFLOWMOVINGDEVICE, "IfcFlowMovingDevice", "hvac"],
+    [IFCFLOWCONTROLLER, "IfcFlowController", "hvac"],
+    [IFCFLOWTERMINAL, "IfcFlowTerminal", "hvac"],
+    [IFCDUCTSEGMENT, "IfcDuctSegment", "hvac"],
+    [IFCDUCTFITTING, "IfcDuctFitting", "hvac"],
+    [IFCPIPESEGMENT, "IfcPipeSegment", "plumbing"],
+    [IFCPIPEFITTING, "IfcPipeFitting", "plumbing"],
+    [IFCCABLECARRIERSEGMENT, "IfcCableCarrierSegment", "electrical"],
+    [IFCCABLECARRIERFITTING, "IfcCableCarrierFitting", "electrical"],
+    [IFCDISTRIBUTIONFLOWELEMENT, "IfcDistributionFlowElement", "other"],
+    [IFCDISTRIBUTIONCHAMBERELEMENT, "IfcDistributionChamberElement", "other"],
+    [IFCBEAM, "IfcBeam", "structure"],
+    [IFCCOLUMN, "IfcColumn", "structure"],
+    [IFCWALL, "IfcWall", "structure"],
+    [IFCWALLSTANDARDCASE, "IfcWallStandardCase", "structure"],
+    [IFCSLAB, "IfcSlab", "structure"],
+    [IFCMEMBER, "IfcMember", "structure"],
   ];
 
   const seen = new Set<number>();
   const resolved: ElementTypeSpec[] = [];
-  for (const [key, ifcType, discipline] of specs) {
-    const code = w[key];
-    if (typeof code !== "number" || seen.has(code)) continue;
+  for (const [code, ifcType, discipline] of specs) {
+    if (seen.has(code)) continue;
     seen.add(code);
     resolved.push({ code, ifcType, discipline });
   }
@@ -66,7 +85,7 @@ export interface ExtractIfcElementsOptions {
 }
 
 export async function extractIfcClashElements(
-  ifcApi: WebIFC.IfcAPI,
+  ifcApi: IfcAPI,
   modelId: number,
   options: ExtractIfcElementsOptions = {}
 ): Promise<BimIfcElement[]> {

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { getSessionOrThrow } from "@/lib/auth/authorize";
 import { prisma } from "@/lib/db/prisma";
+
+type OrgMemberRow = Prisma.UserGetPayload<{
+  select: { id: true; name: true; email: true; role: true; createdAt: true };
+}>;
 
 export async function GET() {
   const session = await getSessionOrThrow();
@@ -20,6 +25,6 @@ export async function GET() {
 
   return NextResponse.json({
     organization,
-    members: members.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() })),
+    members: members.map((m: OrgMemberRow) => ({ ...m, createdAt: m.createdAt.toISOString() })),
   });
 }

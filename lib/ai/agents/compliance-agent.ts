@@ -47,7 +47,11 @@ export class ComplianceAgent {
                 ? "medium"
                 : "low",
         status: "identified" as const,
-        description: locale === "zh" ? check.noteZh : check.note,
+        description:
+          (locale === "zh" ? (check.noteZh ?? check.note) : check.note) ||
+          (locale === "zh"
+            ? "需现场核实该规范要求的合规情况。"
+            : "On-site verification required for this code requirement."),
         evidence: `${check.code} §${check.section} — required: ${check.requiredValue}${
           check.actualValue ? `, actual: ${check.actualValue}` : ""
         }`,
