@@ -27,7 +27,7 @@ interface ExpertAgentsSectionProps {
 }
 
 export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [activeTab, setActiveTab] = useState<ExpertTab>("structural");
   const [structuralLoading, setStructuralLoading] = useState(false);
   const [complianceLoading, setComplianceLoading] = useState(false);
@@ -312,9 +312,14 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       estimatedAnnualKwh: number;
       rating: string;
       benchmarkComparison: { currentEui: number; targetEui: number; gapPercent: number };
-      breakdown: Array<{ systemZh: string; kwh: number; sharePercent: number }>;
+      breakdown: Array<{ system: string; systemZh: string; kwh: number; sharePercent: number }>;
     };
-    recommendedBundle?: Array<{ nameZh: string; estimatedSavingsPercent: number; estimatedCostPerSqm: number }>;
+    recommendedBundle?: Array<{
+      name: string;
+      nameZh: string;
+      estimatedSavingsPercent: number;
+      estimatedCostPerSqm: number;
+    }>;
     roi?: {
       totalInvestment: number;
       annualCostSavings: number;
@@ -372,16 +377,48 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
 
   const strengtheningOptions = structuralResult?.strengtheningOptions as StrengtheningOptions | undefined;
 
-  const strengtheningLabels: Record<string, string> = {
-    insufficient_capacity: "承载力不足",
-    corrosion: "钢筋腐蚀",
-    seismic: "抗震加固",
-    crack: "裂缝处理",
-    masonry_seismic: "砌体抗震加固",
-    settlement: "地基不均匀沉降",
-    joint_strengthening: "梁柱节点加固",
-    precast_slab: "预制板结构改造",
-    timber_protection: "木结构保护性加固",
+  const strengtheningIssueLabel = (key: string) => {
+    const labels: Record<string, [string, string]> = {
+      insufficient_capacity: ["Insufficient capacity", "承载力不足"],
+      corrosion: ["Rebar corrosion", "钢筋腐蚀"],
+      seismic: ["Seismic strengthening", "抗震加固"],
+      crack: ["Crack treatment", "裂缝处理"],
+      masonry_seismic: ["Masonry seismic retrofit", "砌体抗震加固"],
+      settlement: ["Differential settlement", "地基不均匀沉降"],
+      joint_strengthening: ["Beam-column joint strengthening", "梁柱节点加固"],
+      precast_slab: ["Precast slab retrofit", "预制板结构改造"],
+      timber_protection: ["Timber conservation strengthening", "木结构保护性加固"],
+    };
+    const pair = labels[key];
+    return pair ? t(pair[0], pair[1]) : key;
+  };
+
+  const costLevelLabel = (level: string) => {
+    if (level === "low") return t("Low", "低");
+    if (level === "medium") return t("Medium", "中");
+    if (level === "high") return t("High", "高");
+    return level;
+  };
+
+  const complianceStatusLabel = (status: string) => {
+    if (status === "compliant") return t("Compliant", "符合");
+    if (status === "non_compliant") return t("Non-compliant", "不符合");
+    if (status === "requires_verification") return t("Verify", "待核实");
+    return status;
+  };
+
+  const overallComplianceLabel = (status: string) => {
+    if (status === "compliant") return t("Compliant", "整体符合");
+    if (status === "non_compliant") return t("Non-compliant", "存在不合规项");
+    if (status === "partial") return t("Partial", "部分符合");
+    return status;
+  };
+
+  const riskLevelLabel = (risk: string) => {
+    if (risk === "low") return t("Low", "低");
+    if (risk === "medium") return t("Medium", "中");
+    if (risk === "high") return t("High", "高");
+    return risk;
   };
 
   const report = complianceResult?.report as {
@@ -506,15 +543,17 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Structural Engineer Agent</CardTitle>
+              <CardTitle className="text-sm">
+                {t("Structural Engineer Agent", "结构工程师 Agent")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-xs">Carbonation depth (mm)</Label>
+                  <Label className="text-xs">{t("Carbonation depth (mm)", "碳化深度 (mm)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
-                    placeholder="e.g. 18"
+                    placeholder={t("e.g. 18", "如 18")}
                     value={structuralInput.carbonationDepth}
                     onChange={(e) =>
                       setStructuralInput((s) => ({ ...s, carbonationDepth: e.target.value }))
@@ -522,10 +561,10 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Existing load (kg/m²)</Label>
+                  <Label className="text-xs">{t("Existing load (kg/m²)", "现有荷载 (kg/m²)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
-                    placeholder="e.g. 350"
+                    placeholder={t("e.g. 350", "如 350")}
                     value={structuralInput.existingLoad}
                     onChange={(e) =>
                       setStructuralInput((s) => ({ ...s, existingLoad: e.target.value }))
@@ -533,10 +572,10 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Target load (kg/m²)</Label>
+                  <Label className="text-xs">{t("Target load (kg/m²)", "目标荷载 (kg/m²)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
-                    placeholder="e.g. 500"
+                    placeholder={t("e.g. 500", "如 500")}
                     value={structuralInput.targetLoad}
                     onChange={(e) =>
                       setStructuralInput((s) => ({ ...s, targetLoad: e.target.value }))
@@ -550,7 +589,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 ) : (
                   <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                 )}
-                Run Structural Assessment
+                {t("Run Structural Assessment", "运行结构评估")}
               </Button>
             </CardContent>
           </Card>
@@ -559,14 +598,16 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Safety rating</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("Safety rating", "安全评级")}
+                  </span>
                   <Badge variant="outline" className="text-[10px] uppercase">
                     {assessment.safetyRating}
                   </Badge>
                 </div>
                 {assessment.findings && assessment.findings.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Findings</p>
+                    <p className="text-xs font-medium mb-1">{t("Findings", "发现")}</p>
                     <ul className="text-xs text-muted-foreground space-y-1">
                       {assessment.findings.map((f) => (
                         <li key={f}>• {f}</li>
@@ -576,7 +617,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 )}
                 {assessment.risks && assessment.risks.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Risks</p>
+                    <p className="text-xs font-medium mb-1">{t("Risks", "风险")}</p>
                     <ul className="text-xs space-y-2">
                       {assessment.risks.map((r) => (
                         <li key={r.issue}>
@@ -592,12 +633,14 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 )}
                 {assessment.loadCapacityCheck && (
                   <div className="border rounded-md p-2 text-xs">
-                    <p className="font-medium mb-1">承载力复核</p>
+                    <p className="font-medium mb-1">{t("Load capacity check", "承载力复核")}</p>
                     <Badge
                       variant="outline"
                       className={`text-[10px] mb-1 ${assessment.loadCapacityCheck.compliant ? "border-green-300" : "border-destructive"}`}
                     >
-                      {assessment.loadCapacityCheck.compliant ? "满足" : "不足"}
+                      {assessment.loadCapacityCheck.compliant
+                        ? t("Compliant", "满足")
+                        : t("Insufficient", "不足")}
                     </Badge>
                     <p className="text-muted-foreground">{assessment.loadCapacityCheck.note}</p>
                   </div>
@@ -609,27 +652,29 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           {strengtheningOptions && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">加固方案建议</CardTitle>
+                <CardTitle className="text-sm">
+                  {t("Strengthening recommendations", "加固方案建议")}
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 {Object.entries(strengtheningOptions).map(([key, methods]) =>
                   methods.length > 0 ? (
                     <div key={key}>
-                      <p className="text-xs font-medium mb-2">{strengtheningLabels[key] ?? key}</p>
+                      <p className="text-xs font-medium mb-2">{strengtheningIssueLabel(key)}</p>
                       <div className="space-y-2">
                         {methods.map((m) => (
                           <div key={m.method} className="border rounded-md p-2 text-xs">
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-medium">{m.method}</span>
                               <Badge variant="outline" className="text-[10px]">
-                                {m.costLevel} cost
+                                {costLevelLabel(m.costLevel)} {t("cost", "造价")}
                               </Badge>
                             </div>
                             <p className="text-muted-foreground mt-1">
-                              优点：{m.pros.join("；")}
+                              {t("Pros", "优点")}：{m.pros.join("；")}
                             </p>
                             <p className="text-muted-foreground mt-0.5">
-                              缺点：{m.cons.join("；")}
+                              {t("Cons", "缺点")}：{m.cons.join("；")}
                             </p>
                           </div>
                         ))}
@@ -648,27 +693,31 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           {complianceMeta && (
             <Card>
               <CardContent className="p-4 space-y-2 text-xs">
-                <p className="font-medium">Applicable codes · 适用规范</p>
+                <p className="font-medium">{t("Applicable codes", "适用规范")}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {complianceMeta.applicableCodes?.map((c) => (
                     <Badge key={c.code} variant="outline" className="text-[10px]">
-                      {c.code} {c.nameZh}
+                      {c.code}
+                      {locale === "zh" && c.nameZh ? ` ${c.nameZh}` : ""}
                     </Badge>
                   ))}
                 </div>
                 {complianceMeta.scenarios && complianceMeta.scenarios.length > 0 && (
                   <p className="text-muted-foreground">
-                    Scenarios: {complianceMeta.scenarios.join(", ")}
+                    {t("Scenarios", "场景")}: {complianceMeta.scenarios.join(", ")}
                   </p>
                 )}
                 {complianceMeta.history && complianceMeta.history.length > 0 && (
                   <div className="pt-2 border-t">
-                    <p className="font-medium mb-1">Recent runs · 历史记录</p>
+                    <p className="font-medium mb-1">{t("Recent runs", "历史记录")}</p>
                     <ul className="text-muted-foreground space-y-1">
                       {complianceMeta.history.map((h) => (
                         <li key={h.id}>
-                          • {new Date(h.createdAt).toLocaleString()} — {h.overallCompliance}
-                          {h.diagnosisApplied ? ` · ${h.diagnosisCount} diagnosis written` : ""}
+                          • {new Date(h.createdAt).toLocaleString()} —{" "}
+                          {overallComplianceLabel(h.overallCompliance)}
+                          {h.diagnosisApplied
+                            ? ` · ${t(`${h.diagnosisCount} diagnosis written`, `写入 ${h.diagnosisCount} 条诊断`)}`
+                            : ""}
                         </li>
                       ))}
                     </ul>
@@ -680,12 +729,14 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Compliance Engine · 合规引擎</CardTitle>
+              <CardTitle className="text-sm">
+                {t("Compliance Engine", "合规引擎")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Ceiling height (m)</Label>
+                  <Label className="text-xs">{t("Ceiling height (m)", "净高 (m)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
                     value={complianceInput.ceilingHeight}
@@ -695,7 +746,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Stair width (m)</Label>
+                  <Label className="text-xs">{t("Stair width (m)", "楼梯宽度 (m)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
                     value={complianceInput.stairWidth}
@@ -705,7 +756,9 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Fire compartment area (m²)</Label>
+                  <Label className="text-xs">
+                    {t("Fire compartment area (m²)", "防火分区面积 (m²)")}
+                  </Label>
                   <Input
                     className="h-8 text-xs mt-1"
                     value={complianceInput.fireCompartmentArea}
@@ -715,7 +768,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Window U-value</Label>
+                  <Label className="text-xs">{t("Window U-value", "窗传热系数")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
                     value={complianceInput.windowUValue}
@@ -736,7 +789,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     }))
                   }
                 />
-                Accessible entrance provided
+                {t("Accessible entrance provided", "设有无障碍入口")}
               </label>
               <label className="flex items-center gap-2 text-xs">
                 <input
@@ -749,7 +802,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     }))
                   }
                 />
-                Auto-write diagnosis items to database · 自动写入诊断项
+                {t("Auto-write diagnosis items to database", "自动写入诊断项")}
               </label>
               <Button variant="copper" size="sm" onClick={runCompliance} disabled={complianceLoading}>
                 {complianceLoading ? (
@@ -757,7 +810,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 ) : (
                   <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                 )}
-                Run Compliance Check
+                {t("Run Compliance Check", "运行合规检查")}
               </Button>
             </CardContent>
           </Card>
@@ -766,53 +819,54 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Overall</span>
+                  <span className="text-xs text-muted-foreground">{t("Overall", "总体")}</span>
                   <Badge variant="outline" className="text-[10px] uppercase">
-                    {report.overallCompliance}
+                    {overallComplianceLabel(report.overallCompliance ?? "")}
                   </Badge>
                   {report.climateZone && (
                     <Badge variant="outline" className="text-[10px]">
-                      Climate: {report.climateZone}
+                      {t("Climate", "气候区")}: {report.climateZone}
                     </Badge>
                   )}
                   {report.engineVersion && (
                     <Badge variant="outline" className="text-[10px]">
-                      Engine v{report.engineVersion}
+                      {t("Engine", "引擎")} v{report.engineVersion}
                     </Badge>
                   )}
                   {complianceRun?.id && (
                     <Badge variant="outline" className="text-[10px]">
-                      Run {complianceRun.id.slice(0, 8)}
+                      {t("Run", "运行")} {complianceRun.id.slice(0, 8)}
                     </Badge>
                   )}
                 </div>
 
                 {diagnosisStats && (
                   <p className="text-xs text-muted-foreground">
-                    Diagnosis: {diagnosisStats.created ?? 0} created
+                    {t("Diagnosis", "诊断")}: {diagnosisStats.created ?? 0}{" "}
+                    {t("created", "条已创建")}
                     {(diagnosisStats.skipped ?? 0) > 0
-                      ? `, ${diagnosisStats.skipped} skipped (duplicate)`
+                      ? `, ${diagnosisStats.skipped} ${t("skipped (duplicate)", "条跳过（重复）")}`
                       : ""}
-                    {complianceRun?.diagnosisApplied ? " · persisted" : ""}
+                    {complianceRun?.diagnosisApplied ? ` · ${t("persisted", "已持久化")}` : ""}
                   </p>
                 )}
 
                 {report.summary && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                     <div className="border rounded-md p-2">
-                      <p className="text-muted-foreground">Total</p>
+                      <p className="text-muted-foreground">{t("Total", "总计")}</p>
                       <p className="font-semibold">{report.summary.total}</p>
                     </div>
                     <div className="border rounded-md p-2 border-green-200">
-                      <p className="text-muted-foreground">Compliant</p>
+                      <p className="text-muted-foreground">{t("Compliant", "符合")}</p>
                       <p className="font-semibold">{report.summary.compliant}</p>
                     </div>
                     <div className="border rounded-md p-2 border-destructive/30">
-                      <p className="text-muted-foreground">Non-compliant</p>
+                      <p className="text-muted-foreground">{t("Non-compliant", "不符合")}</p>
                       <p className="font-semibold">{report.summary.nonCompliant}</p>
                     </div>
                     <div className="border rounded-md p-2 border-amber-200">
-                      <p className="text-muted-foreground">Verify</p>
+                      <p className="text-muted-foreground">{t("Verify", "待核实")}</p>
                       <p className="font-semibold">{report.summary.requiresVerification}</p>
                     </div>
                   </div>
@@ -824,11 +878,11 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                       <div key={c.ruleId} className="text-xs border rounded-md p-2">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-medium">
-                            {c.requirementZh ?? c.requirement}
+                            {t(c.requirement, c.requirementZh ?? c.requirement)}
                           </span>
                           <div className="flex gap-1">
                             <Badge variant="outline" className={`text-[10px] ${statusColor(c.status)}`}>
-                              {c.status}
+                              {complianceStatusLabel(c.status)}
                             </Badge>
                             <Badge variant="outline" className="text-[10px]">
                               {c.priority}
@@ -837,12 +891,12 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                         </div>
                         <p className="text-muted-foreground mt-1">
                           {c.code}
-                          {c.section ? ` §${c.section}` : ""} — {c.noteZh ?? c.note}
+                          {c.section ? ` §${c.section}` : ""} — {t(c.note, c.noteZh ?? c.note)}
                         </p>
                         {(c.requiredValue || c.actualValue) && (
                           <p className="text-muted-foreground mt-0.5">
-                            Required: {c.requiredValue}
-                            {c.actualValue ? ` · Actual: ${c.actualValue}` : ""}
+                            {t("Required", "要求")}: {c.requiredValue}
+                            {c.actualValue ? ` · ${t("Actual", "实测")}: ${c.actualValue}` : ""}
                           </p>
                         )}
                         {c.remediation && (
@@ -854,7 +908,9 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 )}
                 {report.criticalIssues && report.criticalIssues.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-destructive mb-1">Critical issues</p>
+                    <p className="text-xs font-medium text-destructive mb-1">
+                      {t("Critical issues", "严重问题")}
+                    </p>
                     <ul className="text-xs text-muted-foreground space-y-1">
                       {report.criticalIssues.map((i) => (
                         <li key={i}>• {i}</li>
@@ -864,7 +920,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 )}
                 {report.recommendations && report.recommendations.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Recommendations</p>
+                    <p className="text-xs font-medium mb-1">{t("Recommendations", "建议")}</p>
                     <ul className="text-xs text-muted-foreground space-y-1">
                       {report.recommendations.slice(0, 5).map((i) => (
                         <li key={i}>• {i}</li>
@@ -881,39 +937,46 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       {activeTab === "fire" && (
         <div className="space-y-4">
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Fire Protection Agent</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">
+                {t("Fire Protection Agent", "消防 Agent")}
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
-                  <Label className="text-xs">Stair width (m)</Label>
+                  <Label className="text-xs">{t("Stair width (m)", "楼梯宽度 (m)")}</Label>
                   <Input className="h-8 text-xs mt-1" value={fireInput.stairWidth} onChange={(e) => setFireInput((s) => ({ ...s, stairWidth: e.target.value }))} />
                 </div>
                 <div>
-                  <Label className="text-xs">Travel distance (m)</Label>
+                  <Label className="text-xs">{t("Travel distance (m)", "疏散距离 (m)")}</Label>
                   <Input className="h-8 text-xs mt-1" value={fireInput.travelDistance} onChange={(e) => setFireInput((s) => ({ ...s, travelDistance: e.target.value }))} />
                 </div>
                 <div>
-                  <Label className="text-xs">Floor area (m²)</Label>
+                  <Label className="text-xs">{t("Floor area (m²)", "楼层面积 (m²)")}</Label>
                   <Input className="h-8 text-xs mt-1" value={fireInput.floorArea} onChange={(e) => setFireInput((s) => ({ ...s, floorArea: e.target.value }))} />
                 </div>
                 <div>
-                  <Label className="text-xs">Occupant load</Label>
+                  <Label className="text-xs">{t("Occupant load", "人员密度")}</Label>
                   <Input className="h-8 text-xs mt-1" value={fireInput.occupantLoad} onChange={(e) => setFireInput((s) => ({ ...s, occupantLoad: e.target.value }))} />
                 </div>
               </div>
               <label className="flex items-center gap-2 text-xs">
                 <input type="checkbox" checked={fireInput.hasSprinkler} onChange={(e) => setFireInput((s) => ({ ...s, hasSprinkler: e.target.checked }))} />
-                Sprinkler system present
+                {t("Sprinkler system present", "设有喷淋系统")}
               </label>
               <Button variant="copper" size="sm" onClick={runFire} disabled={fireLoading}>
                 {fireLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
-                Run Fire Analysis
+                {t("Run Fire Analysis", "运行消防分析")}
               </Button>
             </CardContent>
           </Card>
           {fireAnalysis && (
             <Card><CardContent className="p-4 space-y-2 text-xs">
-              <div className="flex gap-2"><Badge variant="outline">Egress: {fireAnalysis.egressRating}</Badge><Badge variant="outline">Compartment: {fireAnalysis.compartmentRating}</Badge></div>
+              <div className="flex gap-2">
+                <Badge variant="outline">{t("Egress", "疏散")}: {fireAnalysis.egressRating}</Badge>
+                <Badge variant="outline">{t("Compartment", "防火分区")}: {fireAnalysis.compartmentRating}</Badge>
+              </div>
               <ul className="text-muted-foreground space-y-1">{fireAnalysis.findings?.map((f) => <li key={f}>• {f}</li>)}</ul>
             </CardContent></Card>
           )}
@@ -923,23 +986,25 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       {activeTab === "mep" && (
         <div className="space-y-4">
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm">MEP Expert Agent</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">{t("MEP Expert Agent", "机电专家 Agent")}</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-xs">Electrical capacity (kVA)</Label>
+                  <Label className="text-xs">{t("Electrical capacity (kVA)", "电气容量 (kVA)")}</Label>
                   <Input className="h-8 text-xs mt-1" value={mepInput.electricalCapacityKva} onChange={(e) => setMepInput((s) => ({ ...s, electricalCapacityKva: e.target.value }))} />
                 </div>
                 <div>
-                  <Label className="text-xs">Required kVA</Label>
+                  <Label className="text-xs">{t("Required kVA", "需求 kVA")}</Label>
                   <Input className="h-8 text-xs mt-1" value={mepInput.requiredElectricalKva} onChange={(e) => setMepInput((s) => ({ ...s, requiredElectricalKva: e.target.value }))} />
                 </div>
                 <div>
-                  <Label className="text-xs">HVAC age (years)</Label>
+                  <Label className="text-xs">{t("HVAC age (years)", "暖通年限 (年)")}</Label>
                   <Input className="h-8 text-xs mt-1" value={mepInput.hvacAgeYears} onChange={(e) => setMepInput((s) => ({ ...s, hvacAgeYears: e.target.value }))} />
                 </div>
                 <div>
-                  <Label className="text-xs">Plumbing condition</Label>
+                  <Label className="text-xs">{t("Plumbing condition", "给排水状况")}</Label>
                   <select
                     className="mt-1 h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
                     value={mepInput.plumbingCondition}
@@ -950,15 +1015,15 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                       }))
                     }
                   >
-                    <option value="good">Good 良好</option>
-                    <option value="fair">Fair 一般</option>
-                    <option value="poor">Poor 较差</option>
+                    <option value="good">{t("Good", "良好")}</option>
+                    <option value="fair">{t("Fair", "一般")}</option>
+                    <option value="poor">{t("Poor", "较差")}</option>
                   </select>
                 </div>
               </div>
               <Button variant="copper" size="sm" onClick={runMep} disabled={mepLoading}>
                 {mepLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
-                Run MEP Assessment
+                {t("Run MEP Assessment", "运行机电评估")}
               </Button>
             </CardContent>
           </Card>
@@ -967,16 +1032,17 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               <Badge variant="outline">{mepAnalysis.overallRating}</Badge>
               {mepAnalysis.electricalLoad && (
                 <div className="border rounded-md p-2">
-                  <p className="font-medium mb-1">电气负荷分析</p>
+                  <p className="font-medium mb-1">{t("Electrical load analysis", "电气负荷分析")}</p>
                   <p className="text-muted-foreground">
-                    {mepAnalysis.electricalLoad.capacityKva} kVA / 需求 {mepAnalysis.electricalLoad.requiredKva} kVA
+                    {mepAnalysis.electricalLoad.capacityKva} kVA / {t("required", "需求")}{" "}
+                    {mepAnalysis.electricalLoad.requiredKva} kVA
                     （{mepAnalysis.electricalLoad.utilizationPercent}% · {mepAnalysis.electricalLoad.status}）
                   </p>
                 </div>
               )}
               {mepAnalysis.hvacEfficiency && (
                 <div className="border rounded-md p-2">
-                  <p className="font-medium mb-1">暖通效率评估</p>
+                  <p className="font-medium mb-1">{t("HVAC efficiency", "暖通效率评估")}</p>
                   <p className="text-muted-foreground">
                     COP ~{mepAnalysis.hvacEfficiency.estimatedCop} · {mepAnalysis.hvacEfficiency.efficiencyRating}
                   </p>
@@ -985,7 +1051,9 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               )}
               {mepAnalysis.plumbing && (
                 <div className="border rounded-md p-2">
-                  <p className="font-medium mb-1">给排水优化（{mepAnalysis.plumbing.condition}）</p>
+                  <p className="font-medium mb-1">
+                    {t("Plumbing optimization", "给排水优化")}（{mepAnalysis.plumbing.condition}）
+                  </p>
                   <ul className="text-muted-foreground space-y-1">
                     {mepAnalysis.plumbing.optimizations.map((o) => (
                       <li key={o}>• {o}</li>
@@ -995,7 +1063,9 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               )}
               <ul className="text-muted-foreground space-y-1">{mepAnalysis.findings?.map((f) => <li key={f}>• {f}</li>)}</ul>
               {mepAnalysis.estimatedUpgradeScope && mepAnalysis.estimatedUpgradeScope.length > 0 && (
-                <p className="text-muted-foreground">升级范围：{mepAnalysis.estimatedUpgradeScope.join("、")}</p>
+                <p className="text-muted-foreground">
+                  {t("Upgrade scope", "升级范围")}：{mepAnalysis.estimatedUpgradeScope.join("、")}
+                </p>
               )}
             </CardContent></Card>
           )}
@@ -1006,30 +1076,32 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Energy &amp; ROI Agent · 能效分析</CardTitle>
+              <CardTitle className="text-sm">
+                {t("Energy & ROI Agent", "能效与 ROI Agent")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-xs">Annual energy (kWh)</Label>
+                  <Label className="text-xs">{t("Annual energy (kWh)", "年能耗 (kWh)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
-                    placeholder="Optional — auto-estimate if empty"
+                    placeholder={t("Optional — auto-estimate if empty", "选填 — 留空则自动估算")}
                     value={energyInput.annualEnergyKwh}
                     onChange={(e) => setEnergyInput((s) => ({ ...s, annualEnergyKwh: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Window U-value</Label>
+                  <Label className="text-xs">{t("Window U-value", "窗传热系数")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
-                    placeholder="e.g. 3.2"
+                    placeholder={t("e.g. 3.2", "如 3.2")}
                     value={energyInput.windowUValue}
                     onChange={(e) => setEnergyInput((s) => ({ ...s, windowUValue: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">HVAC age (years)</Label>
+                  <Label className="text-xs">{t("HVAC age (years)", "暖通年限 (年)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
                     value={energyInput.hvacAgeYears}
@@ -1037,7 +1109,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Electricity price (¥/kWh)</Label>
+                  <Label className="text-xs">{t("Electricity price (¥/kWh)", "电价 (¥/kWh)")}</Label>
                   <Input
                     className="h-8 text-xs mt-1"
                     value={energyInput.electricityPricePerKwh}
@@ -1053,7 +1125,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   checked={energyInput.wallInsulated}
                   onChange={(e) => setEnergyInput((s) => ({ ...s, wallInsulated: e.target.checked }))}
                 />
-                Exterior wall insulated 外墙已保温
+                {t("Exterior wall insulated", "外墙已保温")}
               </label>
               <Button variant="copper" size="sm" onClick={runEnergy} disabled={energyLoading}>
                 {energyLoading ? (
@@ -1061,7 +1133,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 ) : (
                   <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                 )}
-                Run Energy Analysis
+                {t("Run Energy Analysis", "运行能效分析")}
               </Button>
             </CardContent>
           </Card>
@@ -1073,30 +1145,33 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <Badge variant="outline">EUI {energyAnalysis.simulation.benchmarkComparison.currentEui} kWh/m²·a</Badge>
                   <Badge variant="outline">{energyAnalysis.simulation.rating}</Badge>
                   <Badge variant="outline">
-                    基准差距 {energyAnalysis.simulation.benchmarkComparison.gapPercent > 0 ? "+" : ""}
+                    {t("Benchmark gap", "基准差距")}{" "}
+                    {energyAnalysis.simulation.benchmarkComparison.gapPercent > 0 ? "+" : ""}
                     {energyAnalysis.simulation.benchmarkComparison.gapPercent}%
                   </Badge>
                 </div>
                 <p className="text-muted-foreground">
-                  年能耗约 {energyAnalysis.simulation.estimatedAnnualKwh.toLocaleString()} kWh
+                  {t("Estimated annual energy", "年能耗约")}{" "}
+                  {energyAnalysis.simulation.estimatedAnnualKwh.toLocaleString()} kWh
                 </p>
                 <div>
-                  <p className="font-medium mb-1">能耗构成</p>
+                  <p className="font-medium mb-1">{t("Energy breakdown", "能耗构成")}</p>
                   <ul className="text-muted-foreground space-y-1">
                     {energyAnalysis.simulation.breakdown.map((b) => (
-                      <li key={b.systemZh}>
-                        • {b.systemZh}：{b.kwh.toLocaleString()} kWh（{b.sharePercent}%）
+                      <li key={b.system}>
+                        • {t(b.system, b.systemZh)}：{b.kwh.toLocaleString()} kWh（{b.sharePercent}%）
                       </li>
                     ))}
                   </ul>
                 </div>
                 {energyAnalysis.recommendedBundle && energyAnalysis.recommendedBundle.length > 0 && (
                   <div>
-                    <p className="font-medium mb-1">绿色改造策略</p>
+                    <p className="font-medium mb-1">{t("Green retrofit measures", "绿色改造策略")}</p>
                     <ul className="space-y-1">
                       {energyAnalysis.recommendedBundle.map((m) => (
-                        <li key={m.nameZh} className="text-muted-foreground">
-                          • {m.nameZh} — 节能 {m.estimatedSavingsPercent}% · ¥{m.estimatedCostPerSqm}/m²
+                        <li key={m.name} className="text-muted-foreground">
+                          • {t(m.name, m.nameZh)} — {t("savings", "节能")} {m.estimatedSavingsPercent}% · ¥
+                          {m.estimatedCostPerSqm}/m²
                         </li>
                       ))}
                     </ul>
@@ -1104,13 +1179,15 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 )}
                 {energyAnalysis.roi && (
                   <div className="border rounded-md p-2 bg-muted/30">
-                    <p className="font-medium mb-1">ROI 测算</p>
+                    <p className="font-medium mb-1">{t("ROI analysis", "ROI 测算")}</p>
                     <p className="text-muted-foreground">
-                      投资 ¥{energyAnalysis.roi.totalInvestment.toLocaleString()} · 年节省 ¥
+                      {t("Investment", "投资")} ¥{energyAnalysis.roi.totalInvestment.toLocaleString()} ·{" "}
+                      {t("Annual savings", "年节省")} ¥
                       {energyAnalysis.roi.annualCostSavings.toLocaleString()}
                     </p>
                     <p className="text-muted-foreground">
-                      回收期 {energyAnalysis.roi.simplePaybackYears} 年 · 10 年 ROI{" "}
+                      {t("Payback", "回收期")} {energyAnalysis.roi.simplePaybackYears}{" "}
+                      {t("years", "年")} · 10 {t("year ROI", "年 ROI")}{" "}
                       {energyAnalysis.roi.roiPercent10Year}%
                     </p>
                   </div>
@@ -1124,12 +1201,19 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       {activeTab === "cost" && (
         <div className="space-y-4">
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Cost Estimator Agent</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">{t("Cost Estimator Agent", "成本估算 Agent")}</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-xs text-muted-foreground">Estimates based on historical case library and project GFA.</p>
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "Estimates based on historical case library and project GFA.",
+                  "基于历史案例库与项目建筑面积的造价估算。"
+                )}
+              </p>
               <Button variant="copper" size="sm" onClick={runCost} disabled={costLoading}>
                 {costLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
-                Estimate Renovation Cost
+                {t("Estimate Renovation Cost", "估算改造成本")}
               </Button>
             </CardContent>
           </Card>
@@ -1137,25 +1221,26 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
             <Card><CardContent className="p-4 space-y-2 text-xs">
               <p className="text-lg font-semibold tabular-nums">¥{costEstimate.estimatedTotalCost?.toLocaleString()}</p>
               <p className="text-muted-foreground">
-                ~¥{costEstimate.estimatedCostPerSqm?.toLocaleString()}/sqm
+                ~¥{costEstimate.estimatedCostPerSqm?.toLocaleString()}/m²
                 {costEstimate.estimatedCostPerSqmMin != null && costEstimate.estimatedCostPerSqmMax != null && (
-                  <> (range ¥{costEstimate.estimatedCostPerSqmMin.toLocaleString()}–{costEstimate.estimatedCostPerSqmMax.toLocaleString()})</>
+                  <> ({t("range", "区间")} ¥{costEstimate.estimatedCostPerSqmMin.toLocaleString()}–{costEstimate.estimatedCostPerSqmMax.toLocaleString()})</>
                 )}
-                {" "}· {costEstimate.costLevel} · confidence {(costEstimate.confidence ?? 0) * 100}%
+                {" "}· {costLevelLabel(costEstimate.costLevel ?? "")} · {t("confidence", "置信度")}{" "}
+                {(costEstimate.confidence ?? 0) * 100}%
               </p>
               {costEstimate.benchmark && (
                 <p className="text-muted-foreground">
-                  Benchmark: {costEstimate.benchmark.region} (n={costEstimate.benchmark.sampleSize}, {costEstimate.benchmark.updatedAt})
+                  {t("Benchmark", "基准")}: {costEstimate.benchmark.region} (n={costEstimate.benchmark.sampleSize}, {costEstimate.benchmark.updatedAt})
                 </p>
               )}
               {costEstimate.referenceCases && costEstimate.referenceCases.length > 0 && (
                 <p className="text-muted-foreground">
-                  Reference: {costEstimate.referenceCases.map((c) => `${c.title}${c.outcome === "failure" ? " ⚠" : ""}`).join("; ")}
+                  {t("Reference", "参考案例")}: {costEstimate.referenceCases.map((c) => `${c.title}${c.outcome === "failure" ? " ⚠" : ""}`).join("; ")}
                 </p>
               )}
               {costEstimate.wbsItems && costEstimate.wbsItems.length > 0 && (
                 <div className="space-y-1 pt-2 border-t">
-                  <p className="font-medium text-foreground">WBS 分项估算</p>
+                  <p className="font-medium text-foreground">{t("WBS cost breakdown", "WBS 分项估算")}</p>
                   {costEstimate.wbsItems.map((row) => (
                     <div key={row.code} className="flex justify-between gap-2 text-muted-foreground">
                       <span>{row.code} {row.name} ({row.sharePercent}%)</span>
@@ -1244,7 +1329,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     {t("Level", "等级")}: {heritageAssessment.heritageLevel}
                   </Badge>
                   <Badge variant="outline">
-                    {t("Risk", "风险")}: {heritageAssessment.overallRisk}
+                    {t("Risk", "风险")}: {riskLevelLabel(heritageAssessment.overallRisk ?? "")}
                   </Badge>
                 </div>
                 {heritageAssessment.authenticityScores && heritageAssessment.authenticityScores.length > 0 && (
