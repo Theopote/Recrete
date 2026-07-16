@@ -194,7 +194,13 @@ npm run db:seed
 USE_DATABASE=true npm run db:verify
 ```
 
-Deploy to Vercel + hosted Postgres: see [docs/deployment.md](docs/deployment.md).
+Deploy to Vercel + hosted Postgres + Cloudflare R2: see [docs/deployment.md](docs/deployment.md).
+
+One-time production init after Neon is configured:
+
+```bash
+USE_DATABASE=true DATABASE_URL="postgresql://..." npm run db:prod-init
+```
 
 The repository layer (`lib/db/repository.ts`) automatically selects:
 
@@ -254,6 +260,8 @@ The AI layer lives in `lib/ai/` (`model-router.ts`, providers, agents, LangChain
 | `npm run db:seed` | Seed demo data |
 | `npm run db:verify` | DB acceptance checks (`USE_DATABASE=true`) |
 | `npm run db:acceptance` | Push schema + seed + verify (one command) |
+| `npm run db:prod-init` | One-time production DB init (push + seed) |
+| `npm run smoke:trial-prep` | Pre-deployment env checks for firm trial |
 | `npm run test` | Run unit tests (Vitest) |
 | `npm run jobs:worker` | Start BullMQ worker (requires `REDIS_URL`) |
 

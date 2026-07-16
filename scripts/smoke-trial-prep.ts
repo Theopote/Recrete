@@ -7,6 +7,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
+import "./load-env";
+
 const CHECKS: { name: string; run: () => void | Promise<void> }[] = [];
 
 function check(name: string, fn: () => void | Promise<void>) {
@@ -68,6 +70,11 @@ check("STORAGE_PROVIDER for uploads on Vercel", () => {
     requireEnv("S3_BUCKET");
     requireEnv("S3_ACCESS_KEY_ID");
     requireEnv("S3_SECRET_ACCESS_KEY");
+    requireEnv("S3_ENDPOINT");
+    requireEnv("S3_PUBLIC_URL_PREFIX");
+    if (process.env.S3_FORCE_PATH_STYLE !== "true") {
+      throw new Error("S3_FORCE_PATH_STYLE should be true for Cloudflare R2");
+    }
   }
 });
 

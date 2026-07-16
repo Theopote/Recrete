@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import "../scripts/load-env";
 import {
   mockUsers,
   mockOrganization,

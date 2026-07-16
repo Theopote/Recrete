@@ -3,8 +3,9 @@
  *
  * Usage:
  *   npm run db:up
- *   USE_DATABASE=true npm run db:verify
+ *   npm run db:acceptance
  */
+import "./load-env";
 import { prisma } from "@/lib/db/prisma";
 import { addBimModel, getBimModel, listBimModels } from "@/lib/db/bim-models";
 import { upsertDrawingAsset, listDrawingAssetsByProject } from "@/lib/db/drawing-assets";

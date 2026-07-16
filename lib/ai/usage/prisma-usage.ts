@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { isDatabaseEnabled } from "@/lib/db/resolve";
 import type { AIUsageSummary, RecordAIUsageInput } from "./types";
 import {
   countUsageSince as memoryCount,
@@ -41,15 +42,11 @@ function startOfMonth(d = new Date()): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
-function useDatabase(): boolean {
-  return process.env.USE_DATABASE === "true";
-}
-
 export async function countUsageSince(
   organizationId: string,
   since: Date
 ): Promise<number> {
-  if (!useDatabase()) return memoryCount(organizationId, since);
+  if (!isDatabaseEnabled()) return memoryCount(organizationId, since);
   return db.aIUsageEvent.count({
     where: {
       organizationId,
@@ -62,7 +59,7 @@ export async function countUsageSince(
 export async function getUsageSummary(
   organizationId: string
 ): Promise<AIUsageSummary> {
-  if (!useDatabase()) return memorySummary(organizationId);
+  if (!isDatabaseEnabled()) return memorySummary(organizationId);
 
   const dailyUsed = await countUsageSince(organizationId, startOfDay());
   const monthlyUsed = await countUsageSince(organizationId, startOfMonth());
@@ -79,7 +76,7 @@ export async function getUsageSummary(
 }
 
 export async function recordUsage(input: RecordAIUsageInput): Promise<void> {
-  if (!useDatabase()) {
+  if (!isDatabaseEnabled()) {
     await memoryRecord(input);
     return;
   }

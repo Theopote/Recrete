@@ -3,7 +3,7 @@ import "server-only";
 import { isRealAIEnabled } from "@/lib/ai/model-router";
 import { normalizeAIError } from "@/lib/ai/errors";
 
-export function useVisionMockFallback(): boolean {
+export function shouldFallbackToVisionMock(): boolean {
   return !isRealAIEnabled();
 }
 
