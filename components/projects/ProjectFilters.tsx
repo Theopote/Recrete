@@ -46,7 +46,7 @@ export function ProjectFilters({
         className="w-40 h-8 text-xs"
       >
         <option value="all">{t("All Statuses", "全部状态")}</option>
-        {Object.entries(projectStatusLabels).map(([key, enLabel]) => (
+        {Object.entries(projectStatusLabels).map(([key]) => (
           <option key={key} value={key}>
             {label(projectStatusLabels, projectStatusLabelsZh, key as keyof typeof projectStatusLabels)}
           </option>
