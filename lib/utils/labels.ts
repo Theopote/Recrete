@@ -60,6 +60,18 @@ export const diagnosisCategoryLabels: LabelMap<DiagnosisCategory> = {
   operation: "Operation",
 };
 
+export const diagnosisCategoryLabelsZh: LabelMap<DiagnosisCategory> = {
+  architecture: "建筑",
+  structure: "结构",
+  facade: "立面",
+  mep: "机电",
+  fire_safety: "消防",
+  accessibility: "无障碍",
+  energy: "节能",
+  heritage: "文保",
+  operation: "运维",
+};
+
 export const diagnosisStatusLabels: LabelMap<DiagnosisStatus> = {
   identified: "Identified",
   under_review: "Under Review",
@@ -115,6 +127,13 @@ export const issueStatusLabels: LabelMap<IssueStatus> = {
   in_progress: "In Progress",
   resolved: "Resolved",
   closed: "Closed",
+};
+
+export const issueStatusLabelsZh: LabelMap<IssueStatus> = {
+  open: "待处理",
+  in_progress: "处理中",
+  resolved: "已解决",
+  closed: "已关闭",
 };
 
 export const reportTypeLabels: LabelMap<ReportType> = {

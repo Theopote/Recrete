@@ -9,12 +9,19 @@ export default async function GlobalDiagnosisPage() {
 
   return (
     <AppShell>
-      <TopBar title="Diagnosis" subtitle={`${items.length} items across all projects`} />
+      <TopBar
+        title="Diagnosis"
+        titleZh="诊断"
+        subtitle={`${items.length} items across all projects`}
+        subtitleZh={`全项目共 ${items.length} 条诊断`}
+      />
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-7xl">
           <SectionHeader
             title="Building Diagnosis"
+            titleZh="建筑诊断"
             description="Cross-project view of all identified building issues and condition findings"
+            descriptionZh="跨项目查看所有已识别的建筑问题与现状发现"
           />
           <GlobalDiagnosisList items={items} />
         </div>

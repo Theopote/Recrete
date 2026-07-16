@@ -9,18 +9,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { UserRole } from "@/types";
 import type { ProjectAction } from "@/lib/auth/permissions";
+import { useLocale } from "@/lib/i18n/use-locale";
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Administrator",
-  architect: "Architect",
-  engineer: "Engineer",
-  consultant: "Consultant",
-  project_manager: "Project Manager",
-  owner: "Owner / 甲方",
-  viewer: "Viewer",
+const ROLE_LABELS: Record<UserRole, { en: string; zh: string }> = {
+  admin: { en: "Administrator", zh: "管理员" },
+  architect: { en: "Architect", zh: "建筑师" },
+  engineer: { en: "Engineer", zh: "工程师" },
+  consultant: { en: "Consultant", zh: "顾问" },
+  project_manager: { en: "Project Manager", zh: "项目经理" },
+  owner: { en: "Owner", zh: "甲方" },
+  viewer: { en: "Viewer", zh: "只读" },
 };
 
 export function AccountSettingsCard() {
+  const { t } = useLocale();
   const { data: session } = useSession();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -57,32 +59,38 @@ export function AccountSettingsCard() {
     setLoading(false);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(data.error ?? "Password change failed");
+      setError(data.error ?? t("Password change failed", "密码修改失败"));
       return;
     }
 
-    setMessage("Password updated successfully");
+    setMessage(t("Password updated successfully", "密码已更新"));
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
   };
 
+  const roleLabel = ROLE_LABELS[role]
+    ? t(ROLE_LABELS[role].en, ROLE_LABELS[role].zh)
+    : role;
+
   return (
     <Card>
       <CardContent className="p-5 space-y-5">
         <div>
-          <h3 className="text-sm font-medium">Account</h3>
+          <h3 className="text-sm font-medium">{t("Account", "账户")}</h3>
           <p className="text-xs text-muted-foreground mt-1">
             {session?.user?.name} · {session?.user?.email}
           </p>
           <Badge variant="outline" className="mt-2 capitalize">
-            {ROLE_LABELS[role] ?? role}
+            {roleLabel}
           </Badge>
         </div>
 
         {permissions.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Role permissions</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              {t("Role permissions", "角色权限")}
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {permissions.map((action) => (
                 <Badge key={action} variant="outline" className="text-[10px] font-normal">
@@ -94,23 +102,46 @@ export function AccountSettingsCard() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3 border-t pt-4">
-          <p className="text-xs font-medium">Change password</p>
+          <p className="text-xs font-medium">{t("Change password", "修改密码")}</p>
           <div className="space-y-1.5">
-            <Label htmlFor="currentPassword">Current password</Label>
-            <Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className="h-9" />
+            <Label htmlFor="currentPassword">{t("Current password", "当前密码")}</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              className="h-9"
+            />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="newPassword">New password</Label>
-            <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} className="h-9" />
+            <Label htmlFor="newPassword">{t("New password", "新密码")}</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+              className="h-9"
+            />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="confirmNewPassword">Confirm new password</Label>
-            <Input id="confirmNewPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} className="h-9" />
+            <Label htmlFor="confirmNewPassword">{t("Confirm new password", "确认新密码")}</Label>
+            <Input
+              id="confirmNewPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              className="h-9"
+            />
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
           {message && <p className="text-xs text-emerald-500">{message}</p>}
           <Button type="submit" size="sm" disabled={loading}>
-            {loading ? "Saving..." : "Update Password"}
+            {loading ? t("Saving...", "保存中...") : t("Update Password", "更新密码")}
           </Button>
         </form>
       </CardContent>

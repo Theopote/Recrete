@@ -11,12 +11,19 @@ export default async function GlobalStrategiesPage() {
 
   return (
     <AppShell>
-      <TopBar title="Design Strategies" subtitle={`${strategies.length} strategies across projects`} />
+      <TopBar
+        title="Design Strategies"
+        titleZh="改造策略"
+        subtitle={`${strategies.length} strategies across projects`}
+        subtitleZh={`全项目共 ${strategies.length} 套方案`}
+      />
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-7xl space-y-6">
           <SectionHeader
             title="Renovation Strategies"
+            titleZh="改造方案"
             description="Overview of all renovation strategy options being evaluated"
+            descriptionZh="所有在评估中的改造方案概览"
           />
           <div className="space-y-4">
             {strategies.map((strategy) => (

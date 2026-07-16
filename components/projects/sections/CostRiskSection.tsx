@@ -13,6 +13,7 @@ import type { AIInsight, CostRiskMatrix } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { Sparkles, Loader2 } from "lucide-react";
 import { ProjectCostRecordPanel } from "@/components/cost/ProjectCostRecordPanel";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface CostRiskSectionProps {
   project: ProjectWithRelations;
@@ -24,6 +25,7 @@ function filterCostRiskInsights(insights: AIInsight[] | undefined) {
 }
 
 export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSectionProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const [matrix, setMatrix] = useState<CostRiskMatrix | null>(null);
   const [phasing, setPhasing] = useState<string[]>([]);
@@ -95,7 +97,7 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
             ) : (
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Estimate Cost & Risk
+            {t("Estimate Cost & Risk", "估算成本与风险")}
           </Button>
         }
       />
@@ -109,7 +111,10 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
       ) : (
         <Card>
           <CardContent className="p-6 text-center text-xs text-muted-foreground">
-            Generate cost & risk analysis from renovation strategies
+            {t(
+              "Generate cost & risk analysis from renovation strategies",
+              "基于改造方案生成成本与风险分析"
+            )}
           </CardContent>
         </Card>
       )}
@@ -118,7 +123,7 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
         <div>
           <SectionHeader title="Energy ROI Opportunities" titleZh="能效 ROI 机会" />
           <p className="text-[10px] text-muted-foreground mb-2 -mt-4">
-            Persisted to project insights · 已写入项目洞察
+            {t("Persisted to project insights", "已写入项目洞察")}
           </p>
           <AIInsightList insights={energyOpportunities} compact />
         </div>
@@ -135,7 +140,7 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
         <Card>
           <CardContent className="p-4">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-              Suggested Phasing Plan
+              {t("Suggested Phasing Plan", "建议分期计划")}
             </h4>
             <ol className="space-y-2">
               {phasing.map((phase, i) => (
@@ -150,7 +155,10 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
       )}
 
       <div>
-        <SectionHeader title="Strategy Risk Overview" />
+        <SectionHeader
+          title="Strategy Risk Overview"
+          titleZh="方案风险概览"
+        />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {strategiesWithMetrics.map((s) => (
             <Card key={s.id}>

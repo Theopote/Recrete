@@ -18,6 +18,7 @@ import type { AIInsight } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { Brain } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface OverviewSectionProps {
   project: ProjectWithRelations;
@@ -54,6 +55,7 @@ function buildOverviewInsightPanels(insights: AIInsight[]) {
 }
 
 export function OverviewSection({ project }: OverviewSectionProps) {
+  const { t } = useLocale();
   const [insights, setInsights] = useState<AIInsight[]>(() =>
     (project.insights ?? []).map(parseInsight)
   );
@@ -111,14 +113,14 @@ export function OverviewSection({ project }: OverviewSectionProps) {
         </Card>
         <Card>
           <CardContent className="p-4 text-xs space-y-1">
-            <p className="text-muted-foreground">AI Insights</p>
+            <p className="text-muted-foreground">{t("AI Insights", "AI 洞察")}</p>
             <p className="text-2xl font-semibold">{insights.length}</p>
             {costRiskInsights.length > 0 && (
               <p className="text-[10px] text-sage">
-                {costRiskInsights.length} from Cost &amp; Risk / ROI
+                {costRiskInsights.length} {t("from Cost & Risk / ROI", "来自成本与风险 / ROI")}
               </p>
             )}
-            <p className="text-muted-foreground pt-1">Analysis Runs</p>
+            <p className="text-muted-foreground pt-1">{t("Analysis Runs", "分析记录")}</p>
             <p className="text-lg font-semibold">{project.analysisRuns?.length ?? 0}</p>
           </CardContent>
         </Card>
@@ -129,13 +131,15 @@ export function OverviewSection({ project }: OverviewSectionProps) {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Brain className="h-4 w-4 text-copper" />
-              <h3 className="text-sm font-semibold">Building Memory Snapshot</h3>
+              <h3 className="text-sm font-semibold">
+                {t("Building Memory Snapshot", "建筑记忆快照")}
+              </h3>
             </div>
             <Link
               href={`/projects/${project.id}?section=building-memory`}
               className="text-[10px] font-medium text-copper hover:underline"
             >
-              View full memory →
+              {t("View full memory →", "查看完整记忆 →")}
             </Link>
           </div>
           <BuildingMemoryCard memory={project.buildingMemory} />
@@ -154,14 +158,14 @@ export function OverviewSection({ project }: OverviewSectionProps) {
               href={`/projects/${project.id}?section=cost-risk`}
               className="text-[10px] font-medium text-copper hover:underline shrink-0"
             >
-              Cost &amp; Risk →
+              {t("Cost & Risk →", "成本与风险 →")}
             </Link>
           </div>
 
           {costRiskInsights.length > 0 && (
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                Cost &amp; Energy ROI · 成本与能效 ROI
+                {t("Cost & Energy ROI", "成本与能效 ROI")}
               </p>
               <AIInsightList insights={costRiskInsights} compact />
             </div>
@@ -176,7 +180,7 @@ export function OverviewSection({ project }: OverviewSectionProps) {
               <div>
                 {costRiskInsights.length > 0 && (
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2 mt-4">
-                    Priority · 优先关注
+                    {t("Priority", "优先关注")}
                   </p>
                 )}
                 <AIInsightList insights={priorityOnly} compact />
@@ -186,7 +190,10 @@ export function OverviewSection({ project }: OverviewSectionProps) {
 
           {costRiskInsights.length === 0 && displayInsights.length === 0 && (
             <p className="text-xs text-muted-foreground">
-              Run Cost &amp; Risk or Diagnosis workflows to populate insights.
+              {t(
+                "Run Cost & Risk or Diagnosis workflows to populate insights.",
+                "运行成本与风险或诊断流程以生成洞察。"
+              )}
             </p>
           )}
         </div>
@@ -205,7 +212,7 @@ export function OverviewSection({ project }: OverviewSectionProps) {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">No open issues</p>
+            <p className="text-xs text-muted-foreground">{t("No open issues", "暂无待处理问题")}</p>
           )}
         </div>
         <div>

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectWithRelations } from "@/types";
 import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf } from "lucide-react";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost";
 
@@ -26,6 +27,7 @@ interface ExpertAgentsSectionProps {
 }
 
 export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
+  const { t } = useLocale();
   const [activeTab, setActiveTab] = useState<ExpertTab>("structural");
   const [structuralLoading, setStructuralLoading] = useState(false);
   const [complianceLoading, setComplianceLoading] = useState(false);
@@ -404,7 +406,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           className="text-xs gap-1.5"
           onClick={() => setActiveTab("structural")}
         >
-          <Building2 className="h-3.5 w-3.5" /> Structural
+          <Building2 className="h-3.5 w-3.5" /> {t("Structural", "结构")}
         </Button>
         <Button
           variant={activeTab === "compliance" ? "default" : "outline"}
@@ -415,7 +417,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
             if (!complianceMeta) void loadComplianceMeta();
           }}
         >
-          <ShieldCheck className="h-3.5 w-3.5" /> Compliance
+          <ShieldCheck className="h-3.5 w-3.5" /> {t("Compliance", "合规")}
         </Button>
         <Button
           variant={activeTab === "fire" ? "default" : "outline"}
@@ -423,7 +425,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           className="text-xs gap-1.5"
           onClick={() => setActiveTab("fire")}
         >
-          <Flame className="h-3.5 w-3.5" /> Fire
+          <Flame className="h-3.5 w-3.5" /> {t("Fire", "消防")}
         </Button>
         <Button
           variant={activeTab === "mep" ? "default" : "outline"}
@@ -431,7 +433,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           className="text-xs gap-1.5"
           onClick={() => setActiveTab("mep")}
         >
-          <Zap className="h-3.5 w-3.5" /> MEP
+          <Zap className="h-3.5 w-3.5" /> {t("MEP", "机电")}
         </Button>
         <Button
           variant={activeTab === "energy" ? "default" : "outline"}
@@ -439,7 +441,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           className="text-xs gap-1.5"
           onClick={() => setActiveTab("energy")}
         >
-          <Leaf className="h-3.5 w-3.5" /> Energy
+          <Leaf className="h-3.5 w-3.5" /> {t("Energy", "能效")}
         </Button>
         <Button
           variant={activeTab === "cost" ? "default" : "outline"}
@@ -447,7 +449,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           className="text-xs gap-1.5"
           onClick={() => setActiveTab("cost")}
         >
-          <Coins className="h-3.5 w-3.5" /> Cost
+          <Coins className="h-3.5 w-3.5" /> {t("Cost", "成本")}
         </Button>
       </div>
 

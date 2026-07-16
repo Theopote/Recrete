@@ -15,6 +15,7 @@ import { Box, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { BimSpatialAnalyticsPanel } from "@/components/bim/BimSpatialAnalyticsPanel";
 import { IfcLightweightProcessor } from "@/components/bim/IfcLightweightProcessor";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 const IfcModelViewer = dynamic(
   () => import("@/components/bim/IfcModelViewer").then((m) => m.IfcModelViewer),
@@ -117,6 +118,7 @@ function RoomTable({ model }: { model: BimModel }) {
 }
 
 export function BimViewerSection({ project }: BimViewerSectionProps) {
+  const { t } = useLocale();
   const [models, setModels] = useState<BimModel[]>([]);
   const [selectedId, setSelectedId] = useState<string | "sample">("sample");
   const [loading, setLoading] = useState(true);
@@ -177,12 +179,14 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
       <IfcLightweightProcessor models={models} onUpdated={handleModelUpdated} />
       <SectionHeader
         title="BIM / CAD Viewer"
+        titleZh="BIM / CAD 查看器"
         description="Import IFC, DWG, or DXF — circulation analysis, spatial cost heatmap, strategy 3D compare"
+        descriptionZh="导入 IFC、DWG 或 DXF — 动线分析、空间成本热力图、方案三维对比"
         action={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={loadModels} disabled={loading}>
               <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+              {t("Refresh", "刷新")}
             </Button>
             <RoleGate action="upload_documents">
               <BimModelUploadButton projectId={project.id} onUploaded={handleUploaded} />
@@ -195,7 +199,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
         <Card>
           <CardContent className="p-3 space-y-2">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Models
+              {t("Models", "模型")}
             </p>
             <button
               type="button"

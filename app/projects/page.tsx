@@ -28,12 +28,20 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
 
   return (
     <AppShell>
-      <TopBar title="Projects" subtitle={`${projects.length} renovation projects`} showNewProject />
+      <TopBar
+        title="Projects"
+        titleZh="项目"
+        subtitle={`${projects.length} renovation projects`}
+        subtitleZh={`${projects.length} 个改造项目`}
+        showNewProject
+      />
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-7xl space-y-6">
           <SectionHeader
             title="Renovation Projects"
+            titleZh="改造项目"
             description="Manage existing building renovation and adaptive reuse projects"
+            descriptionZh="管理既有建筑改造与适应性再利用项目"
           />
 
           <ProjectFilters

@@ -8,8 +8,12 @@ import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
 import { parseAIErrorResponse } from "@/lib/ai/client-messages";
-import { diagnosisCategoryLabels } from "@/lib/utils/labels";
-import type { DiagnosisItem, ProjectWithRelations } from "@/types";
+import {
+  diagnosisCategoryLabels,
+  diagnosisCategoryLabelsZh,
+} from "@/lib/utils/labels";
+import { useLocale } from "@/lib/i18n/use-locale";
+import type { DiagnosisCategory, DiagnosisItem, ProjectWithRelations } from "@/types";
 import { Sparkles, Stethoscope, Plus } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { EvidenceTrail } from "@/components/diagnosis/EvidenceTrail";
@@ -20,12 +24,16 @@ interface DiagnosisSectionProps {
 }
 
 export function DiagnosisSection({ project: initialProject }: DiagnosisSectionProps) {
+  const { t, label } = useLocale();
   const [items, setItems] = useState(initialProject.diagnosis ?? []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DiagnosisItem | null>(null);
+
+  const categoryLabel = (key: DiagnosisCategory) =>
+    label(diagnosisCategoryLabels, diagnosisCategoryLabelsZh, key);
 
   const projectEvidence = initialProject.sourceEvidence ?? [];
   const documentNames = Object.fromEntries(
@@ -38,10 +46,10 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
     return projectEvidence.filter((ev) => {
       if (!needle) return false;
       const quote = ev.quote?.toLowerCase() ?? "";
-      const label = ev.locationLabel?.toLowerCase() ?? "";
+      const labelText = ev.locationLabel?.toLowerCase() ?? "";
       return (
         (quote && needle.includes(quote.slice(0, 24))) ||
-        (label && needle.includes(label)) ||
+        (labelText && needle.includes(labelText)) ||
         (ev.documentId && needle.includes(ev.documentId))
       );
     });
@@ -63,7 +71,10 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
         setAiError(parsed);
       }
     } catch {
-      setAiError({ message: "网络异常，请稍后重试。", retryable: true });
+      setAiError({
+        message: t("Network error. Please try again.", "网络异常，请稍后重试。"),
+        retryable: true,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -103,17 +114,21 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
     <div className="space-y-6">
       <SectionHeader
         title="Building Diagnosis"
+        titleZh="建筑诊断"
         description="AI-assisted condition assessment grouped by discipline"
+        descriptionZh="AI 辅助的现状评估，按专业分类展示"
         action={
           <RoleGate action="run_ai_analysis">
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={openCreate}>
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
-                Add Item
+                {t("Add Item", "添加条目")}
               </Button>
               <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                {isGenerating ? "Generating..." : "Generate AI Diagnosis"}
+                {isGenerating
+                  ? t("Generating...", "生成中...")
+                  : t("Generate AI Diagnosis", "AI 生成诊断")}
               </Button>
             </div>
           </RoleGate>
@@ -138,17 +153,23 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
       )}
 
       <div className="flex flex-wrap gap-2">
-        <CategoryPill label="All" count={items.length} active={activeCategory === "all"} onClick={() => setActiveCategory("all")} />
-        {Object.entries(diagnosisCategoryLabels).map(([key, label]) => {
-          const count = grouped[key]?.length ?? 0;
+        <CategoryPill
+          label={t("All", "全部")}
+          count={items.length}
+          active={activeCategory === "all"}
+          onClick={() => setActiveCategory("all")}
+        />
+        {Object.keys(diagnosisCategoryLabels).map((key) => {
+          const cat = key as DiagnosisCategory;
+          const count = grouped[cat]?.length ?? 0;
           if (count === 0) return null;
           return (
             <CategoryPill
-              key={key}
-              label={label}
+              key={cat}
+              label={categoryLabel(cat)}
               count={count}
-              active={activeCategory === key}
-              onClick={() => setActiveCategory(key)}
+              active={activeCategory === cat}
+              onClick={() => setActiveCategory(cat)}
             />
           );
         })}
@@ -159,7 +180,7 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
           Object.entries(grouped).map(([category, categoryItems]) => (
             <div key={category}>
               <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
-                {diagnosisCategoryLabels[category as keyof typeof diagnosisCategoryLabels]} ({categoryItems.length})
+                {categoryLabel(category as DiagnosisCategory)} ({categoryItems.length})
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 {categoryItems.map((item) => (
@@ -188,9 +209,15 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
       ) : (
         <EmptyState
           icon={Stethoscope}
-          title="No diagnosis items"
-          description="Add items manually or run AI diagnosis to identify building issues."
-          action={{ label: "Generate Diagnosis", onClick: handleGenerate }}
+          title={t("No diagnosis items", "暂无诊断条目")}
+          description={t(
+            "Add items manually or run AI diagnosis to identify building issues.",
+            "手动添加条目，或运行 AI 诊断识别建筑问题。"
+          )}
+          action={{
+            label: t("Generate Diagnosis", "生成诊断"),
+            onClick: handleGenerate,
+          }}
         />
       )}
 
@@ -205,7 +232,17 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
   );
 }
 
-function CategoryPill({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
+function CategoryPill({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}

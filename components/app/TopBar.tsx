@@ -6,27 +6,39 @@ import Link from "next/link";
 import { GlobalSearch } from "./GlobalSearch";
 import { LanguageToggle } from "./LanguageToggle";
 import { useUIStore } from "@/lib/stores/ui-store";
+import { pickLocaleText } from "@/lib/i18n/locale";
 import { useSession, signOut } from "next-auth/react";
 import { getInitials } from "@/lib/utils";
 
 interface TopBarProps {
   title: string;
+  titleZh?: string;
   subtitle?: string;
+  subtitleZh?: string;
   showNewProject?: boolean;
   showAiToggle?: boolean;
 }
 
-export function TopBar({ title, subtitle, showNewProject = false, showAiToggle = false }: TopBarProps) {
-  const { aiPanelOpen, toggleAiPanel } = useUIStore();
+export function TopBar({
+  title,
+  titleZh,
+  subtitle,
+  subtitleZh,
+  showNewProject = false,
+  showAiToggle = false,
+}: TopBarProps) {
+  const { aiPanelOpen, toggleAiPanel, locale } = useUIStore();
+  const displayTitle = pickLocaleText(locale, title, titleZh);
+  const displaySubtitle = subtitle ? pickLocaleText(locale, subtitle, subtitleZh) : undefined;
   const { data: session } = useSession();
   const initials = session?.user?.name ? getInitials(session.user.name) : "U";
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border/80 bg-card/75 backdrop-blur-xl px-4 md:px-6 shrink-0">
       <div className="min-w-0">
-        <h1 className="text-sm font-semibold tracking-tight truncate">{title}</h1>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+        <h1 className="text-sm font-semibold tracking-tight truncate">{displayTitle}</h1>
+        {displaySubtitle && (
+          <p className="text-xs text-muted-foreground truncate">{displaySubtitle}</p>
         )}
       </div>
 

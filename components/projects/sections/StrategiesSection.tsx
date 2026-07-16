@@ -18,6 +18,7 @@ import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
 import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { Lightbulb, Sparkles, GitCompare } from "lucide-react";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface StrategiesSectionProps {
   project: ProjectWithRelations;
@@ -25,6 +26,7 @@ interface StrategiesSectionProps {
 }
 
 export function StrategiesSection({ project, strategiesWithMetrics: initialMetrics }: StrategiesSectionProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const showWelcome = searchParams.get("welcome") === "1";
@@ -56,7 +58,10 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
         setAiError(parseAIErrorResponse(data));
       }
     } catch {
-      setAiError({ message: "网络异常，请稍后重试。", retryable: true });
+      setAiError({
+        message: t("Network error. Please try again.", "网络异常，请稍后重试。"),
+        retryable: true,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -102,12 +107,15 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
               onClick={() => setShowComparison(!showComparison)}
             >
               <GitCompare className="h-3.5 w-3.5 mr-1.5" />
-              {showComparison ? "Hide" : "Show"} Comparison
+              {showComparison ? t("Hide", "隐藏") : t("Show", "显示")}{" "}
+              {t("Comparison", "对比")}
             </Button>
             <RoleGate action="create_strategy">
               <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                {isGenerating ? "Generating..." : "Generate Strategies"}
+                {isGenerating
+                  ? t("Generating...", "生成中...")
+                  : t("Generate Strategies", "生成方案")}
               </Button>
             </RoleGate>
           </div>
@@ -125,7 +133,7 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
 
       {recommendation && (
         <div className="rounded-lg border border-copper/30 bg-copper/5 px-4 py-3 text-xs">
-          <p className="font-medium text-copper">AI 推荐方案</p>
+          <p className="font-medium text-copper">{t("AI Recommended Strategy", "AI 推荐方案")}</p>
           <p className="mt-1 text-muted-foreground leading-relaxed">{recommendation.reason}</p>
         </div>
       )}
@@ -139,9 +147,12 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
 
       {strategies.length === 0 && showWelcome && (
         <div className="rounded-lg border border-copper/30 bg-copper/5 px-4 py-3 text-xs">
-          <p className="font-medium">项目已创建！</p>
+          <p className="font-medium">{t("Project created!", "项目已创建！")}</p>
           <p className="mt-1 text-muted-foreground">
-            下一步：点击「Generate Strategies」生成三套改造方案并对比。
+            {t(
+              'Next: click "Generate Strategies" to compare three renovation options.',
+              "下一步：点击「生成方案」对比三套改造策略。"
+            )}
           </p>
         </div>
       )}
@@ -155,7 +166,7 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
       {showComparison && strategies.length > 1 && (
         <div>
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
-            Strategy Comparison
+            {t("Strategy Comparison", "方案对比")}
           </h3>
           <StrategyComparisonTable strategies={strategies} />
         </div>
@@ -186,9 +197,15 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
       ) : (
         <EmptyState
           icon={Lightbulb}
-          title="No strategies yet"
-          description="Click Generate Strategies to compare three AI options: light intervention, medium reconfiguration, and deep recreation."
-          action={{ label: "Generate Strategies", onClick: handleGenerate }}
+          title={t("No strategies yet", "暂无改造方案")}
+          description={t(
+            "Click Generate Strategies to compare three AI options: light intervention, medium reconfiguration, and deep recreation.",
+            "点击「生成方案」对比轻介入、中度重组、深度再造三套 AI 方案。"
+          )}
+          action={{
+            label: t("Generate Strategies", "生成方案"),
+            onClick: handleGenerate,
+          }}
         />
       )}
     </div>

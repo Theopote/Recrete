@@ -1,3 +1,5 @@
+"use client";
+
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { BuildingMemoryCard } from "@/components/ai/BuildingMemoryCard";
 import { MissingInformationList } from "@/components/ai/MissingInformationList";
@@ -10,12 +12,14 @@ import type { ProjectWithRelations } from "@/types";
 import { Brain } from "lucide-react";
 import { BuildingMemoryHistoryPanel } from "@/components/ai/BuildingMemoryHistoryPanel";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 interface BuildingMemorySectionProps {
   project: ProjectWithRelations;
 }
 
 export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
+  const { t } = useLocale();
   const memory = project.buildingMemory;
 
   if (!memory) {
@@ -30,8 +34,11 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
         />
         <EmptyState
           icon={Brain}
-          title="Building Memory not initialized"
-          description="Run AI analysis to build persistent project intelligence."
+          title={t("Building Memory not initialized", "建筑记忆尚未初始化")}
+          description={t(
+            "Run AI analysis to build persistent project intelligence.",
+            "运行 AI 分析以建立持久化的项目智能。"
+          )}
         />
       </div>
     );
@@ -59,7 +66,7 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
         <Card>
           <CardContent className="p-4 space-y-4">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Design Constraints
+              {t("Design Constraints", "设计约束")}
             </h4>
             <ul className="space-y-1.5">
               {memory.designConstraints.map((item, i) => (
@@ -67,7 +74,7 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
               ))}
             </ul>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-2">
-              Owner Requirements
+              {t("Owner Requirements", "业主要求")}
             </h4>
             <ul className="space-y-1.5">
               {memory.ownerRequirements.map((item, i) => (
@@ -75,7 +82,7 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
               ))}
             </ul>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-2">
-              Important Decisions
+              {t("Important Decisions", "重要决策")}
             </h4>
             <ul className="space-y-1.5">
               {memory.importantDecisions.map((item, i) => (
@@ -92,7 +99,10 @@ export function BuildingMemorySection({ project }: BuildingMemorySectionProps) {
       </div>
 
       <div>
-        <SectionHeader title="Related AI Insights" />
+        <SectionHeader
+          title="Related AI Insights"
+          titleZh="相关 AI 洞察"
+        />
         <AIInsightList insights={project.insights ?? []} compact />
       </div>
     </div>
