@@ -135,7 +135,7 @@ export async function generateHeritageDiagnosis(
       title: "Heritage approval pathway required",
       category: "heritage",
       severity: assessment.overallRisk === "high" ? "critical" : "high",
-      status: "open",
+      status: "identified",
       description:
         assessment.guidelines.find((g) => g.id === "approval")?.principleEn ??
         "Heritage renovation requires authority review.",
@@ -153,7 +153,7 @@ export async function generateHeritageDiagnosis(
       title: "Minimum intervention & reversibility",
       category: "heritage",
       severity: "medium",
-      status: "open",
+      status: "identified",
       description: assessment.reversibleInterventions[0]?.en ?? "Prefer reversible interventions.",
       evidence: "GB 50458 / PRC Heritage Law principles",
       recommendation: assessment.reversibleInterventions[1]?.en,
