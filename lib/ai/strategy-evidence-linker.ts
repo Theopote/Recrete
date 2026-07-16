@@ -8,12 +8,12 @@ export interface StrategySourceLinks {
 
 const STRATEGY_CATEGORY_FOCUS: Partial<Record<StrategyType, DiagnosisItem["category"][]>> = {
   light_renewal: ["facade", "energy", "mep", "accessibility"],
-  medium_renovation: ["structure", "mep", "fire", "accessibility"],
-  deep_recreation: ["structure", "fire", "mep", "heritage"],
-  adaptive_reuse: ["structure", "fire", "mep", "heritage", "accessibility"],
+  medium_renovation: ["structure", "mep", "fire_safety", "accessibility"],
+  deep_recreation: ["structure", "fire_safety", "mep", "heritage"],
+  adaptive_reuse: ["structure", "fire_safety", "mep", "heritage", "accessibility"],
   facade_upgrade: ["facade", "energy"],
   energy_retrofit: ["energy", "mep"],
-  safety_upgrade: ["structure", "fire"],
+  safety_upgrade: ["structure", "fire_safety"],
 };
 
 function scoreDiagnosisForStrategy(

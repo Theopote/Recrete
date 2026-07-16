@@ -10,7 +10,7 @@ export async function POST(
   const access = await requireProjectAccess(projectId);
   if ("error" in access) return access.error;
 
-  const memory = await updateBuildingMemory(projectId, access.user.organizationId);
+  const memory = await updateBuildingMemory(projectId, access.user.organizationId, "manual");
   if (!memory) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
