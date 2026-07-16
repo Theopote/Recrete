@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { RiskBadge } from "./RiskBadge";
 import { StatusBadge } from "./StatusBadge";
@@ -22,8 +21,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const topRisk = getProjectTopRisk(project.id);
   const nextAction = getProjectNextAction(project.id);
 
+  const projectHref = `/projects/${project.id}`;
+
   return (
-    <Link href={`/projects/${project.id}`}>
+    <a href={projectHref} className="block h-full no-underline text-inherit">
       <Card className="group h-full transition-all hover:border-copper/40 hover:shadow-md">
         <CardContent className="p-5">
           <div className="mb-3 flex items-start justify-between">
@@ -77,6 +78,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </a>
   );
 }
