@@ -1,4 +1,5 @@
 import type { DiagnosisItem, ProjectWithRelations } from "@/types";
+import { bi, type BilingualString } from "@/lib/i18n/bilingual";
 import {
   AUTHENTICITY_FACTORS,
   HERITAGE_GUIDELINES,
@@ -24,9 +25,9 @@ export interface HeritageAssessmentResult {
   overallRisk: "low" | "medium" | "high";
   authenticityScores: HeritageAuthenticityScore[];
   guidelines: typeof HERITAGE_GUIDELINES;
-  reversibleInterventions: Array<{ en: string; zh: string }>;
-  prohibitedActions: Array<{ en: string; zh: string }>;
-  recommendations: Array<{ en: string; zh: string }>;
+  reversibleInterventions: BilingualString[];
+  prohibitedActions: BilingualString[];
+  recommendations: BilingualString[];
 }
 
 function heritageLevelWeight(level?: string | null): number {
@@ -85,38 +86,38 @@ export function assessHeritageProject(
     authenticityScores,
     guidelines: HERITAGE_GUIDELINES,
     reversibleInterventions: [
-      {
-        en: "Detachable MEP runs in secondary zones; avoid chasing into primary heritage fabric",
-        zh: "次要区域采用可拆卸机电管线，避免在保护本体上开槽",
-      },
-      {
-        en: "Lightweight partition systems with reversible anchors for program adaptation",
-        zh: "功能调整优先采用轻质隔墙与可逆锚固节点",
-      },
-      {
-        en: "Facade cleaning and localized repair before wholesale replacement",
-        zh: "立面优先清洗与局部修缮，避免整体替换",
-      },
+      bi(
+        "Detachable MEP runs in secondary zones; avoid chasing into primary heritage fabric",
+        "次要区域采用可拆卸机电管线，避免在保护本体上开槽"
+      ),
+      bi(
+        "Lightweight partition systems with reversible anchors for program adaptation",
+        "功能调整优先采用轻质隔墙与可逆锚固节点"
+      ),
+      bi(
+        "Facade cleaning and localized repair before wholesale replacement",
+        "立面优先清洗与局部修缮，避免整体替换"
+      ),
     ],
     prohibitedActions: [
-      {
-        en: "Unauthorized demolition of protected roof forms, timber brackets, or streetscape elements",
-        zh: "禁止擅自拆除保护屋顶形制、木作斗栱或街巷风貌要素",
-      },
-      {
-        en: "Irreversible structural cuts without heritage impact assessment",
-        zh: "未经影响评估不得对保护本体做不可逆结构开洞",
-      },
+      bi(
+        "Unauthorized demolition of protected roof forms, timber brackets, or streetscape elements",
+        "禁止擅自拆除保护屋顶形制、木作斗栱或街巷风貌要素"
+      ),
+      bi(
+        "Irreversible structural cuts without heritage impact assessment",
+        "未经影响评估不得对保护本体做不可逆结构开洞"
+      ),
     ],
     recommendations: [
-      {
-        en: `Building age ${age}y — prepare condition survey and heritage impact report before schematic design`,
-        zh: `建筑建造 ${age} 年 — 方案设计前应完成现状勘察与修缮影响说明`,
-      },
-      {
-        en: "Engage qualified heritage design team for approval pathway with cultural relics authority",
-        zh: "建议配备文保设计团队，按文物主管部门要求履行审批程序",
-      },
+      bi(
+        `Building age ${age}y — prepare condition survey and heritage impact report before schematic design`,
+        `建筑建造 ${age} 年 — 方案设计前应完成现状勘察与修缮影响说明`
+      ),
+      bi(
+        "Engage qualified heritage design team for approval pathway with cultural relics authority",
+        "建议配备文保设计团队，按文物主管部门要求履行审批程序"
+      ),
     ],
   };
 }

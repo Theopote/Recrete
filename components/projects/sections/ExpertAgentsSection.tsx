@@ -10,13 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import type { ProjectWithRelations } from "@/types";
 import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Landmark } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
+import type { BilingualString } from "@/lib/i18n/bilingual";
 
 type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost" | "heritage";
 
 type StrengtheningMethod = {
-  method: string;
-  pros: string[];
-  cons: string[];
+  method: BilingualString | string;
+  pros: Array<BilingualString | string>;
+  cons: Array<BilingualString | string>;
   costLevel: string;
 };
 
@@ -27,7 +28,7 @@ interface ExpertAgentsSectionProps {
 }
 
 export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
-  const { locale, t } = useLocale();
+  const { locale, t, bt } = useLocale();
   const [activeTab, setActiveTab] = useState<ExpertTab>("structural");
   const [structuralLoading, setStructuralLoading] = useState(false);
   const [complianceLoading, setComplianceLoading] = useState(false);
@@ -280,15 +281,15 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const fireAnalysis = fireResult?.analysis as {
     egressRating?: string;
     compartmentRating?: string;
-    findings?: string[];
-    recommendations?: string[];
+    findings?: Array<BilingualString | string>;
+    recommendations?: Array<BilingualString | string>;
   } | undefined;
 
   const mepAnalysis = mepResult?.analysis as {
     overallRating?: string;
-    findings?: string[];
-    recommendations?: string[];
-    estimatedUpgradeScope?: string[];
+    findings?: Array<BilingualString | string>;
+    recommendations?: Array<BilingualString | string>;
+    estimatedUpgradeScope?: Array<BilingualString | string>;
     electricalLoad?: {
       capacityKva: number;
       requiredKva: number;
@@ -298,12 +299,12 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     hvacEfficiency?: {
       estimatedCop: number;
       efficiencyRating: string;
-      note: string;
+      note: BilingualString | string;
     };
     plumbing?: {
       condition: string;
-      findings: string[];
-      optimizations: string[];
+      findings: Array<BilingualString | string>;
+      optimizations: Array<BilingualString | string>;
     };
   } | undefined;
 
@@ -326,8 +327,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       simplePaybackYears: number;
       roiPercent10Year: number;
     };
-    findings?: string[];
-    recommendations?: string[];
+    findings?: Array<BilingualString | string>;
+    recommendations?: Array<BilingualString | string>;
   } | undefined;
 
   const costEstimate = costResult?.estimate as {
@@ -355,24 +356,29 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     heritageLevel?: string;
     overallRisk?: string;
     authenticityScores?: Array<{
+      factor: string;
       labelEn: string;
       labelZh: string;
       score: number;
       noteEn: string;
       noteZh: string;
     }>;
-    reversibleInterventions?: Array<{ en: string; zh: string }>;
-    prohibitedActions?: Array<{ en: string; zh: string }>;
-    recommendations?: Array<{ en: string; zh: string }>;
+    reversibleInterventions?: BilingualString[];
+    prohibitedActions?: BilingualString[];
+    recommendations?: BilingualString[];
     guidelines?: Array<{ id: string; principleEn: string; principleZh: string }>;
   } | undefined;
 
   const assessment = structuralResult?.assessment as {
     safetyRating?: string;
-    findings?: string[];
-    recommendations?: string[];
-    loadCapacityCheck?: { compliant: boolean; note: string };
-    risks?: Array<{ issue: string; severity: string; recommendation: string }>;
+    findings?: Array<BilingualString | string>;
+    recommendations?: Array<BilingualString | string>;
+    loadCapacityCheck?: { compliant: boolean; note: BilingualString | string };
+    risks?: Array<{
+      issue: BilingualString | string;
+      severity: string;
+      recommendation: BilingualString | string;
+    }>;
   } | undefined;
 
   const strengtheningOptions = structuralResult?.strengtheningOptions as StrengtheningOptions | undefined;
@@ -419,6 +425,70 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
     if (risk === "medium") return t("Medium", "中");
     if (risk === "high") return t("High", "高");
     return risk;
+  };
+
+  const safetyRatingLabel = (rating: string) => {
+    if (rating === "safe") return t("Safe", "安全");
+    if (rating === "acceptable") return t("Acceptable", "基本满足");
+    if (rating === "marginal") return t("Marginal", "边缘");
+    if (rating === "unsafe") return t("Unsafe", "不安全");
+    return rating;
+  };
+
+  const egressRatingLabel = (rating: string) => {
+    if (rating === "adequate") return t("Adequate", "满足");
+    if (rating === "marginal") return t("Marginal", "边缘");
+    if (rating === "insufficient") return t("Insufficient", "不足");
+    if (rating === "unknown") return t("Unknown", "待核实");
+    return rating;
+  };
+
+  const compartmentRatingLabel = (rating: string) => {
+    if (rating === "compliant") return t("Compliant", "符合");
+    if (rating === "non_compliant") return t("Non-compliant", "不符合");
+    if (rating === "requires_verification") return t("Verify", "待核实");
+    return rating;
+  };
+
+  const mepOverallRatingLabel = (rating: string) => {
+    if (rating === "adequate") return t("Adequate", "满足");
+    if (rating === "upgrade_required") return t("Upgrade required", "需升级");
+    if (rating === "replacement_required") return t("Replacement required", "需更换");
+    return rating;
+  };
+
+  const electricalStatusLabel = (status: string) => {
+    if (status === "adequate") return t("Adequate", "充足");
+    if (status === "marginal") return t("Marginal", "边缘");
+    if (status === "insufficient") return t("Insufficient", "不足");
+    return status;
+  };
+
+  const energyRatingLabel = (rating: string) => {
+    if (rating === "poor") return t("Poor", "较差");
+    if (rating === "average") return t("Average", "一般");
+    if (rating === "good") return t("Good", "良好");
+    return rating;
+  };
+
+  const heritageLevelLabel = (level: string) => {
+    const labels: Record<string, [string, string]> = {
+      national: ["National heritage", "全国重点文物"],
+      provincial: ["Provincial heritage", "省级文物"],
+      municipal: ["Municipal heritage", "市级文物"],
+      district: ["District heritage", "区县级文物"],
+      none: ["None", "无文保等级"],
+    };
+    const pair = labels[level];
+    return pair ? t(pair[0], pair[1]) : level;
+  };
+
+  const severityLabel = (severity: string) => {
+    if (severity === "low") return t("Low", "低");
+    if (severity === "medium") return t("Medium", "中");
+    if (severity === "high") return t("High", "高");
+    if (severity === "critical") return t("Critical", "严重");
+    return severity;
   };
 
   const report = complianceResult?.report as {
@@ -602,15 +672,15 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     {t("Safety rating", "安全评级")}
                   </span>
                   <Badge variant="outline" className="text-[10px] uppercase">
-                    {assessment.safetyRating}
+                    {safetyRatingLabel(assessment.safetyRating ?? "")}
                   </Badge>
                 </div>
                 {assessment.findings && assessment.findings.length > 0 && (
                   <div>
                     <p className="text-xs font-medium mb-1">{t("Findings", "发现")}</p>
                     <ul className="text-xs text-muted-foreground space-y-1">
-                      {assessment.findings.map((f) => (
-                        <li key={f}>• {f}</li>
+                      {assessment.findings.map((f, i) => (
+                        <li key={i}>• {bt(f)}</li>
                       ))}
                     </ul>
                   </div>
@@ -619,13 +689,13 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <div>
                     <p className="text-xs font-medium mb-1">{t("Risks", "风险")}</p>
                     <ul className="text-xs space-y-2">
-                      {assessment.risks.map((r) => (
-                        <li key={r.issue}>
-                          <span className="font-medium">{r.issue}</span>{" "}
+                      {assessment.risks.map((r, i) => (
+                        <li key={i}>
+                          <span className="font-medium">{bt(r.issue)}</span>{" "}
                           <Badge variant="outline" className="text-[10px] ml-1">
-                            {r.severity}
+                            {severityLabel(r.severity)}
                           </Badge>
-                          <p className="text-muted-foreground mt-0.5">{r.recommendation}</p>
+                          <p className="text-muted-foreground mt-0.5">{bt(r.recommendation)}</p>
                         </li>
                       ))}
                     </ul>
@@ -642,7 +712,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                         ? t("Compliant", "满足")
                         : t("Insufficient", "不足")}
                     </Badge>
-                    <p className="text-muted-foreground">{assessment.loadCapacityCheck.note}</p>
+                    <p className="text-muted-foreground">{bt(assessment.loadCapacityCheck.note)}</p>
                   </div>
                 )}
               </CardContent>
@@ -662,19 +732,19 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     <div key={key}>
                       <p className="text-xs font-medium mb-2">{strengtheningIssueLabel(key)}</p>
                       <div className="space-y-2">
-                        {methods.map((m) => (
-                          <div key={m.method} className="border rounded-md p-2 text-xs">
+                        {methods.map((m, mi) => (
+                          <div key={mi} className="border rounded-md p-2 text-xs">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-medium">{m.method}</span>
+                              <span className="font-medium">{bt(m.method)}</span>
                               <Badge variant="outline" className="text-[10px]">
                                 {costLevelLabel(m.costLevel)} {t("cost", "造价")}
                               </Badge>
                             </div>
                             <p className="text-muted-foreground mt-1">
-                              {t("Pros", "优点")}：{m.pros.join("；")}
+                              {t("Pros", "优点")}：{m.pros.map((p) => bt(p)).join("；")}
                             </p>
                             <p className="text-muted-foreground mt-0.5">
-                              {t("Cons", "缺点")}：{m.cons.join("；")}
+                              {t("Cons", "缺点")}：{m.cons.map((c) => bt(c)).join("；")}
                             </p>
                           </div>
                         ))}
@@ -900,7 +970,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                           </p>
                         )}
                         {c.remediation && (
-                          <p className="text-muted-foreground mt-0.5">→ {c.remediation}</p>
+                          <p className="text-muted-foreground mt-0.5">→ {bt(c.remediation)}</p>
                         )}
                       </div>
                     ))}
@@ -974,10 +1044,29 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           {fireAnalysis && (
             <Card><CardContent className="p-4 space-y-2 text-xs">
               <div className="flex gap-2">
-                <Badge variant="outline">{t("Egress", "疏散")}: {fireAnalysis.egressRating}</Badge>
-                <Badge variant="outline">{t("Compartment", "防火分区")}: {fireAnalysis.compartmentRating}</Badge>
+                <Badge variant="outline">
+                  {t("Egress", "疏散")}: {egressRatingLabel(fireAnalysis.egressRating ?? "")}
+                </Badge>
+                <Badge variant="outline">
+                  {t("Compartment", "防火分区")}:{" "}
+                  {compartmentRatingLabel(fireAnalysis.compartmentRating ?? "")}
+                </Badge>
               </div>
-              <ul className="text-muted-foreground space-y-1">{fireAnalysis.findings?.map((f) => <li key={f}>• {f}</li>)}</ul>
+              <ul className="text-muted-foreground space-y-1">
+                {fireAnalysis.findings?.map((f, i) => (
+                  <li key={i}>• {bt(f)}</li>
+                ))}
+              </ul>
+              {fireAnalysis.recommendations && fireAnalysis.recommendations.length > 0 && (
+                <div>
+                  <p className="font-medium mb-1">{t("Recommendations", "建议")}</p>
+                  <ul className="text-muted-foreground space-y-1">
+                    {fireAnalysis.recommendations.map((r, i) => (
+                      <li key={i}>• {bt(r)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent></Card>
           )}
         </div>
@@ -1029,14 +1118,15 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           </Card>
           {mepAnalysis && (
             <Card><CardContent className="p-4 space-y-3 text-xs">
-              <Badge variant="outline">{mepAnalysis.overallRating}</Badge>
+              <Badge variant="outline">{mepOverallRatingLabel(mepAnalysis.overallRating ?? "")}</Badge>
               {mepAnalysis.electricalLoad && (
                 <div className="border rounded-md p-2">
                   <p className="font-medium mb-1">{t("Electrical load analysis", "电气负荷分析")}</p>
                   <p className="text-muted-foreground">
                     {mepAnalysis.electricalLoad.capacityKva} kVA / {t("required", "需求")}{" "}
                     {mepAnalysis.electricalLoad.requiredKva} kVA
-                    （{mepAnalysis.electricalLoad.utilizationPercent}% · {mepAnalysis.electricalLoad.status}）
+                    （{mepAnalysis.electricalLoad.utilizationPercent}% ·{" "}
+                    {electricalStatusLabel(mepAnalysis.electricalLoad.status)}）
                   </p>
                 </div>
               )}
@@ -1044,27 +1134,53 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 <div className="border rounded-md p-2">
                   <p className="font-medium mb-1">{t("HVAC efficiency", "暖通效率评估")}</p>
                   <p className="text-muted-foreground">
-                    COP ~{mepAnalysis.hvacEfficiency.estimatedCop} · {mepAnalysis.hvacEfficiency.efficiencyRating}
+                    COP ~{mepAnalysis.hvacEfficiency.estimatedCop} ·{" "}
+                    {energyRatingLabel(mepAnalysis.hvacEfficiency.efficiencyRating)}
                   </p>
-                  <p className="text-muted-foreground mt-1">{mepAnalysis.hvacEfficiency.note}</p>
+                  <p className="text-muted-foreground mt-1">{bt(mepAnalysis.hvacEfficiency.note)}</p>
                 </div>
               )}
               {mepAnalysis.plumbing && (
                 <div className="border rounded-md p-2">
                   <p className="font-medium mb-1">
-                    {t("Plumbing optimization", "给排水优化")}（{mepAnalysis.plumbing.condition}）
+                    {t("Plumbing optimization", "给排水优化")}（
+                    {energyRatingLabel(mepAnalysis.plumbing.condition)}）
                   </p>
+                  {mepAnalysis.plumbing.findings.length > 0 && (
+                    <ul className="text-muted-foreground space-y-1 mb-2">
+                      {mepAnalysis.plumbing.findings.map((f, i) => (
+                        <li key={i}>• {bt(f)}</li>
+                      ))}
+                    </ul>
+                  )}
                   <ul className="text-muted-foreground space-y-1">
-                    {mepAnalysis.plumbing.optimizations.map((o) => (
-                      <li key={o}>• {o}</li>
+                    {mepAnalysis.plumbing.optimizations.map((o, i) => (
+                      <li key={i}>• {bt(o)}</li>
                     ))}
                   </ul>
                 </div>
               )}
-              <ul className="text-muted-foreground space-y-1">{mepAnalysis.findings?.map((f) => <li key={f}>• {f}</li>)}</ul>
+              {mepAnalysis.findings && mepAnalysis.findings.length > 0 && (
+                <ul className="text-muted-foreground space-y-1">
+                  {mepAnalysis.findings.map((f, i) => (
+                    <li key={i}>• {bt(f)}</li>
+                  ))}
+                </ul>
+              )}
+              {mepAnalysis.recommendations && mepAnalysis.recommendations.length > 0 && (
+                <div>
+                  <p className="font-medium mb-1">{t("Recommendations", "建议")}</p>
+                  <ul className="text-muted-foreground space-y-1">
+                    {mepAnalysis.recommendations.map((r, i) => (
+                      <li key={i}>• {bt(r)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {mepAnalysis.estimatedUpgradeScope && mepAnalysis.estimatedUpgradeScope.length > 0 && (
                 <p className="text-muted-foreground">
-                  {t("Upgrade scope", "升级范围")}：{mepAnalysis.estimatedUpgradeScope.join("、")}
+                  {t("Upgrade scope", "升级范围")}：
+                  {mepAnalysis.estimatedUpgradeScope.map((s) => bt(s)).join("、")}
                 </p>
               )}
             </CardContent></Card>
@@ -1143,7 +1259,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               <CardContent className="p-4 space-y-3 text-xs">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">EUI {energyAnalysis.simulation.benchmarkComparison.currentEui} kWh/m²·a</Badge>
-                  <Badge variant="outline">{energyAnalysis.simulation.rating}</Badge>
+                  <Badge variant="outline">{energyRatingLabel(energyAnalysis.simulation.rating)}</Badge>
                   <Badge variant="outline">
                     {t("Benchmark gap", "基准差距")}{" "}
                     {energyAnalysis.simulation.benchmarkComparison.gapPercent > 0 ? "+" : ""}
@@ -1164,6 +1280,26 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                     ))}
                   </ul>
                 </div>
+                {energyAnalysis.findings && energyAnalysis.findings.length > 0 && (
+                  <div>
+                    <p className="font-medium mb-1">{t("Findings", "发现")}</p>
+                    <ul className="text-muted-foreground space-y-1">
+                      {energyAnalysis.findings.map((f, i) => (
+                        <li key={i}>• {bt(f)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {energyAnalysis.recommendations && energyAnalysis.recommendations.length > 0 && (
+                  <div>
+                    <p className="font-medium mb-1">{t("Recommendations", "建议")}</p>
+                    <ul className="text-muted-foreground space-y-1">
+                      {energyAnalysis.recommendations.map((r, i) => (
+                        <li key={i}>• {bt(r)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {energyAnalysis.recommendedBundle && energyAnalysis.recommendedBundle.length > 0 && (
                   <div>
                     <p className="font-medium mb-1">{t("Green retrofit measures", "绿色改造策略")}</p>
@@ -1326,7 +1462,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               <CardContent className="p-4 space-y-3 text-xs">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">
-                    {t("Level", "等级")}: {heritageAssessment.heritageLevel}
+                    {t("Level", "等级")}: {heritageLevelLabel(heritageAssessment.heritageLevel ?? "")}
                   </Badge>
                   <Badge variant="outline">
                     {t("Risk", "风险")}: {riskLevelLabel(heritageAssessment.overallRisk ?? "")}
@@ -1336,9 +1472,14 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <div className="space-y-1">
                     <p className="font-medium">{t("Authenticity scores", "原真性评分")}</p>
                     {heritageAssessment.authenticityScores.map((row) => (
-                      <div key={row.labelEn} className="flex justify-between gap-2 text-muted-foreground">
-                        <span>{t(row.labelEn, row.labelZh)}</span>
-                        <span className="tabular-nums shrink-0">{row.score}</span>
+                      <div key={row.factor} className="space-y-0.5">
+                        <div className="flex justify-between gap-2 text-muted-foreground">
+                          <span>{t(row.labelEn, row.labelZh)}</span>
+                          <span className="tabular-nums shrink-0">{row.score}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/80">
+                          {t(row.noteEn, row.noteZh)}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -1347,8 +1488,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <div>
                     <p className="font-medium mb-1">{t("Reversible interventions", "可逆干预建议")}</p>
                     <ul className="text-muted-foreground space-y-1">
-                      {heritageAssessment.reversibleInterventions.map((item) => (
-                        <li key={item.en}>• {t(item.en, item.zh)}</li>
+                      {heritageAssessment.reversibleInterventions.map((item, i) => (
+                        <li key={i}>• {bt(item)}</li>
                       ))}
                     </ul>
                   </div>
@@ -1357,8 +1498,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <div>
                     <p className="font-medium mb-1 text-destructive">{t("Prohibited actions", "禁止行为")}</p>
                     <ul className="text-muted-foreground space-y-1">
-                      {heritageAssessment.prohibitedActions.map((item) => (
-                        <li key={item.en}>• {t(item.en, item.zh)}</li>
+                      {heritageAssessment.prohibitedActions.map((item, i) => (
+                        <li key={i}>• {bt(item)}</li>
                       ))}
                     </ul>
                   </div>
@@ -1367,8 +1508,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   <div>
                     <p className="font-medium mb-1">{t("Recommendations", "建议")}</p>
                     <ul className="text-muted-foreground space-y-1">
-                      {heritageAssessment.recommendations.map((item) => (
-                        <li key={item.en}>• {t(item.en, item.zh)}</li>
+                      {heritageAssessment.recommendations.map((item, i) => (
+                        <li key={i}>• {bt(item)}</li>
                       ))}
                     </ul>
                   </div>

@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { labelForLocale, pickLocaleText } from "@/lib/i18n/locale";
+import { pickBilingual, type BilingualString } from "@/lib/i18n/bilingual";
 
 export function useLocale() {
   const locale = useUIStore((s) => s.locale);
@@ -15,5 +16,10 @@ export function useLocale() {
       labelForLocale(locale, en, zh, key),
     [locale]
   );
-  return { locale, t, label };
+  const bt = useCallback(
+    (text: BilingualString | string | undefined | null) =>
+      text ? pickBilingual(locale, text) : "",
+    [locale]
+  );
+  return { locale, t, label, bt };
 }
