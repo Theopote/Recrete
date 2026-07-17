@@ -830,14 +830,8 @@ export async function getStrategiesWithMetrics(
   }));
   if (!project) return withMetrics;
   const ranked = attachStrategyRankings(withMetrics, { ...project, strategies });
-  const documentNames = Object.fromEntries(
-    (project.documents ?? []).map((doc) => [doc.id, doc.name])
-  );
-  const drawingGraph = await loadProjectDrawingGraph(projectId, documentNames);
-  return enrichStrategiesWithProfiles(ranked, {
-    drawingGraph,
-    diagnosis: project.diagnosis ?? [],
-  });
+  const drawingGraph = await loadProjectDrawingGraph(projectId);
+  return enrichStrategiesWithProfiles(ranked, { drawingGraph });
 }
 
 export {

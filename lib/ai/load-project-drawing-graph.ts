@@ -1,5 +1,3 @@
-import "server-only";
-
 import { listDrawingAssetsByProject } from "@/lib/db/drawing-assets";
 import {
   buildDrawingKnowledgeGraph,
