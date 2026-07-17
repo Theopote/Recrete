@@ -40,6 +40,8 @@ import {
   strategyMetrics,
 } from "@/lib/mock-data";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
+import { collectStructuredProjectBriefFacts } from "@/lib/ai/project-brief-context";
+import { evaluateBriefCompliance } from "@/lib/ai/brief-compliance-scoring";
 import { attachStrategyRankings } from "@/lib/utils/strategy-ranking";
 import { enrichStrategiesWithProfiles } from "@/lib/ai/strategy-schema";
 import { loadProjectDrawingGraph } from "@/lib/ai/load-project-drawing-graph";
@@ -921,11 +923,13 @@ export async function getStrategiesWithMetrics(
 ): Promise<StrategyWithMetrics[]> {
   const project = store.projects.find((p) => p.id === projectId) ?? null;
   const strategies = store.strategies.filter((s) => s.projectId === projectId);
+  const briefFacts = project ? collectStructuredProjectBriefFacts(project.documents) : [];
   const withMetrics = strategies.map((s) => ({
     ...s,
     metrics:
       strategyMetrics[s.id] ??
       computeStrategyMetrics(s, project ? { ...project, strategies } : null, strategies),
+    briefComplianceResult: briefFacts.length > 0 ? evaluateBriefCompliance(s, briefFacts) : undefined,
   }));
   if (!project) return withMetrics;
   const ranked = attachStrategyRankings(withMetrics, { ...project, strategies });
