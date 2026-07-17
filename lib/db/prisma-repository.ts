@@ -327,6 +327,23 @@ export async function updateDiagnosisItem(
   }
 }
 
+export async function updateProjectDataCompletenessScore(
+  projectId: string,
+  score: number
+): Promise<boolean> {
+  try {
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        dataCompletenessScore: Math.max(0, Math.min(100, Math.round(score))),
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function addStrategies(
   projectId: string,
   strategies: Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">[]

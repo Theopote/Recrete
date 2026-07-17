@@ -22,6 +22,7 @@ import {
   updateDocumentAnalysisTask,
 } from "@/lib/ai/tasks/document-analysis-tasks";
 import { formatIngestCompletionMessage } from "@/lib/documents/ingest-diagnosis-bridge";
+import { syncProjectDataCompleteness } from "@/lib/documents/sync-project-completeness";
 import {
   formatAnalysisTimeoutError,
   getDocumentAnalysisTimeoutMs,
@@ -227,6 +228,8 @@ export async function runDocumentIngestWorkflow(
       formatIngestCompletionMessage(doc.name, analysis.kind, evidence.length)
     );
   }
+
+  await syncProjectDataCompleteness(projectId, organizationId);
 
   return {
     document,

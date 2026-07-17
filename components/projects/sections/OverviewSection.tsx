@@ -20,6 +20,7 @@ import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { Brain } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/i18n/use-locale";
+import { computeProjectPhaseCompleteness } from "@/lib/documents/phase-completeness";
 
 interface OverviewSectionProps {
   project: ProjectWithRelations;
@@ -92,6 +93,18 @@ export function OverviewSection({ project }: OverviewSectionProps) {
   const openIssues =
     project.issues?.filter((i) => i.status === "open" || i.status === "in_progress") ?? [];
 
+  const phaseReport = useMemo(
+    () => computeProjectPhaseCompleteness(project.documents ?? [], project.status),
+    [project.documents, project.status]
+  );
+  const completenessScore = Math.max(
+    project.dataCompletenessScore,
+    phaseReport.overallScore
+  );
+  const activePhaseMissing = phaseReport.phases.find(
+    (p) => p.phase === phaseReport.activePhase
+  )?.missingLabels;
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -108,8 +121,21 @@ export function OverviewSection({ project }: OverviewSectionProps) {
           </CardContent>
         </Card>
         <Card className="md:col-span-2">
-          <CardContent className="p-4">
-            <DataCompletenessScore score={project.dataCompletenessScore} />
+          <CardContent className="p-4 space-y-2">
+            <DataCompletenessScore score={completenessScore} />
+            {activePhaseMissing && activePhaseMissing.length > 0 && (
+              <p className="text-[10px] text-muted-foreground">
+                {t("Missing for current phase", "当前阶段缺失")}:{" "}
+                {activePhaseMissing.slice(0, 3).join(", ")}
+                {activePhaseMissing.length > 3 ? "…" : ""}{" "}
+                <Link
+                  href={`/projects/${project.id}?section=survey-intelligence`}
+                  className="text-copper hover:underline"
+                >
+                  {t("Upload docs →", "上传资料 →")}
+                </Link>
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>

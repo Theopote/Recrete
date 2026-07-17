@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/repository";
 import { detectMissingInformation, generateSurveyTaskList } from "@/lib/ai/agents/survey-agent";
 import { runDocumentIngestWorkflow } from "./document-ingest-workflow";
+import { syncProjectDataCompleteness } from "@/lib/documents/sync-project-completeness";
 import { createDocumentAnalysisTask } from "@/lib/ai/tasks/document-analysis-tasks";
 import { enqueueDocumentIngestJob } from "@/lib/jobs/enqueue";
 import type { BuildingMemory, AIInsight, AITask, AIAnalysisRun } from "@/types/ai";
@@ -124,6 +125,8 @@ export async function runSurveyFinalizeWorkflow(
   if (refreshBuildingMemory) {
     buildingMemory = await updateBuildingMemory(projectId, organizationId, "survey_analysis");
   }
+
+  await syncProjectDataCompleteness(projectId, organizationId);
 
   return {
     summaries,

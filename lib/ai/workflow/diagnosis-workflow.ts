@@ -140,6 +140,7 @@ export async function runDiagnosisWorkflow(
     }
     const updated = await updateDiagnosisItem(draft.id, {
       evidence: draft.evidence,
+      linkedEvidenceIds: draft.linkedEvidenceIds,
     });
     enrichedDiagnosisItems.push({
       ...(updated ?? original),
@@ -233,4 +234,63 @@ export async function runDiagnosisWorkflow(
       ? { structuralItemCount, complianceItemCount, mepItemCount, energyItemCount }
       : undefined,
   };
+}
+
+export interface DiagnosisEvidenceRelinkResult {
+  updatedCount: number;
+  diagnosisItems: DiagnosisItem[];
+}
+
+export async function runDiagnosisEvidenceRelinkWorkflow(
+  projectId: string,
+  organizationId: string
+): Promise<DiagnosisEvidenceRelinkResult | null> {
+  const project = await getProjectById(projectId, organizationId);
+  if (!project) return null;
+
+  const diagnosisItems = project.diagnosis ?? [];
+  if (diagnosisItems.length === 0) {
+    return { updatedCount: 0, diagnosisItems: [] };
+  }
+
+  const evidence =
+    (project.sourceEvidence?.length ?? 0) > 0
+      ? project.sourceEvidence!
+      : await getProjectEvidence(projectId);
+
+  const enrichedDrafts = enrichDiagnosisItemsWithEvidence(
+    diagnosisItems,
+    evidence,
+    project.documents ?? []
+  );
+
+  let updatedCount = 0;
+  const finalItems: DiagnosisItem[] = [];
+
+  for (const item of diagnosisItems) {
+    const draft = enrichedDrafts.find((d) => d.id === item.id);
+    if (!draft || draft.linkedEvidenceIds.length === 0) {
+      finalItems.push(item);
+      continue;
+    }
+
+    const idsChanged =
+      JSON.stringify([...(item.linkedEvidenceIds ?? [])].sort()) !==
+      JSON.stringify([...draft.linkedEvidenceIds].sort());
+    const textChanged = draft.evidence !== (item.evidence ?? "");
+
+    if (!idsChanged && !textChanged) {
+      finalItems.push(item);
+      continue;
+    }
+
+    const updated = await updateDiagnosisItem(item.id, {
+      evidence: draft.evidence,
+      linkedEvidenceIds: draft.linkedEvidenceIds,
+    });
+    updatedCount += 1;
+    finalItems.push(updated ?? { ...item, evidence: draft.evidence, linkedEvidenceIds: draft.linkedEvidenceIds });
+  }
+
+  return { updatedCount, diagnosisItems: finalItems };
 }

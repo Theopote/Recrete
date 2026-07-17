@@ -76,6 +76,12 @@ export async function updateDiagnosisItem(
   return (await resolveDb()) ? db.updateDiagnosisItem(itemId, data) : mock.updateDiagnosisItem(itemId, data);
 }
 
+export async function updateProjectDataCompletenessScore(projectId: string, score: number) {
+  return (await resolveDb())
+    ? db.updateProjectDataCompletenessScore(projectId, score)
+    : mock.updateProjectDataCompletenessScore(projectId, score);
+}
+
 export async function addStrategies(
   projectId: string,
   strategies: Parameters<typeof mock.addStrategies>[1]

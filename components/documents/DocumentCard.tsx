@@ -11,6 +11,7 @@ import { documentCategoryLabels, documentCategoryLabelsZh, documentProjectPhaseL
 import { useLocale } from "@/lib/i18n/use-locale";
 import { isPdf } from "@/lib/storage/file-utils";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
+import { parseIngestCompletionMessage } from "@/lib/documents/ingest-diagnosis-bridge";
 import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import type { DocumentAsset } from "@/types";
 import { FileText, Image, Archive, Eye, Sparkles, Loader2, CheckCircle2, Trash2 } from "lucide-react";
@@ -22,6 +23,7 @@ interface DocumentCardProps {
   onPreview?: (document: DocumentAsset) => void;
   onAnalyzed?: (document: DocumentAsset) => void;
   onDeleted?: (documentId: string) => void;
+  onDiagnosisSuggest?: (meta: { evidenceCount: number }) => void;
   batchMode?: boolean;
   selected?: boolean;
   onToggleSelect?: (documentId: string) => void;
@@ -33,6 +35,7 @@ export function DocumentCard({
   onPreview,
   onAnalyzed,
   onDeleted,
+  onDiagnosisSuggest,
   batchMode,
   selected,
   onToggleSelect,
@@ -86,6 +89,10 @@ export function DocumentCard({
           }
         );
         if (outcome.result === "completed") {
+          const meta = parseIngestCompletionMessage(outcome.message);
+          if (meta.suggestDiagnosis) {
+            onDiagnosisSuggest?.({ evidenceCount: meta.evidenceCount });
+          }
           router.refresh();
           onAnalyzed?.({
             ...document,
@@ -102,6 +109,9 @@ export function DocumentCard({
           );
         }
       } else if (data.document) {
+        if (data.suggestDiagnosisRefresh) {
+          onDiagnosisSuggest?.({ evidenceCount: data.evidenceCount ?? 0 });
+        }
         onAnalyzed?.(data.document);
       }
     } catch {

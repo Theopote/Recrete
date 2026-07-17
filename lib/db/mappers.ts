@@ -92,10 +92,12 @@ export function mapDocument(d: PrismaDocument): DocumentAsset {
 }
 
 export function mapDiagnosis(d: PrismaDiagnosis): DiagnosisItem {
+  const ext = d as PrismaDiagnosis & { linkedEvidenceIds?: string[] };
   return {
     ...d,
     insightId: d.insightId,
     requiresEngineerReview: d.requiresEngineerReview ?? false,
+    linkedEvidenceIds: ext.linkedEvidenceIds ?? [],
   };
 }
 

@@ -152,6 +152,17 @@ export async function updateProjectStatus(
   return true;
 }
 
+export async function updateProjectDataCompletenessScore(
+  projectId: string,
+  score: number
+): Promise<boolean> {
+  const project = store.projects.find((p) => p.id === projectId);
+  if (!project) return false;
+  project.dataCompletenessScore = Math.max(0, Math.min(100, Math.round(score)));
+  project.updatedAt = new Date();
+  return true;
+}
+
 export async function createProject(
   input: CreateProjectInput,
   organizationId: string

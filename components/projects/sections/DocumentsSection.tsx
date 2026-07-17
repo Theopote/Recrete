@@ -17,12 +17,12 @@ import {
 } from "@/lib/utils/labels";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
 import { parseIngestCompletionMessage } from "@/lib/documents/ingest-diagnosis-bridge";
+import { IngestDiagnosisPromptCard } from "@/components/documents/IngestDiagnosisPromptCard";
 import { openBuildingConditionAfterIngest } from "@/lib/building-condition/client-navigation";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { DocumentAsset, DocumentCategory, DocumentProjectPhase, ProjectWithRelations } from "@/types";
 import { defaultPhaseForProjectStatus } from "@/lib/documents/governance";
-import { FileText, Trash2, Tags, Stethoscope } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { FileText, Trash2, Tags } from "lucide-react";
 
 interface DocumentsSectionProps {
   project: ProjectWithRelations;
@@ -312,34 +312,11 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
       )}
 
       {diagnosisPrompt && (
-        <Card className="border-copper/30 bg-copper/5">
-          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-start gap-2">
-              <Stethoscope className="h-4 w-4 text-copper shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-medium">
-                  {t("New document evidence ready for diagnosis", "新文档证据可用于诊断")}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {t(
-                    `${diagnosisPrompt.evidenceCount} evidence item(s) extracted — refresh diagnosis to link findings.`,
-                    `已抽取 ${diagnosisPrompt.evidenceCount} 条证据 — 建议更新诊断以关联发现。`
-                  )}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="copper"
-              size="sm"
-              className="shrink-0"
-              onClick={() =>
-                router.push(`/projects/${initialProject.id}?section=diagnosis`)
-              }
-            >
-              {t("Open Diagnosis", "打开诊断")}
-            </Button>
-          </CardContent>
-        </Card>
+        <IngestDiagnosisPromptCard
+          projectId={initialProject.id}
+          evidenceCount={diagnosisPrompt.evidenceCount}
+          onDismiss={() => setDiagnosisPrompt(null)}
+        />
       )}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -427,6 +404,9 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
                 )
               }
               onDeleted={handleDeleted}
+              onDiagnosisSuggest={({ evidenceCount }) =>
+                setDiagnosisPrompt({ evidenceCount })
+              }
               batchMode={batchMode}
               selected={selectedIds.has(doc.id)}
               onToggleSelect={toggleSelect}

@@ -63,5 +63,7 @@ export async function POST(
     issuesCreated: result.issuesCreated,
     analysisRun: result.analysisRun,
     buildingMemory: result.buildingMemory,
+    evidenceCount: result.evidenceCount,
+    suggestDiagnosisRefresh: result.suggestDiagnosisRefresh,
   });
 }

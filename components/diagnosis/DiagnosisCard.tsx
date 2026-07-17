@@ -23,10 +23,11 @@ import { MapPin, Pencil } from "lucide-react";
 interface DiagnosisCardProps {
   item: DiagnosisItem;
   relatedEvidence?: SourceEvidence[];
+  documentNames?: Record<string, string>;
   onEdit?: (item: DiagnosisItem) => void;
 }
 
-export function DiagnosisCard({ item, relatedEvidence = [], onEdit }: DiagnosisCardProps) {
+export function DiagnosisCard({ item, relatedEvidence = [], documentNames, onEdit }: DiagnosisCardProps) {
   const { t, label } = useLocale();
 
   return (
@@ -73,7 +74,7 @@ export function DiagnosisCard({ item, relatedEvidence = [], onEdit }: DiagnosisC
         <p className="text-xs leading-relaxed text-foreground/80">{item.description}</p>
 
         {relatedEvidence.length > 0 && (
-          <EvidenceTrail evidence={relatedEvidence} maxItems={3} />
+          <EvidenceTrail evidence={relatedEvidence} documentNames={documentNames} maxItems={3} />
         )}
 
         {item.evidence && (

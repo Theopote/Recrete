@@ -14,7 +14,7 @@ import {
 } from "@/lib/utils/labels";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { DiagnosisCategory, DiagnosisItem, ProjectWithRelations } from "@/types";
-import { Sparkles, Stethoscope, Plus, FileText } from "lucide-react";
+import { Sparkles, Stethoscope, Plus, FileText, Link2 } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { EvidenceTrail } from "@/components/diagnosis/EvidenceTrail";
 import { AIDisclaimer } from "@/components/ai/AIDisclaimer";
@@ -28,6 +28,8 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
   const { t, label } = useLocale();
   const [items, setItems] = useState(initialProject.diagnosis ?? []);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRelinking, setIsRelinking] = useState(false);
+  const [relinkNotice, setRelinkNotice] = useState<string | null>(null);
   const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
@@ -46,6 +48,41 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
 
   const evidenceForItem = (item: DiagnosisItem) =>
     resolveEvidenceForDiagnosis(item, projectEvidence);
+
+  const handleRelinkEvidence = async () => {
+    setIsRelinking(true);
+    setRelinkNotice(null);
+    setAiError(null);
+    try {
+      const res = await fetch(
+        `/api/projects/${initialProject.id}/diagnosis/relink-evidence`,
+        { method: "POST" }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const updated = (data.diagnosisItems ?? []) as DiagnosisItem[];
+        if (updated.length > 0) {
+          setItems(updated.map(parseDiagnosis));
+        }
+        setRelinkNotice(
+          t(
+            `Linked document evidence to ${data.updatedCount ?? 0} diagnosis item(s).`,
+            `已为 ${data.updatedCount ?? 0} 条诊断关联文档证据。`
+          )
+        );
+      } else {
+        const parsed = parseAIErrorResponse(data);
+        setAiError(parsed);
+      }
+    } catch {
+      setAiError({
+        message: t("Network error. Please try again.", "网络异常，请稍后重试。"),
+        retryable: true,
+      });
+    } finally {
+      setIsRelinking(false);
+    }
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -119,6 +156,19 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 {t("Add Item", "添加条目")}
               </Button>
+              {items.length > 0 && projectEvidence.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRelinkEvidence}
+                  disabled={isRelinking}
+                >
+                  <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                  {isRelinking
+                    ? t("Linking...", "关联中...")
+                    : t("Refresh Evidence Links", "刷新证据关联")}
+                </Button>
+              )}
               <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                 {isGenerating
@@ -144,6 +194,10 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
             {executiveSummary}
           </p>
         </div>
+      )}
+
+      {relinkNotice && (
+        <p className="text-xs text-muted-foreground">{relinkNotice}</p>
       )}
 
       {aiError && (
@@ -199,6 +253,7 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
                     key={item.id}
                     item={item}
                     relatedEvidence={evidenceForItem(item)}
+                    documentNames={documentNames}
                     onEdit={openEdit}
                   />
                 ))}
@@ -212,6 +267,7 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
                 key={item.id}
                 item={item}
                 relatedEvidence={evidenceForItem(item)}
+                documentNames={documentNames}
                 onEdit={openEdit}
               />
             ))}

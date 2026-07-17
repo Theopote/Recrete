@@ -15,6 +15,7 @@ import { shouldOpenBuildingCondition } from "@/lib/building-condition/cad-file-u
 import type { ProjectWithRelations } from "@/types";
 import { Sparkles, Loader2, FileSearch, Building2 } from "lucide-react";
 import { PhaseCompletenessPanel } from "@/components/documents/PhaseCompletenessPanel";
+import { IngestDiagnosisPromptCard } from "@/components/documents/IngestDiagnosisPromptCard";
 import { computeProjectPhaseCompleteness } from "@/lib/documents/phase-completeness";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
 import { useLocale } from "@/lib/i18n/use-locale";
@@ -28,6 +29,7 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
   const router = useRouter();
   const [analyzing, setAnalyzing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [diagnosisPrompt, setDiagnosisPrompt] = useState<{ evidenceCount: number } | null>(null);
   const documents = project.documents ?? [];
   const phaseReport = computeProjectPhaseCompleteness(documents, project.status);
 
@@ -70,12 +72,8 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
             )
           );
         } else if (poll.completed > 0) {
-          setNotice(
-            t(
-              "Document evidence updated — consider refreshing diagnosis.",
-              "文档证据已更新 — 建议刷新诊断。"
-            )
-          );
+          setDiagnosisPrompt({ evidenceCount: poll.completed });
+          setNotice(null);
         }
 
         if (
@@ -122,6 +120,14 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
 
       {notice && (
         <p className="text-xs text-muted-foreground">{notice}</p>
+      )}
+
+      {diagnosisPrompt && (
+        <IngestDiagnosisPromptCard
+          projectId={project.id}
+          evidenceCount={diagnosisPrompt.evidenceCount}
+          onDismiss={() => setDiagnosisPrompt(null)}
+        />
       )}
 
       {documents.some((d) => d.aiSummary) && (
