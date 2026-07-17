@@ -7,6 +7,10 @@ import { isOpenAIConfigured } from "../openai-config";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
 import { searchSimilarCasesAsync } from "../knowledge/similar-cases";
 import { runStrategyContextChain } from "../langchain/chains";
+import {
+  collectStructuredProjectBriefFacts,
+  formatProjectBriefConstraintsBlock,
+} from "../project-brief-context";
 
 function defaultParams(project: ProjectWithRelations): StrategyLabParams {
   return {
@@ -77,6 +81,9 @@ export async function generateRenovationStrategies(
     params: resolvedParams,
     knowledge: cases,
     diagnosisSummary,
+    briefConstraints: formatProjectBriefConstraintsBlock(
+      collectStructuredProjectBriefFacts(project.documents ?? [])
+    ),
   });
 
   if (cases.length > 0) {

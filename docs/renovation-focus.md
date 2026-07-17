@@ -51,7 +51,7 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 | 项 | 状态 | 说明 |
 |----|------|------|
 | 结构化法规事实注入合规诊断 prompt | ✅ | `regulation-context.ts` → compliance agent + hybrid chain + renovation context |
-| 任务书约束注入方案 prompt | ⬜ | P4-B |
+| 任务书约束注入方案 prompt | ✅ | `project-brief-context.ts` + strategy prompt/chain 约束注入 |
 
 ## 明确暂缓（往后放）
 

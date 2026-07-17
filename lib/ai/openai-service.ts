@@ -11,6 +11,10 @@ import type { BuildingMemory } from "@/types/ai";
 import { chatCompletion, chatJsonArray, chatJsonObject } from "./openai-client";
 import { loadRenovationContextBlock } from "./load-renovation-context";
 import {
+  collectStructuredProjectBriefFacts,
+  formatProjectBriefConstraintsBlock,
+} from "./project-brief-context";
+import {
   buildAssistantSystemPrompt,
   buildAssistantSystemPromptFromContext,
   buildDiagnosisPrompt,
@@ -49,7 +53,14 @@ export class OpenAIService implements AIService {
       includeDiagnosis: true,
       includeMemory: true,
     });
-    const prompt = buildStrategyPrompt(project, diagnosisItems, contextBlock);
+    const briefFacts = collectStructuredProjectBriefFacts(project.documents ?? []);
+    const briefConstraints = formatProjectBriefConstraintsBlock(briefFacts);
+    const prompt = buildStrategyPrompt(
+      project,
+      diagnosisItems,
+      contextBlock,
+      briefConstraints
+    );
 
     return chatJsonArray<
       Omit<RenovationStrategy, "id" | "projectId" | "createdAt" | "updatedAt">

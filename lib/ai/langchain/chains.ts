@@ -32,6 +32,7 @@ export async function runStrategyContextChain(input: {
   params: StrategyLabParams;
   knowledge: KnowledgeSearchResult[];
   diagnosisSummary: string;
+  briefConstraints?: string;
 }): Promise<string> {
   if (!isLangChainEnabled()) {
     return input.knowledge.map((k) => `- ${k.title}: ${k.excerpt}`).join("\n");
@@ -57,6 +58,9 @@ Preservation: {preservation}
 Diagnosis summary:
 {diagnosis}
 
+Owner brief constraints:
+{briefConstraints}
+
 Reference knowledge:
 {knowledge}`,
     ],
@@ -78,6 +82,7 @@ Reference knowledge:
     ambition: input.params.designAmbition,
     preservation: input.params.preservationLevel,
     diagnosis: input.diagnosisSummary || "No critical diagnosis items.",
+    briefConstraints: input.briefConstraints?.trim() || "No structured brief constraints available.",
     knowledge:
       input.knowledge.map((k) => `[${k.sourceType}] ${k.title}: ${k.excerpt}`).join("\n") ||
       "No external references.",

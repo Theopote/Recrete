@@ -91,7 +91,8 @@ Generate 6-12 diverse diagnosis items covering multiple categories. Be specific 
 export function buildStrategyPrompt(
   project: ProjectWithRelations,
   diagnosisItems: { title: string; severity: string; category: string; description: string }[],
-  renovationContextBlock?: string
+  renovationContextBlock?: string,
+  briefConstraintsBlock?: string
 ): string {
   const diagnosisLines = diagnosisItems
     .slice(0, 14)
@@ -100,6 +101,9 @@ export function buildStrategyPrompt(
 
   const contextSection = renovationContextBlock
     ? `\n\n## Evidence & Document Grounding (strategies MUST respond to these facts)\n${renovationContextBlock}`
+    : "";
+  const briefSection = briefConstraintsBlock
+    ? `\n\n## Owner Brief Constraints (MANDATORY)\n${briefConstraintsBlock}`
     : "";
 
   return `You are a senior architect specializing in adaptive reuse and existing building renovation in China.
@@ -110,7 +114,7 @@ Generate professionally credible renovation strategies grounded in project evide
 ${formatProjectBasics(project)}
 
 ## Diagnosis Context
-${diagnosisLines || "No diagnosis items yet — infer typical risks from building age, function change, and documents."}${contextSection}
+${diagnosisLines || "No diagnosis items yet — infer typical risks from building age, function change, and documents."}${contextSection}${briefSection}
 
 ## Strategy Requirements
 Propose exactly 3 strategies — one per intervention tier — using this unified schema:
@@ -125,6 +129,7 @@ Each strategy MUST include:
 - \`costLevel\`, \`scheduleLevel\`, \`riskLevel\`
 - \`pros[]\`, \`cons[]\` tied to THIS building
 - Do NOT set \`recommendationReason\` — ranking engine selects the recommendation
+- Strategies MUST explicitly satisfy owner brief constraints (program, objective, schedule, budget, and design constraints when present)
 
 Use concrete renovation terminology (柱网, 功能置换, 消防分区, 无障碍, 节能改造) where appropriate.`;
 }
