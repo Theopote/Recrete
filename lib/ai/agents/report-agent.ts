@@ -16,6 +16,8 @@ import {
   langChainModelLabel,
 } from "../langchain/report-chain";
 import { isLangChainEnabled } from "../langchain/chains";
+import type { ComplianceEngineReport } from "../compliance/types";
+import { buildStrategyConditionedReportContent } from "../strategy-conditioned-report";
 
 const REPORT_TYPES_WITH_ENERGY = new Set<ReportType>([
   "diagnosis_report",
@@ -64,6 +66,36 @@ export async function generateReport(
   }
 
   return withMockDelay(() => result, isLangChainEnabled() ? 200 : 800);
+}
+
+export async function generateStrategyConditionedReport(
+  project: ProjectWithRelations,
+  buildingMemory: BuildingMemory | null | undefined,
+  diagnosisItems: DiagnosisItem[],
+  strategies: RenovationStrategy[],
+  issues: SiteIssue[],
+  selectedStrategy: RenovationStrategy,
+  complianceReport: ComplianceEngineReport
+) {
+  const skeleton = buildStrategyConditionedReportContent({
+    project,
+    selectedStrategy,
+    allStrategies: strategies,
+    diagnosisItems,
+    issues,
+    complianceReport,
+  });
+
+  return runReportGenerationChain({
+    project,
+    buildingMemory,
+    diagnosisItems,
+    strategies,
+    issues,
+    reportType: "renovation_strategy_report",
+    skeletonTitle: skeleton.title,
+    skeletonContent: skeleton.content,
+  });
 }
 
 export async function generatePresentationOutline(

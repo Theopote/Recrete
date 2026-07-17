@@ -13,6 +13,9 @@ import {
 } from "./pipeline-utils";
 import { isLangChainEnabled, getChatModel } from "./chains";
 import { buildProfessionalPromptContext } from "../knowledge/prompt-context";
+import { buildRuleBasedExecutiveSummary } from "../diagnosis-executive-summary";
+import { isOpenAIConfigured } from "../openai-config";
+import { chatCompletion } from "../openai-client";
 
 export interface DiagnosisInsightDraft {
   title: string;
@@ -36,14 +39,8 @@ export async function runDiagnosisExecutiveSummaryChain(input: {
   expertSummary?: string;
   knowledge?: KnowledgeSearchResult[];
 }): Promise<string> {
-  if (!isLangChainEnabled()) {
-    const critical = input.diagnosisItems.filter(
-      (d) => d.severity === "critical" || d.severity === "high"
-    ).length;
-    return `${input.project.name}: ${input.diagnosisItems.length} diagnosis items (${critical} high/critical). ${input.expertSummary ?? ""}`.trim();
-  }
-
-  const prompt = ChatPromptTemplate.fromMessages([
+  if (isLangChainEnabled()) {
+    const prompt = ChatPromptTemplate.fromMessages([
     [
       "system",
       `You are Recrete's building diagnosis lead. Write a 150-word executive summary for architects and owners. Bilingual terms OK. Focus on top risks and next steps.
@@ -64,17 +61,50 @@ Reference cases:
     ],
   ]);
 
-  const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
+    const chain = RunnableSequence.from([prompt, getChatModel("reasoning"), new StringOutputParser()]);
 
-  return chain.invoke({
-    professionalContext: buildProfessionalPromptContext(input.project),
-    projectContext: buildProjectContextBlock(input.project),
-    expertSummary: input.expertSummary ?? "Standard multi-agent diagnosis completed.",
-    diagnosis: formatDiagnosisForPrompt(input.diagnosisItems),
-    knowledge:
+    return chain.invoke({
+      professionalContext: buildProfessionalPromptContext(input.project),
+      projectContext: buildProjectContextBlock(input.project),
+      expertSummary: input.expertSummary ?? "Standard multi-agent diagnosis completed.",
+      diagnosis: formatDiagnosisForPrompt(input.diagnosisItems),
+      knowledge:
+        input.knowledge?.map((k) => `- ${k.title}: ${k.excerpt}`).join("\n") ??
+        "No external references.",
+    });
+  }
+
+  if (isOpenAIConfigured()) {
+    const knowledgeBlock =
       input.knowledge?.map((k) => `- ${k.title}: ${k.excerpt}`).join("\n") ??
-      "No external references.",
-  });
+      "No external references.";
+
+    return chatCompletion(
+      [
+        {
+          role: "system",
+          content: `You are Recrete's building diagnosis lead. Write a 150-word executive summary for architects and owners. Bilingual terms OK. Focus on top risks and next steps.
+
+${buildProfessionalPromptContext(input.project)}`,
+        },
+        {
+          role: "user",
+          content: `${buildProjectContextBlock(input.project)}
+
+Expert agent summary: ${input.expertSummary ?? "Standard multi-agent diagnosis completed."}
+
+Diagnosis items:
+${formatDiagnosisForPrompt(input.diagnosisItems)}
+
+Reference cases:
+${knowledgeBlock}`,
+        },
+      ],
+      { scenario: "reasoning", maxTokens: 450, temperature: 0.35 }
+    );
+  }
+
+  return buildRuleBasedExecutiveSummary(input);
 }
 
 export async function runDiagnosisInsightsChain(input: {

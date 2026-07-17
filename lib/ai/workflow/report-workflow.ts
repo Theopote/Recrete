@@ -9,6 +9,8 @@ import {
 import { getAIPlatform } from "@/lib/ai";
 import { reportPipelineModelName } from "@/lib/ai/agents/report-agent";
 import { isLangChainEnabled } from "@/lib/ai/langchain/chains";
+import { runComplianceEngine } from "@/lib/ai/compliance";
+import { resolveProjectMeasurements } from "@/lib/db/site-measurements-store";
 import type { Report, ReportType } from "@/types";
 import type { AIAnalysisRun, BuildingMemory } from "@/types/ai";
 
@@ -50,6 +52,22 @@ export async function runReportWorkflow(
     const result = await platform.report.generateMeetingSummary(project, meetingNotes);
     title = result.title;
     content = result.content;
+  } else if (reportType === "renovation_strategy_report" && strategyId) {
+    const strategy = project.strategies?.find((s) => s.id === strategyId);
+    if (!strategy) return null;
+    const measurements = await resolveProjectMeasurements(projectId);
+    const complianceReport = runComplianceEngine(project, { measurements });
+    const result = await platform.report.generateStrategyConditionedReport(
+      project,
+      project.buildingMemory ?? null,
+      project.diagnosis ?? [],
+      project.strategies ?? [],
+      project.issues ?? [],
+      strategy,
+      complianceReport
+    );
+    title = result.title;
+    content = result.content;
   } else if (reportType === "owner_presentation" && strategyId) {
     const strategy = project.strategies?.find((s) => s.id === strategyId);
     if (!strategy) return null;
@@ -81,7 +99,7 @@ export async function runReportWorkflow(
   const analysisRun = await addAnalysisRun({
     projectId,
     analysisType: "report_generation",
-    inputSummary: `Report pipeline — ${reportType}${isLangChainEnabled() ? " + LangChain" : ""}`,
+    inputSummary: `Report pipeline — ${reportType}${strategyId ? ` (strategy ${strategyId})` : ""}${isLangChainEnabled() ? " + LangChain" : ""}`,
     outputSummary: content.slice(0, 500),
     generatedItemCount: 1,
     modelName: reportPipelineModelName(reportType),

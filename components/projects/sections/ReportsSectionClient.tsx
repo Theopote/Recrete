@@ -12,6 +12,7 @@ import { useUIStore } from "@/lib/stores/ui-store";
 import type { ProjectWithRelations, Report, ReportType } from "@/types";
 import { FileText, Sparkles, CheckCircle2 } from "lucide-react";
 import { REPORT_TEMPLATE_CATALOG } from "@/lib/ai/report-templates";
+import { reportTypeNeedsStrategy } from "@/lib/ai/strategy-conditioned-report";
 import { AIErrorBanner } from "@/components/ai/AIErrorBanner";
 import { parseAIErrorResponse } from "@/lib/ai/client-messages";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -26,6 +27,11 @@ export function ReportsSectionClient({ project: initialProject }: ReportsSection
   const [reports, setReports] = useState(initialProject.reports ?? []);
   const [selectedReport, setSelectedReport] = useState<Report | null>(reports[0] ?? null);
   const [reportType, setReportType] = useState<ReportType>("existing_condition_report");
+  const strategies = initialProject.strategies ?? [];
+  const defaultStrategyId =
+    strategies.find((s) => s.recommendationReason)?.id ?? strategies[0]?.id ?? "";
+  const [strategyId, setStrategyId] = useState(defaultStrategyId);
+  const needsStrategy = reportTypeNeedsStrategy(reportType);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState<{ message: string; retryable: boolean } | null>(null);
 
@@ -44,7 +50,10 @@ export function ReportsSectionClient({ project: initialProject }: ReportsSection
       const res = await fetch(`/api/projects/${initialProject.id}/reports/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reportType }),
+        body: JSON.stringify({
+          reportType,
+          ...(needsStrategy && strategyId ? { strategyId } : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -80,7 +89,7 @@ export function ReportsSectionClient({ project: initialProject }: ReportsSection
         descriptionZh="基于项目数据生成结构化 Markdown 报告"
         action={
           <RoleGate action="publish_report">
-            <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+            <Button variant="copper" size="sm" onClick={handleGenerate} disabled={isGenerating || (needsStrategy && !strategyId)}>
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
               {isGenerating
                 ? pickLocaleText(locale, "Generating...", "生成中...")
@@ -95,6 +104,42 @@ export function ReportsSectionClient({ project: initialProject }: ReportsSection
           {pickLocaleText(locale, "Report Template", "报告模板")}
         </h3>
         <ReportTemplatePicker value={reportType} onChange={setReportType} />
+        {needsStrategy && (
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              {pickLocaleText(locale, "Selected Strategy", "选定改造方案")}
+            </h3>
+            {strategies.length > 0 ? (
+              <select
+                value={strategyId}
+                onChange={(e) => setStrategyId(e.target.value)}
+                className="w-full max-w-md rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                {strategies.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                    {s.recommendationReason ? " ★" : ""}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {pickLocaleText(
+                  locale,
+                  "Generate renovation strategies first to produce a strategy-conditioned report.",
+                  "请先生成改造策略，再生成方案条件化报告。"
+                )}
+              </p>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              {pickLocaleText(
+                locale,
+                "Report will reference the selected strategy and compliance remediation items.",
+                "报告将引用所选方案及合规整改项。"
+              )}
+            </p>
+          </div>
+        )}
         <div
           className="flex items-start gap-2 rounded-md border border-copper/30 bg-copper/5 px-3 py-2"
           aria-live="polite"

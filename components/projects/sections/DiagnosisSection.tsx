@@ -14,7 +14,7 @@ import {
 } from "@/lib/utils/labels";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { DiagnosisCategory, DiagnosisItem, ProjectWithRelations } from "@/types";
-import { Sparkles, Stethoscope, Plus } from "lucide-react";
+import { Sparkles, Stethoscope, Plus, FileText } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { EvidenceTrail } from "@/components/diagnosis/EvidenceTrail";
 import { AIDisclaimer } from "@/components/ai/AIDisclaimer";
@@ -32,6 +32,9 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DiagnosisItem | null>(null);
+  const [executiveSummary, setExecutiveSummary] = useState<string | null>(
+    findStoredExecutiveSummary(initialProject)
+  );
 
   const categoryLabel = (key: DiagnosisCategory) =>
     label(diagnosisCategoryLabels, diagnosisCategoryLabelsZh, key);
@@ -67,6 +70,9 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
       if (res.ok) {
         const newItems = data.diagnosisItems ?? data;
         setItems((prev) => [...newItems.map(parseDiagnosis), ...prev]);
+        if (typeof data.executiveSummary === "string" && data.executiveSummary.trim()) {
+          setExecutiveSummary(data.executiveSummary);
+        }
       } else {
         const parsed = parseAIErrorResponse(data);
         setAiError(parsed);
@@ -137,6 +143,20 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
       />
 
       <AIDisclaimer />
+
+      {executiveSummary && (
+        <div className="rounded-lg border border-copper/30 bg-copper/5 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-copper shrink-0" />
+            <h3 className="text-sm font-medium">
+              {t("Executive Summary", "执行摘要")}
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {executiveSummary}
+          </p>
+        </div>
+      )}
 
       {aiError && (
         <AIErrorBanner
@@ -256,6 +276,11 @@ function CategoryPill({
       {label} ({count})
     </button>
   );
+}
+
+function findStoredExecutiveSummary(project: ProjectWithRelations): string | null {
+  const insight = project.insights?.find((i) => i.title === "Diagnosis Executive Summary");
+  return insight?.summary?.trim() ? insight.summary : null;
 }
 
 function parseDiagnosis(d: DiagnosisItem): DiagnosisItem {

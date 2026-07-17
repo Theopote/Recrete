@@ -20,6 +20,8 @@ import {
 import { isLangChainEnabled } from "@/lib/ai/langchain/chains";
 import { langChainModelLabel } from "@/lib/ai/langchain/report-chain";
 import { executiveInsightConfidence } from "@/lib/ai/agents/cost-risk-scoring";
+import { diagnosisSummaryUsesAI } from "@/lib/ai/diagnosis-executive-summary";
+import { isOpenAIConfigured } from "@/lib/ai/openai-config";
 import type { DiagnosisItem } from "@/types";
 import type { AIInsight, AITask, BuildingMemory, AIAnalysisRun } from "@/types/ai";
 
@@ -124,9 +126,10 @@ export async function runDiagnosisWorkflow(
       })
     : undefined;
 
-  const knowledge = isLangChainEnabled()
-    ? await searchKnowledgeForProjectAsync(project, project.targetFunction, 3)
-    : [];
+  const knowledge =
+    isLangChainEnabled() || isOpenAIConfigured()
+      ? await searchKnowledgeForProjectAsync(project, project.targetFunction, 3)
+      : [];
 
   const executiveSummary = await runDiagnosisExecutiveSummaryChain({
     project,
@@ -151,7 +154,10 @@ export async function runDiagnosisWorkflow(
     recommendation: "Review full diagnosis matrix and prioritize engineer reviews.",
     confidence: executiveInsightConfidence(diagnosisItems, {
       expertSummary: expertSummaryText,
-      langChainEnabled: isLangChainEnabled(),
+      aiEnriched: diagnosisSummaryUsesAI({
+        langChainEnabled: isLangChainEnabled(),
+        openAIConfigured: isOpenAIConfigured(),
+      }),
     }),
     status: "open",
     sourceType: "diagnosis",
@@ -168,12 +174,14 @@ export async function runDiagnosisWorkflow(
   const analysisRun = await addAnalysisRun({
     projectId,
     analysisType: "diagnosis_generation",
-    inputSummary: `Diagnosis pipeline — base + ${includeExpertAgents ? "expert agents" : "no experts"}${isLangChainEnabled() ? " + LangChain" : ""}`,
+    inputSummary: `Diagnosis pipeline — base + ${includeExpertAgents ? "expert agents" : "no experts"}${isLangChainEnabled() ? " + LangChain" : isOpenAIConfigured() ? " + OpenAI summary" : " + rule summary"}`,
     outputSummary: executiveSummary.slice(0, 500),
     generatedItemCount: diagnosisItems.length + insights.length + tasks.length,
     modelName: isLangChainEnabled()
       ? langChainModelLabel("diagnosis")
-      : "recrete-expert-matrix-v1",
+      : isOpenAIConfigured()
+        ? "openai-diagnosis-summary"
+        : "recrete-expert-matrix-v1",
     confidence: 0.87,
   });
 

@@ -103,7 +103,7 @@ export function insightConfidenceFromDiagnosis(item: DiagnosisItem | undefined):
 
 export function executiveInsightConfidence(
   diagnosisItems: DiagnosisItem[],
-  options?: { expertSummary?: string | null; langChainEnabled?: boolean }
+  options?: { expertSummary?: string | null; aiEnriched?: boolean }
 ): number {
   if (diagnosisItems.length === 0) return 0.55;
 
@@ -118,7 +118,7 @@ export function executiveInsightConfidence(
   if (critical > 0) score += 0.06;
   if (high > 0) score += 0.04;
   if (options?.expertSummary && options.expertSummary.trim().length > 80) score += 0.05;
-  if (options?.langChainEnabled) score += 0.04;
+  if (options?.aiEnriched) score += 0.04;
 
   return Math.min(0.92, Math.round(score * 100) / 100);
 }

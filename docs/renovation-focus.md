@@ -33,8 +33,10 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 
 ### P2 · 交付物
 
-- 方案条件化报告（引用选中策略 + 合规 remediation）
-- 诊断 executive summary 默认开启（不必依赖 LangChain 开关）
+| 项 | 状态 | 说明 |
+|----|------|------|
+| 方案条件化报告（引用选中策略 + 合规 remediation） | ✅ | `strategy-conditioned-report.ts` + Reports 策略选择器 |
+| 诊断 executive summary 默认开启 | ✅ | 规则模板 / OpenAI 直连；不依赖 `LANGCHAIN_ENABLED` |
 
 ## 明确暂缓（往后放）
 
