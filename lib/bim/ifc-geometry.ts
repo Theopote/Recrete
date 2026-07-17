@@ -2,6 +2,26 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type * as WebIFC from "web-ifc";
 
+/** web-ifc interleaves position + normal as [x,y,z,nx,ny,nz] per vertex. */
+function splitPositionNormalArrays(verts: Float32Array) {
+  const vertexCount = Math.floor(verts.length / 6);
+  const positions = new Float32Array(vertexCount * 3);
+  const normals = new Float32Array(vertexCount * 3);
+
+  for (let i = 0; i < vertexCount; i++) {
+    const v = i * 6;
+    const p = i * 3;
+    positions[p] = verts[v];
+    positions[p + 1] = verts[v + 1];
+    positions[p + 2] = verts[v + 2];
+    normals[p] = verts[v + 3];
+    normals[p + 1] = verts[v + 4];
+    normals[p + 2] = verts[v + 5];
+  }
+
+  return { positions, normals };
+}
+
 export function bufferGeometryFromPlacedMesh(
   ifcApi: WebIFC.IfcAPI,
   modelId: number,
@@ -17,8 +37,11 @@ export function bufferGeometryFromPlacedMesh(
     geometry.GetIndexDataSize()
   );
 
+  const { positions, normals } = splitPositionNormalArrays(verts);
+
   const buffer = new THREE.BufferGeometry();
-  buffer.setAttribute("position", new THREE.BufferAttribute(verts, 3));
+  buffer.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  buffer.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
   buffer.setIndex(new THREE.BufferAttribute(indices, 1));
 
   const matrix = new THREE.Matrix4().fromArray(placedGeometry.flatTransformation);
@@ -149,7 +172,6 @@ export function buildIfcMeshGroup(ifcApi: WebIFC.IfcAPI, modelId: number) {
     const merged = mergeGeometries(opaqueGeometries, false);
     if (merged) {
       const material = new THREE.MeshStandardMaterial({
-        side: THREE.DoubleSide,
         color: 0x94a3b8,
         metalness: 0.05,
         roughness: 0.85,
@@ -162,12 +184,12 @@ export function buildIfcMeshGroup(ifcApi: WebIFC.IfcAPI, modelId: number) {
     const merged = mergeGeometries(transparentGeometries, false);
     if (merged) {
       const material = new THREE.MeshStandardMaterial({
-        side: THREE.DoubleSide,
         transparent: true,
         opacity: 0.75,
         color: 0x64748b,
         metalness: 0.05,
         roughness: 0.85,
+        depthWrite: false,
       });
       group.add(new THREE.Mesh(merged, material));
     }
