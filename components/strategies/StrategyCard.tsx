@@ -16,7 +16,14 @@ import type { SourceEvidence } from "@/types/ai";
 import { Check, X, Star } from "lucide-react";
 
 interface StrategyCardProps {
-  strategy: StrategyWithMetrics | (RenovationStrategy & { rank?: number; compositeScore?: number; metrics?: StrategyWithMetrics["metrics"] });
+  strategy: StrategyWithMetrics | (RenovationStrategy & {
+    rank?: number;
+    compositeScore?: number;
+    metrics?: StrategyWithMetrics["metrics"];
+    scoreContributions?: StrategyWithMetrics["scoreContributions"];
+    scoreWeights?: StrategyWithMetrics["scoreWeights"];
+    lifecycleBonus?: number;
+  });
   isRecommended?: boolean;
   projectId?: string;
   riskOptions?: string[];
