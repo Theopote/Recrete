@@ -4,10 +4,15 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeader } from "@/components/app/SectionHeader";
+import { WebCaseCard } from "@/components/ai/WebReference";
 import { useLocale } from "@/lib/i18n/use-locale";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, BookOpen, CheckCircle2, Loader2 } from "lucide-react";
-import type { SimilarCaseResult, CaseFailureWarning } from "@/lib/ai/knowledge/similar-cases";
+import { AlertTriangle, BookOpen, CheckCircle2, Globe, Loader2 } from "lucide-react";
+import type {
+  SimilarCaseResult,
+  CaseFailureWarning,
+  WebCaseResult,
+} from "@/lib/ai/knowledge/similar-cases";
 
 interface SimilarCasesPanelProps {
   projectId: string;
@@ -119,6 +124,8 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
   const [successCases, setSuccessCases] = useState<SimilarCaseResult[]>([]);
   const [warningCases, setWarningCases] = useState<SimilarCaseResult[]>([]);
   const [failureWarnings, setFailureWarnings] = useState<CaseFailureWarning[]>([]);
+  const [webCases, setWebCases] = useState<WebCaseResult[]>([]);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,6 +139,8 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
         setSuccessCases(data.successCases ?? []);
         setWarningCases(data.warningCases ?? []);
         setFailureWarnings(data.failureWarnings ?? []);
+        setWebCases(data.webCases ?? []);
+        setWebSearchEnabled(Boolean(data.webSearchEnabled));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -150,7 +159,10 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
     );
   }
 
-  if (successCases.length === 0 && warningCases.length === 0) {
+  const hasLocalCases = successCases.length > 0 || warningCases.length > 0;
+  const hasWebCases = webCases.length > 0;
+
+  if (!hasLocalCases && !hasWebCases) {
     return null;
   }
 
@@ -160,9 +172,29 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
         <SectionHeader
           title="Similar Projects"
           titleZh="相似项目案例"
-          description="AI-retrieved renovation precedents with success references and failure warnings"
-          descriptionZh="AI 检索相似改造先例，提供成功案例参考与失败教训警示"
+          description="Curated case library plus live web references for renovation precedents"
+          descriptionZh="内置案例库与联网实时检索，提供成功案例参考与失败教训警示"
         />
+      )}
+
+      {webSearchEnabled && hasWebCases && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-sky-700 flex items-center gap-1.5">
+            <Globe className="h-3 w-3" />
+            {t("Live Web References", "联网实时案例")}
+          </p>
+          <p className="text-[10px] text-muted-foreground -mt-1">
+            {t(
+              "Retrieved from the open web — verify project details before citing in reports.",
+              "来自公开网络检索，引用前请核实项目细节。"
+            )}
+          </p>
+          <div className={cn("grid gap-3", compact ? "grid-cols-1" : "md:grid-cols-2")}>
+            {webCases.slice(0, compact ? 2 : 4).map((item) => (
+              <WebCaseCard key={item.url} item={item} compact={compact} />
+            ))}
+          </div>
+        </div>
       )}
 
       {failureWarnings.length > 0 && (
@@ -180,7 +212,7 @@ export function SimilarCasesPanel({ projectId, compact }: SimilarCasesPanelProps
         <div className="space-y-2">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <BookOpen className="h-3 w-3" />
-            {t("Success References", "成功案例")}
+            {t("Curated Library", "内置案例库")}
           </p>
           <div className={cn("grid gap-3", compact ? "grid-cols-1" : "md:grid-cols-2")}>
             {successCases.slice(0, compact ? 2 : 4).map((c) => (

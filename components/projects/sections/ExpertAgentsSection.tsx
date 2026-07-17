@@ -17,6 +17,7 @@ import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Lan
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { BilingualString } from "@/lib/i18n/bilingual";
 import { MepIfcClashPanel } from "@/components/bim/MepIfcClashPanel";
+import { DataSourceNote } from "@/components/ai/WebReference";
 import type { BimModel } from "@/types/bim";
 
 type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost" | "heritage";
@@ -1676,9 +1677,10 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                 {(costEstimate.confidence ?? 0) * 100}%
               </p>
               {costEstimate.provenance?.dataSourceNote && (
-                <p className="text-[10px] text-muted-foreground">
-                  {costEstimate.provenance.dataSourceNote}
-                </p>
+                <DataSourceNote
+                  note={costEstimate.provenance.dataSourceNote}
+                  className="text-[10px] text-muted-foreground"
+                />
               )}
               {costEstimate.benchmark && (
                 <p className="text-muted-foreground">

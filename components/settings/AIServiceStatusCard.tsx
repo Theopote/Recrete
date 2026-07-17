@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Globe, Loader2, Sparkles } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
 import { pickLocaleText } from "@/lib/i18n/locale";
 
@@ -11,6 +11,8 @@ interface AIStatus {
   mode: "mock" | "openai";
   live: boolean;
   langChainEnabled: boolean;
+  webSearchEnabled?: boolean;
+  webSearchProvider?: string | null;
   usage?: {
     dailyUsed: number;
     dailyLimit: number;
@@ -97,6 +99,17 @@ export function AIServiceStatusCard() {
                   {status.langChainEnabled ? t("Enabled", "已启用") : t("Disabled", "未启用")}
                 </Badge>
               </div>
+              <div>
+                <p className="text-muted-foreground">{t("Web Search", "联网搜索")}</p>
+                <Badge
+                  variant="outline"
+                  className={`mt-1 ${status.webSearchEnabled ? "border-sky-300 text-sky-700" : ""}`}
+                >
+                  {status.webSearchEnabled
+                    ? status.webSearchProvider ?? t("Enabled", "已启用")
+                    : t("Not configured", "未配置")}
+                </Badge>
+              </div>
               {status.usage && (
                 <div>
                   <p className="text-muted-foreground">{t("Daily quota", "今日额度")}</p>
@@ -106,6 +119,18 @@ export function AIServiceStatusCard() {
                 </div>
               )}
             </div>
+
+            {status.webSearchEnabled ? (
+              <div className="flex items-start gap-2 rounded-md border border-sky-500/30 bg-sky-500/5 px-3 py-2">
+                <Globe className="h-4 w-4 text-sky-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-foreground/80">
+                  {t(
+                    "Web search is active — regulations, similar cases, and market costs can be retrieved live.",
+                    "联网搜索已启用，可实时检索规范条文、相似案例与市场造价参考。"
+                  )}
+                </p>
+              </div>
+            ) : null}
 
             {isLive ? (
               <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">

@@ -216,7 +216,7 @@ function buildPhasingWithEnergy(
 
 export type CostEstimateContext = Pick<
   CostEstimateInput,
-  "costKnowledge" | "projectCostRecords"
+  "costKnowledge" | "projectCostRecords" | "webMarketNote"
 >;
 
 export async function estimateCostAndRisk(

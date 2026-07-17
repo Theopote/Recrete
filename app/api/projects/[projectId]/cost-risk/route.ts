@@ -4,7 +4,8 @@ import { getAIPlatform } from "@/lib/ai";
 import type { AIInsight } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { requireProjectAccess } from "@/lib/auth/authorize";
-import { prepareCostEstimateContext } from "@/lib/ai/knowledge/cost-knowledge-sync.server";
+import { prepareCostEstimateContext, fetchMarketCostWebNote } from "@/lib/ai/knowledge/cost-knowledge-sync.server";
+import { inferRegion } from "@/lib/ai/knowledge/prompt-context";
 type InsightDraft = Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt">;
 
 export async function POST(
@@ -19,7 +20,17 @@ export async function POST(
   const strategies = project.strategies ?? [];
   const platform = getAIPlatform();
   const { snapshot, projectRecords } = await prepareCostEstimateContext(projectId);
-  const costContext = { costKnowledge: snapshot, projectCostRecords: projectRecords };
+  const region = inferRegion(project.location);
+  const webMarketNote = await fetchMarketCostWebNote({
+    region,
+    buildingType: project.buildingType,
+    strategyType: strategies[0]?.type,
+  });
+  const costContext = {
+    costKnowledge: snapshot,
+    projectCostRecords: projectRecords,
+    webMarketNote,
+  };
   const matrix = await platform.costRisk.generateRiskMatrix(project, strategies, costContext);
   const phasingPlan =
     strategies.length > 0

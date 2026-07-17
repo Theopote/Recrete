@@ -13,6 +13,7 @@ import type { AIInsight, CostRiskMatrix } from "@/types/ai";
 import { COST_RISK_INSIGHT_SOURCE } from "@/types/ai";
 import { Sparkles, Loader2 } from "lucide-react";
 import { ProjectCostRecordPanel } from "@/components/cost/ProjectCostRecordPanel";
+import { DataSourceNote } from "@/components/ai/WebReference";
 import { useLocale } from "@/lib/i18n/use-locale";
 
 interface CostRiskSectionProps {
@@ -112,9 +113,10 @@ export function CostRiskSection({ project, strategiesWithMetrics }: CostRiskSect
       {matrix?.energyRoi && <EnergyRoiPanel energyRoi={matrix.energyRoi} />}
 
       {matrix?.dataSourceNote && (
-        <p className="text-[10px] text-muted-foreground -mt-2">
-          {matrix.dataSourceNote}
-        </p>
+        <DataSourceNote
+          note={matrix.dataSourceNote}
+          className="text-[10px] text-muted-foreground -mt-2"
+        />
       )}
 
       {matrix?.strategyEstimates && matrix.strategyEstimates.length > 0 && (
