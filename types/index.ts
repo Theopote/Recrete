@@ -358,6 +358,8 @@ export interface StrategyComparisonMetrics {
   feasibility: number;
   /** ROI-adjusted lifecycle cost risk (lower is better); aligns with Cost & Risk matrix */
   lifecycleCost: number;
+  /** Owner brief constraint coverage (0–100); higher is better */
+  briefCompliance?: number;
 }
 
 export interface StrategyWithMetrics extends RenovationStrategy {
@@ -370,6 +372,7 @@ export interface StrategyWithMetrics extends RenovationStrategy {
   scoreWeights?: import("@/types/ai").StrategyScoreWeights;
   rankSummary?: string;
   lifecycleBonus?: number;
+  briefComplianceResult?: import("@/lib/ai/brief-compliance-scoring").BriefComplianceResult;
   tierProfile?: import("@/types/strategy-profile").StrategyTierProfile;
   linkedGraphNodeIds?: string[];
 }

@@ -23,6 +23,8 @@ import {
 import { normalizeStrategyBatch, enrichStrategiesWithProfiles } from "@/lib/ai/strategy-schema";
 import { loadProjectDrawingGraph } from "@/lib/ai/load-project-drawing-graph";
 import { diffStrategySnapshots, summarizeStrategyDiff } from "@/lib/utils/strategy-diff";
+import { collectStructuredProjectBriefFacts } from "@/lib/ai/project-brief-context";
+import { evaluateBriefCompliance } from "@/lib/ai/brief-compliance-scoring";
 import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
 import type { AIInsight, BuildingMemory, AIAnalysisRun, StrategyLabParams } from "@/types/ai";
 
@@ -118,9 +120,11 @@ export async function runStrategyWorkflow(
     });
   }
 
+  const briefFacts = collectStructuredProjectBriefFacts(project.documents);
   const withMetrics = linkedCreated.map((s) => ({
     ...s,
     metrics: computeStrategyMetrics(s, project, created),
+    briefComplianceResult: briefFacts.length > 0 ? evaluateBriefCompliance(s, briefFacts) : undefined,
   }));
 
   const rankings = rankStrategies(withMetrics, project, resolvedParams);
@@ -217,9 +221,11 @@ export async function runStrategyIterationWorkflow(
     changeSummary: summarizeStrategyDiff(diffs),
   });
 
+  const refineBriefFacts = collectStructuredProjectBriefFacts(project.documents);
   const strategy: StrategyWithMetrics = {
     ...updated,
     metrics: computeStrategyMetrics(updated, project, project.strategies ?? []),
+    briefComplianceResult: refineBriefFacts.length > 0 ? evaluateBriefCompliance(updated, refineBriefFacts) : undefined,
   };
 
   const [insight] = await addInsights(projectId, [

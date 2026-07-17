@@ -1,5 +1,7 @@
 import { levelToPercent } from "@/lib/utils";
 import { computeLifecycleCostScore } from "@/lib/ai/agents/cost-risk-agent";
+import { evaluateBriefCompliance } from "@/lib/ai/brief-compliance-scoring";
+import { collectStructuredProjectBriefFacts } from "@/lib/ai/project-brief-context";
 import type { ProjectWithRelations, RenovationStrategy, StrategyComparisonMetrics } from "@/types";
 
 export function computeStrategyMetrics(
@@ -12,6 +14,14 @@ export function computeStrategyMetrics(
     | "feasibilityScore"
     | "designValueScore"
     | "preservationScore"
+    | "summary"
+    | "designGoal"
+    | "spatialStrategy"
+    | "structuralStrategy"
+    | "facadeStrategy"
+    | "mepStrategy"
+    | "pros"
+    | "cons"
   >,
   project?: ProjectWithRelations | null,
   allStrategies?: RenovationStrategy[]
@@ -45,6 +55,12 @@ export function computeStrategyMetrics(
       ? computeLifecycleCostScore(project, strategy, allStrategies)
       : cost;
 
+  const briefFacts = project ? collectStructuredProjectBriefFacts(project.documents) : [];
+  const briefCompliance =
+    briefFacts.length > 0
+      ? evaluateBriefCompliance(strategy as RenovationStrategy, briefFacts).score
+      : undefined;
+
   return {
     cost,
     schedule,
@@ -56,5 +72,6 @@ export function computeStrategyMetrics(
       strategy.feasibilityScore ??
       (strategy.type === "light_renewal" ? 88 : strategy.type === "adaptive_reuse" ? 72 : 55),
     lifecycleCost,
+    briefCompliance,
   };
 }

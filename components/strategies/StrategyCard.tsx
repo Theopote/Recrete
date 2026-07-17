@@ -7,6 +7,7 @@ import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDial
 import { StrategyReviewThread } from "@/components/strategies/StrategyReviewThread";
 import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
 import { StrategyLinkedSources } from "@/components/strategies/StrategyLinkedSources";
+import { StrategyBriefCompliancePanel } from "@/components/strategies/StrategyBriefCompliancePanel";
 import { StrategyScoreBreakdown } from "@/components/strategies/StrategyScoreBreakdown";
 import { StrategyTierProfilePanel } from "@/components/strategies/StrategyTierProfilePanel";
 import { strategyTypeLabels, strategyTypeLabelsZh, riskLevelLabels, riskLevelLabelsZh } from "@/lib/utils/labels";
@@ -25,6 +26,7 @@ interface StrategyCardProps {
     scoreWeights?: StrategyWithMetrics["scoreWeights"];
     tierProfile?: StrategyWithMetrics["tierProfile"];
     lifecycleBonus?: number;
+    briefComplianceResult?: StrategyWithMetrics["briefComplianceResult"];
   });
   isRecommended?: boolean;
   projectId?: string;
@@ -145,6 +147,10 @@ export function StrategyCard({
               />
             )}
           </div>
+        )}
+
+        {strategy.briefComplianceResult && (
+          <StrategyBriefCompliancePanel result={strategy.briefComplianceResult} />
         )}
 
         <StrategyLinkedSources
