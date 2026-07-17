@@ -21,6 +21,7 @@ import { ElevatorFeasibilityPanel } from "@/components/building-condition/Elevat
 import { DataSourceNote } from "@/components/ai/WebReference";
 import type { BimModel } from "@/types/bim";
 import type { ElevatorFeasibilityResult } from "@/types/elevator-feasibility";
+import type { ElevatorBimMockScenario } from "@/lib/mock-data/elevator-bim-rooms";
 
 type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost" | "heritage" | "elevator";
 
@@ -56,6 +57,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const [heritageResult, setHeritageResult] = useState<Record<string, unknown> | null>(null);
   const [elevatorLoading, setElevatorLoading] = useState(false);
   const [elevatorResult, setElevatorResult] = useState<ElevatorFeasibilityResult | null>(null);
+  const [elevatorMockScenario, setElevatorMockScenario] = useState<ElevatorBimMockScenario>("feasible");
   const [bimModels, setBimModels] = useState<BimModel[]>([]);
   const [selectedBimModelId, setSelectedBimModelId] = useState("");
 
@@ -408,6 +410,7 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           existingLoad: structuralInput.existingLoad
             ? Number(structuralInput.existingLoad)
             : undefined,
+          mockScenario: elevatorMockScenario,
         }),
       });
       if (res.ok) {
@@ -1893,6 +1896,22 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
                   "护栏模式：先从 BIM 识别候选井道、校验尺寸/结构/文保约束，仅在可行时生成 AI 设计建议。"
                 )}
               </p>
+              <div>
+                <Label className="text-xs">{t("Mock BIM scenario (no upload needed)", "Mock BIM 场景（无需上传）")}</Label>
+                <select
+                  className="mt-1 h-8 w-full rounded-md border bg-background px-2 text-xs"
+                  value={elevatorMockScenario}
+                  onChange={(e) =>
+                    setElevatorMockScenario(e.target.value as ElevatorBimMockScenario)
+                  }
+                >
+                  <option value="feasible">{t("Feasible — southeast storage", "可行 — 东南角储藏间")}</option>
+                  <option value="heritage">{t("Heritage — same layout", "文保 — 同布局")}</option>
+                  <option value="infeasible">{t("Infeasible — too small", "不可行 — 空间过小")}</option>
+                  <option value="multi_candidate">{t("Multi-candidate ranking", "多候选排序")}</option>
+                  <option value="empty">{t("Empty — no BIM", "空数据")}</option>
+                </select>
+              </div>
               <Button variant="copper" size="sm" onClick={runElevator} disabled={elevatorLoading}>
                 {elevatorLoading ? (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />

@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { assessElevatorFeasibility } from "@/lib/ai/agents/elevator-feasibility-agent";
+import {
+  getElevatorMockRooms,
+  MOCK_ELEVATOR_BEST_CANDIDATE,
+  MOCK_ELEVATOR_TOO_SMALL_CANDIDATE,
+} from "@/lib/mock-data/elevator-bim-rooms";
 import type { ProjectWithRelations, HeritageLevel } from "@/types";
-import type { BimRoomInfo } from "@/types/bim";
 
 vi.mock("@/lib/ai/openai-client", () => ({
   chatCompletion: vi.fn().mockResolvedValue("建议将电梯与二层连廊衔接。"),
@@ -57,34 +61,6 @@ function demoProject(overrides: Partial<ProjectWithRelations> = {}): ProjectWith
   };
 }
 
-const goodRoom: BimRoomInfo = {
-  id: "r1",
-  label: "三层东南角储藏间",
-  area: 5.5,
-  areaUnit: "m2",
-  source: "cad_polyline",
-  polygon: [
-    { x: 0, y: 0 },
-    { x: 2.4, y: 0 },
-    { x: 2.4, y: 2.3 },
-    { x: 0, y: 2.3 },
-  ],
-};
-
-const smallRoom: BimRoomInfo = {
-  id: "r2",
-  label: "储藏间",
-  area: 1.8,
-  areaUnit: "m2",
-  source: "cad_polyline",
-  polygon: [
-    { x: 0, y: 0 },
-    { x: 1.4, y: 0 },
-    { x: 1.4, y: 1.3 },
-    { x: 0, y: 1.3 },
-  ],
-};
-
 describe("assessElevatorFeasibility", () => {
   it("returns insufficient_data when no BIM rooms", async () => {
     const result = await assessElevatorFeasibility(demoProject(), [], {
@@ -94,17 +70,20 @@ describe("assessElevatorFeasibility", () => {
   });
 
   it("returns infeasible when candidate space is too small", async () => {
-    const result = await assessElevatorFeasibility(demoProject(), [smallRoom], {
-      skipAiRecommendation: true,
-    });
+    const result = await assessElevatorFeasibility(
+      demoProject(),
+      getElevatorMockRooms("infeasible"),
+      { skipAiRecommendation: true }
+    );
     expect(result.verdict).toBe("infeasible");
     expect(result.spaceCheck.meetsMinimum).toBe(false);
+    expect(result.spaceCheck.candidateLabel).toContain("储藏");
   });
 
   it("returns conditional for adequate space with heritage flag", async () => {
     const result = await assessElevatorFeasibility(
       demoProject({ building: demoBuilding("district") }),
-      [goodRoom],
+      getElevatorMockRooms("feasible"),
       { skipAiRecommendation: true }
     );
     expect(["feasible", "conditional"]).toContain(result.verdict);
@@ -112,12 +91,33 @@ describe("assessElevatorFeasibility", () => {
     expect(result.spaceCheck.candidateLabel).toContain("储藏");
   });
 
+  it("uses full feasible floor mock with southeast storage candidate", async () => {
+    const result = await assessElevatorFeasibility(
+      demoProject(),
+      getElevatorMockRooms("feasible"),
+      { skipAiRecommendation: true }
+    );
+    expect(result.spaceCheck.candidateRoomId).toBe(MOCK_ELEVATOR_BEST_CANDIDATE.id);
+    expect(result.spaceCheck.meetsMinimum).toBe(true);
+  });
+
   it("includes AI recommendation when feasible/conditional and not skipped", async () => {
-    const result = await assessElevatorFeasibility(demoProject(), [goodRoom], {
-      existingLoad: 200,
-    });
+    const result = await assessElevatorFeasibility(
+      demoProject(),
+      [MOCK_ELEVATOR_BEST_CANDIDATE],
+      { existingLoad: 200 }
+    );
     if (result.verdict === "feasible" || result.verdict === "conditional") {
       expect(result.aiRecommendation).toBeTruthy();
     }
+  });
+
+  it("infeasible mock single room is below minimum", async () => {
+    const result = await assessElevatorFeasibility(
+      demoProject(),
+      [MOCK_ELEVATOR_TOO_SMALL_CANDIDATE],
+      { skipAiRecommendation: true }
+    );
+    expect(result.verdict).toBe("infeasible");
   });
 });

@@ -8,6 +8,11 @@ import {
   saveElevatorFeasibilityResult,
 } from "@/lib/db/elevator-feasibility-store";
 import { getProjectSiteMeasurementsWithFallback } from "@/lib/db/site-measurements-store";
+import {
+  getElevatorMockRooms,
+  isElevatorBimMockScenario,
+  ELEVATOR_BIM_MOCK_SCENARIO_META,
+} from "@/lib/mock-data/elevator-bim-rooms";
 
 function collectRoomsFromModels(models: Awaited<ReturnType<typeof listBimModels>>): BimRoomInfo[] {
   const rooms: BimRoomInfo[] = [];
@@ -27,7 +32,10 @@ export async function GET(
   if ("error" in access) return access.error;
 
   const result = await getElevatorFeasibilityResult(projectId);
-  return NextResponse.json({ result });
+  return NextResponse.json({
+    result,
+    availableMockScenarios: Object.values(ELEVATOR_BIM_MOCK_SCENARIO_META),
+  });
 }
 
 export async function POST(
@@ -43,7 +51,13 @@ export async function POST(
   const skipAi = body.skipAiRecommendation === true;
 
   const models = await listBimModels(projectId);
-  const rooms = collectRoomsFromModels(models);
+  let rooms = collectRoomsFromModels(models);
+  let mockScenario: string | undefined;
+
+  if (rooms.length === 0 && isElevatorBimMockScenario(body.mockScenario)) {
+    mockScenario = body.mockScenario;
+    rooms = getElevatorMockRooms(body.mockScenario);
+  }
 
   const siteMeasurements = await getProjectSiteMeasurementsWithFallback(projectId);
   const existingLoad =
@@ -59,5 +73,10 @@ export async function POST(
 
   await saveElevatorFeasibilityResult(projectId, result);
 
-  return NextResponse.json({ result, candidateCount: rooms.length });
+  return NextResponse.json({
+    result,
+    candidateCount: rooms.length,
+    mockScenario,
+    availableMockScenarios: Object.values(ELEVATOR_BIM_MOCK_SCENARIO_META),
+  });
 }
