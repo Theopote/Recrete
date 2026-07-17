@@ -23,9 +23,9 @@ describe("evaluateBriefCompliance", () => {
     linkedDiagnosisIds: [],
     linkedEvidenceIds: [],
     recommendationReason: null,
-    feasibilityScore: null,
-    designValueScore: null,
-    preservationScore: null,
+    feasibilityScore: undefined,
+    designValueScore: undefined,
+    preservationScore: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
