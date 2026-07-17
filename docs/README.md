@@ -8,6 +8,7 @@
 |------|------|
 | [../README.md](../README.md) | 项目概览、本地启动、环境变量、脚本 |
 | [deployment.md](./deployment.md) | Vercel + Neon + Cloudflare R2 生产部署 |
+| [vercel-env-checklist.md](./vercel-env-checklist.md) | **Vercel 环境变量核对清单（部署前复制粘贴）** |
 | [architecture-data-layer-migration.md](./architecture-data-layer-migration.md) | BIM / 图纸分析 DB 迁移设计（代码已完成） |
 | [renovation-focus.md](./renovation-focus.md) | 产品战略：改造证据链优先 |
 
