@@ -22,6 +22,7 @@ export async function runComplianceHybridChain(input: {
   ruleChecks: ComplianceCheckSummary[];
   knowledge: KnowledgeSearchResult[];
   codeSnippets: string;
+  structuredRegulations?: string;
 }): Promise<
   Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]
 > {
@@ -34,6 +35,7 @@ export async function runComplianceHybridChain(input: {
       "system",
       `You are Recrete's compliance reviewer for Chinese building codes (GB standards).
 Given rule-engine findings and knowledge snippets, add 0–3 NEW diagnosis items that the rules may have missed.
+When structured regulation extracts from uploaded code documents are provided, prioritize gaps those clauses highlight for the occupancy change.
 Return JSON array only: [{ title, category, severity, status, description, evidence, recommendation, relatedLocation }].
 Do not duplicate existing rule findings. categories: fire_safety, accessibility, structure, architecture, operation.`,
     ],
@@ -49,6 +51,9 @@ Rule engine findings:
 
 Code snippets:
 {codes}
+
+Structured regulation extracts (uploaded code documents):
+{structuredRegulations}
 
 RAG knowledge:
 {knowledge}`,
@@ -70,6 +75,7 @@ RAG knowledge:
       .map((c) => `- [${c.status}] ${c.code}: ${c.requirement} — ${c.note}`)
       .join("\n"),
     codes: input.codeSnippets || "None",
+    structuredRegulations: input.structuredRegulations?.trim() || "None",
     knowledge:
       input.knowledge.map((k) => `[${k.sourceType}] ${k.title}: ${k.excerpt}`).join("\n") ||
       "None",

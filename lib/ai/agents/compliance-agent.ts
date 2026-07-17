@@ -14,6 +14,10 @@ import {
   type ComplianceCategory,
   type ComplianceCheck,
 } from "../compliance";
+import {
+  collectStructuredRegulationFacts,
+  enrichComplianceEvidenceWithRegulations,
+} from "../compliance/regulation-context";
 
 /**
  * Compliance Review Agent — delegates rule evaluation to the compliance engine.
@@ -32,10 +36,16 @@ export class ComplianceAgent {
     locale: AppLocale = "zh"
   ): Promise<Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]> {
     const result = await this.performComplianceCheck(project, context);
+    const regulationFacts = collectStructuredRegulationFacts(project.documents);
 
     return result.checks
       .filter((check) => check.status !== "compliant" && check.status !== "not_applicable")
-      .map((check) => ({
+      .map((check) => {
+        const baseEvidence = `${check.code} §${check.section} — required: ${check.requiredValue}${
+          check.actualValue ? `, actual: ${check.actualValue}` : ""
+        }`;
+
+        return {
         title: locale === "zh" ? check.requirementZh : check.requirement,
         category: mapComplianceCategory(check.category),
         severity:
@@ -52,9 +62,7 @@ export class ComplianceAgent {
           (locale === "zh"
             ? "需现场核实该规范要求的合规情况。"
             : "On-site verification required for this code requirement."),
-        evidence: `${check.code} §${check.section} — required: ${check.requiredValue}${
-          check.actualValue ? `, actual: ${check.actualValue}` : ""
-        }`,
+        evidence: enrichComplianceEvidenceWithRegulations(baseEvidence, check, regulationFacts),
         recommendation:
           pickRemediationText(check.remediation, result.recommendations, check.category, locale) ??
           (locale === "zh"
@@ -67,7 +75,8 @@ export class ComplianceAgent {
               : "Egress and fire compartments"
             : undefined,
         requiresEngineerReview: check.category === "fire" || check.category === "structure",
-      }));
+      };
+      });
   }
 
   searchCodeRequirements(keyword: string): Array<{

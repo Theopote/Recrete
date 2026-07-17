@@ -7,6 +7,7 @@ import type { ComplianceMeasurements } from "./types";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
 import { isLangChainEnabled } from "../langchain/chains";
 import { runComplianceHybridChain } from "../langchain/compliance-chain";
+import { loadStructuredRegulationContext } from "./regulation-context";
 
 function dedupeDiagnosis(
   items: Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]
@@ -45,6 +46,8 @@ export async function generateComplianceDiagnosisHybrid(
     .map((h) => `${h.code.code} ${h.code.name}: ${h.requirement.description}`)
     .join("\n");
 
+  const regulationContext = loadStructuredRegulationContext(project);
+
   const llmItems = await runComplianceHybridChain({
     project,
     ruleChecks: checkResult.checks.map((c) => ({
@@ -56,6 +59,7 @@ export async function generateComplianceDiagnosisHybrid(
     })),
     knowledge,
     codeSnippets,
+    structuredRegulations: regulationContext.chainSnippets,
   });
 
   return dedupeDiagnosis([...ruleItems, ...llmItems]);

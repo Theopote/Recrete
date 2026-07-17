@@ -44,7 +44,14 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 |----|------|------|
 | 资料治理：版本 / 法规·任务书分类 / 元数据 | ✅ | `DocumentGovernancePanel` + versions API + 删除清理 storage |
 | AI 结构化消化（法规/任务书/扫描专类） | ✅ | `document-structured-extract.ts` + preview facts panel + Building Memory merge |
-| 阶段完备度 + 诊断溯源 + ingest 串联 | ✅ | `phase-completeness.ts` + `diagnosis-evidence-linker.ts` + ingest→diagnosis CTA |
+| 阶段完备度 + 诊断溯源 + ingest 串联 | ✅ | `phase-completeness.ts` + `diagnosis-evidence-linker.ts` + ingest→diagnosis CTA + `relink-evidence` API + `dataCompletenessScore` sync |
+
+### P4 · 法规事实驱动合规（进行中）
+
+| 项 | 状态 | 说明 |
+|----|------|------|
+| 结构化法规事实注入合规诊断 prompt | ✅ | `regulation-context.ts` → compliance agent + hybrid chain + renovation context |
+| 任务书约束注入方案 prompt | ⬜ | P4-B |
 
 ## 明确暂缓（往后放）
 

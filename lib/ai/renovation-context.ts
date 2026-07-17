@@ -1,5 +1,6 @@
 import type { DiagnosisItem, ProjectWithRelations, RenovationStrategy } from "@/types";
 import type { BuildingMemory, SourceEvidence } from "@/types/ai";
+import { formatStructuredRegulationsBlock, collectStructuredRegulationFacts } from "@/lib/ai/compliance/regulation-context";
 
 export interface RenovationContext {
   project: ProjectWithRelations;
@@ -93,6 +94,7 @@ export function formatRenovationContextBlock(
   const { project, evidence } = ctx;
   const sections = [
     formatDocumentAnalysisSection(project),
+    formatStructuredRegulationsBlock(collectStructuredRegulationFacts(project.documents)),
     formatEvidenceSection(evidence),
   ];
 
