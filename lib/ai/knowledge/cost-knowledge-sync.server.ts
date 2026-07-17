@@ -17,7 +17,7 @@ import {
   formatWebSearchSnippets,
   isWebSearchConfigured,
   searchMarketCostsOnline,
-} from "./web-search";
+} from "./web-search.server";
 import type { MarketCostWebContext } from "./cost-knowledge-sync";
 
 export type { CostKnowledgeSnapshot } from "./cost-knowledge-sync";

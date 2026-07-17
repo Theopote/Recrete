@@ -1,4 +1,4 @@
-import type { DiagnosisItem, DiagnosisCategory, ProjectWithRelations } from "@/types";
+import type { DiagnosisItem, DiagnosisCategory, ProjectWithRelations, SeverityLevel } from "@/types";
 import { bilingualKey, pickBilingual, type BilingualString } from "@/lib/i18n/bilingual";
 import type { AppLocale } from "@/lib/i18n/locale";
 import {
@@ -16,8 +16,8 @@ import {
 } from "../compliance";
 import {
   collectStructuredRegulationFacts,
-  enrichComplianceEvidenceWithWebSearch,
 } from "../compliance/regulation-context";
+import { enrichComplianceEvidenceWithWebSearch } from "../compliance/regulation-context.server";
 
 /**
  * Compliance Review Agent — delegates rule evaluation to the compliance engine.
@@ -38,25 +38,27 @@ export class ComplianceAgent {
     const result = await this.performComplianceCheck(project, context);
     const regulationFacts = collectStructuredRegulationFacts(project.documents);
 
-    const items = await Promise.all(
+    const items: Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[] =
+      await Promise.all(
       result.checks
         .filter((check) => check.status !== "compliant" && check.status !== "not_applicable")
         .map(async (check) => {
           const baseEvidence = `${check.code} §${check.section} — required: ${check.requiredValue}${
             check.actualValue ? `, actual: ${check.actualValue}` : ""
           }`;
+          const severity: SeverityLevel =
+            check.priority === "critical"
+              ? "critical"
+              : check.priority === "high"
+                ? "high"
+                : check.priority === "medium"
+                  ? "medium"
+                  : "low";
 
           return {
             title: locale === "zh" ? check.requirementZh : check.requirement,
             category: mapComplianceCategory(check.category),
-            severity:
-              check.priority === "critical"
-                ? "critical"
-                : check.priority === "high"
-                  ? "high"
-                  : check.priority === "medium"
-                    ? "medium"
-                    : "low",
+            severity,
             status: "identified" as const,
             description:
               (locale === "zh" ? (check.noteZh ?? check.note) : check.note) ||

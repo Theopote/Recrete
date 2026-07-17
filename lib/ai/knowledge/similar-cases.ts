@@ -9,8 +9,8 @@ import { searchKnowledgeForProjectAsync, searchKnowledgeForProject } from "./emb
 import {
   isWebSearchConfigured,
   searchRenovationCasesOnline,
-  type WebSearchResult,
-} from "./web-search";
+} from "./web-search.server";
+import type { WebSearchResult } from "./web-search";
 
 export interface SimilarCaseResult {
   id: string;

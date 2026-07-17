@@ -7,7 +7,7 @@ import type { ComplianceMeasurements } from "./types";
 import { searchKnowledgeForProjectAsync } from "../knowledge/embedding-search";
 import { isLangChainEnabled } from "../langchain/chains";
 import { runComplianceHybridChain } from "../langchain/compliance-chain";
-import { loadStructuredRegulationContextAsync } from "./regulation-context";
+import { loadStructuredRegulationContextAsync } from "./regulation-context.server";
 
 function dedupeDiagnosis(
   items: Omit<DiagnosisItem, "id" | "projectId" | "createdAt" | "updatedAt">[]

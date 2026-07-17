@@ -4,7 +4,7 @@ import {
   isWebSearchConfigured,
   searchWeb,
   type WebSearchDomain,
-} from "@/lib/ai/knowledge/web-search";
+} from "@/lib/ai/knowledge/web-search.server";
 
 const VALID_DOMAINS = new Set<WebSearchDomain>(["regulations", "cases", "cost", "general"]);
 

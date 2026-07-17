@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   enrichComplianceEvidenceWithRegulations,
-  enrichComplianceEvidenceWithWebSearch,
 } from "@/lib/ai/compliance/regulation-context";
+import { enrichComplianceEvidenceWithWebSearch } from "@/lib/ai/compliance/regulation-context.server";
 import type { RegulationFactWithSource } from "@/lib/ai/compliance/regulation-context";
 
-vi.mock("@/lib/ai/knowledge/web-search", () => ({
+vi.mock("@/lib/ai/knowledge/web-search.server", () => ({
   isWebSearchConfigured: vi.fn(() => true),
   searchRegulationsOnline: vi.fn(async () => ({
     query: "GB 50016",

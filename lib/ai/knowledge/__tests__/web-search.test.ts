@@ -18,7 +18,7 @@ describe("web-search", () => {
   });
 
   it("reports unconfigured when no API keys are set", async () => {
-    const { isWebSearchConfigured, searchWeb } = await import("../web-search");
+    const { isWebSearchConfigured, searchWeb } = await import("../web-search.server");
     expect(isWebSearchConfigured()).toBe(false);
 
     const response = await searchWeb("GB 50016 防火规范", { domain: "regulations" });
@@ -44,7 +44,7 @@ describe("web-search", () => {
       )
     );
 
-    const { searchRegulationsOnline } = await import("../web-search");
+    const { searchRegulationsOnline } = await import("../web-search.server");
     const response = await searchRegulationsOnline({
       codeRef: "GB 50016",
       section: "5.3.2",
@@ -80,7 +80,7 @@ describe("web-search", () => {
       )
     );
 
-    const { searchRenovationCasesOnline } = await import("../web-search");
+    const { searchRenovationCasesOnline } = await import("../web-search.server");
     const response = await searchRenovationCasesOnline({
       location: "上海",
       buildingType: "Industrial",
