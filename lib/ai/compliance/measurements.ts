@@ -78,14 +78,7 @@ export function mergeMeasurements(
   base: ComplianceMeasurements = {},
   overrides: ComplianceMeasurements = {}
 ): ComplianceMeasurements {
-  const merged: ComplianceMeasurements = { ...base };
-  for (const key of COMPLIANCE_MEASUREMENT_KEYS) {
-    const value = overrides[key];
-    if (value !== undefined) {
-      merged[key] = value;
-    }
-  }
-  return merged;
+  return { ...base, ...stripEmptyMeasurements(overrides) };
 }
 
 export interface MeasurementCoverage {
@@ -129,14 +122,11 @@ export const MEASUREMENT_FIELD_LABELS: Record<
 export function stripEmptyMeasurements(
   measurements: ComplianceMeasurements
 ): ComplianceMeasurements {
-  const result: ComplianceMeasurements = {};
-  for (const key of COMPLIANCE_MEASUREMENT_KEYS) {
-    const value = measurements[key];
-    if (isMeasurementValueSet(key, value)) {
-      result[key] = value;
-    }
-  }
-  return result;
+  return Object.fromEntries(
+    COMPLIANCE_MEASUREMENT_KEYS.filter((key) =>
+      isMeasurementValueSet(key, measurements[key])
+    ).map((key) => [key, measurements[key]])
+  ) as ComplianceMeasurements;
 }
 
 export function listMissingMeasurementFields(
@@ -151,16 +141,13 @@ export function extractHistoryFallback(
   stored: ComplianceMeasurements,
   history: ComplianceMeasurements = {}
 ): ComplianceMeasurements {
-  const fallback: ComplianceMeasurements = {};
-  for (const key of COMPLIANCE_MEASUREMENT_KEYS) {
-    if (
-      !isMeasurementValueSet(key, stored[key]) &&
-      isMeasurementValueSet(key, history[key])
-    ) {
-      fallback[key] = history[key];
-    }
-  }
-  return fallback;
+  return Object.fromEntries(
+    COMPLIANCE_MEASUREMENT_KEYS.filter(
+      (key) =>
+        !isMeasurementValueSet(key, stored[key]) &&
+        isMeasurementValueSet(key, history[key])
+    ).map((key) => [key, history[key]])
+  ) as ComplianceMeasurements;
 }
 
 export function buildMeasurementCoverage(
