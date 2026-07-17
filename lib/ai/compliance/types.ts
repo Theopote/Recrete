@@ -32,6 +32,10 @@ export interface ComplianceMeasurements {
   targetLoadKN?: number;
   travelDistance?: number;
   hasSprinkler?: boolean;
+  candidateShaftWidth?: number;
+  candidateShaftDepth?: number;
+  hasLobbySpace?: boolean;
+  lobbyDepth?: number;
 }
 
 export interface ComplianceContext {

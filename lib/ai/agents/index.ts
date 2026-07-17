@@ -41,3 +41,6 @@ export {
   generateHeritageDiagnosis,
   heritageAgent,
 } from "./heritage-agent";
+export {
+  assessElevatorFeasibility,
+} from "./elevator-feasibility-agent";

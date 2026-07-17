@@ -4,6 +4,7 @@ import { energyRules } from "./energy-rules";
 import { heritageRules } from "./heritage-rules";
 import { structureRules } from "./structure-rules";
 import { generalRules } from "./general-rules";
+import { elevatorRules } from "./elevator-rules";
 import type { ComplianceCategory, ComplianceRuleDefinition } from "../types";
 
 export const COMPLIANCE_ENGINE_VERSION = "1.0.0";
@@ -15,6 +16,7 @@ export const allComplianceRules: ComplianceRuleDefinition[] = [
   ...heritageRules,
   ...structureRules,
   ...generalRules,
+  ...elevatorRules,
 ];
 
 export function getRulesForScenarios(scenarios: string[]): ComplianceRuleDefinition[] {

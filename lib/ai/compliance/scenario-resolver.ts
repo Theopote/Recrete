@@ -1,4 +1,5 @@
 import type { ProjectWithRelations } from "@/types";
+import { hasElevatorIntent } from "./elevator-intent";
 
 export function resolveComplianceScenarios(project: ProjectWithRelations): string[] {
   const scenarios = new Set<string>(["all", "pre_renovation_inspection"]);
@@ -51,6 +52,10 @@ export function resolveComplianceScenarios(project: ProjectWithRelations): strin
 
   if (project.targetFunction !== project.originalFunction) {
     scenarios.add("interior_renovation");
+  }
+
+  if (hasElevatorIntent(project)) {
+    scenarios.add("elevator_addition");
   }
 
   return [...scenarios];

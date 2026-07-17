@@ -12,6 +12,10 @@ export const COMPLIANCE_MEASUREMENT_KEYS = [
   "targetLoadKN",
   "travelDistance",
   "hasSprinkler",
+  "candidateShaftWidth",
+  "candidateShaftDepth",
+  "hasLobbySpace",
+  "lobbyDepth",
 ] as const satisfies readonly (keyof ComplianceMeasurements)[];
 
 export type ComplianceMeasurementKey = (typeof COMPLIANCE_MEASUREMENT_KEYS)[number];
@@ -48,6 +52,10 @@ export function parseMeasurementsFromBody(
     targetLoadKN: parseOptionalNumber(body.targetLoadKN ?? body.targetLoad),
     travelDistance: parseOptionalNumber(body.travelDistance),
     hasSprinkler: parseOptionalBoolean(body.hasSprinkler),
+    candidateShaftWidth: parseOptionalNumber(body.candidateShaftWidth),
+    candidateShaftDepth: parseOptionalNumber(body.candidateShaftDepth),
+    hasLobbySpace: parseOptionalBoolean(body.hasLobbySpace),
+    lobbyDepth: parseOptionalNumber(body.lobbyDepth),
   };
 }
 
@@ -100,6 +108,8 @@ export const RULE_MEASUREMENT_DEPENDENCIES: Partial<
   "floor-live-load": ["existingLoadKN"],
   "accessible-entrance": ["hasAccessibleEntrance"],
   "window-u-value": ["windowUValue"],
+  "elevator-shaft-dimensions": ["candidateShaftWidth", "candidateShaftDepth"],
+  "elevator-lobby-space": ["hasLobbySpace", "lobbyDepth"],
 };
 
 export const MEASUREMENT_FIELD_LABELS: Record<
@@ -117,6 +127,10 @@ export const MEASUREMENT_FIELD_LABELS: Record<
   targetLoadKN: { en: "Target live load", zh: "目标活荷载" },
   travelDistance: { en: "Travel distance", zh: "疏散距离" },
   hasSprinkler: { en: "Sprinkler system", zh: "喷淋系统" },
+  candidateShaftWidth: { en: "Candidate shaft width", zh: "候选井道宽度" },
+  candidateShaftDepth: { en: "Candidate shaft depth", zh: "候选井道进深" },
+  hasLobbySpace: { en: "Elevator lobby space", zh: "候梯厅空间" },
+  lobbyDepth: { en: "Lobby depth", zh: "候梯厅深度" },
 };
 
 export function stripEmptyMeasurements(

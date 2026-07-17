@@ -21,6 +21,7 @@ import {
   buildReportPrompt,
   buildStrategyPrompt,
 } from "./prompts";
+import { getElevatorFeasibilityResult } from "@/lib/db/elevator-feasibility-store";
 
 export class OpenAIService implements AIService {
   async generateDiagnosis(
@@ -55,11 +56,13 @@ export class OpenAIService implements AIService {
     });
     const briefFacts = collectStructuredProjectBriefFacts(project.documents ?? []);
     const briefConstraints = formatProjectBriefConstraintsBlock(briefFacts);
+    const elevatorFeasibility = await getElevatorFeasibilityResult(project.id);
     const prompt = buildStrategyPrompt(
       project,
       diagnosisItems,
       contextBlock,
-      briefConstraints
+      briefConstraints,
+      elevatorFeasibility ?? undefined
     );
 
     return chatJsonArray<

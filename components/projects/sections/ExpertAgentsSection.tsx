@@ -13,14 +13,16 @@ import type {
   ProjectSiteMeasurementsDto,
   ProjectSiteMeasurementsResponse,
 } from "@/types/site-measurements";
-import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Landmark } from "lucide-react";
+import { Building2, ShieldCheck, Loader2, Sparkles, Flame, Zap, Coins, Leaf, Landmark, ArrowUpDown } from "lucide-react";
 import { useLocale } from "@/lib/i18n/use-locale";
 import type { BilingualString } from "@/lib/i18n/bilingual";
 import { MepIfcClashPanel } from "@/components/bim/MepIfcClashPanel";
+import { ElevatorFeasibilityPanel } from "@/components/building-condition/ElevatorFeasibilityPanel";
 import { DataSourceNote } from "@/components/ai/WebReference";
 import type { BimModel } from "@/types/bim";
+import type { ElevatorFeasibilityResult } from "@/types/elevator-feasibility";
 
-type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost" | "heritage";
+type ExpertTab = "structural" | "compliance" | "fire" | "mep" | "energy" | "cost" | "heritage" | "elevator";
 
 type StrengtheningMethod = {
   method: BilingualString | string;
@@ -52,6 +54,8 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
   const [costResult, setCostResult] = useState<Record<string, unknown> | null>(null);
   const [heritageLoading, setHeritageLoading] = useState(false);
   const [heritageResult, setHeritageResult] = useState<Record<string, unknown> | null>(null);
+  const [elevatorLoading, setElevatorLoading] = useState(false);
+  const [elevatorResult, setElevatorResult] = useState<ElevatorFeasibilityResult | null>(null);
   const [bimModels, setBimModels] = useState<BimModel[]>([]);
   const [selectedBimModelId, setSelectedBimModelId] = useState("");
 
@@ -391,6 +395,27 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
       if (res.ok) setHeritageResult(await res.json());
     } finally {
       setHeritageLoading(false);
+    }
+  };
+
+  const runElevator = async () => {
+    setElevatorLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/experts/elevator`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          existingLoad: structuralInput.existingLoad
+            ? Number(structuralInput.existingLoad)
+            : undefined,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setElevatorResult(data.result ?? null);
+      }
+    } finally {
+      setElevatorLoading(false);
     }
   };
 
@@ -767,6 +792,21 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
           onClick={() => setActiveTab("heritage")}
         >
           <Landmark className="h-3.5 w-3.5" /> {t("Heritage", "遗产")}
+        </Button>
+        <Button
+          variant={activeTab === "elevator" ? "default" : "outline"}
+          size="sm"
+          className="text-xs gap-1.5"
+          onClick={() => {
+            setActiveTab("elevator");
+            void fetch(`/api/projects/${project.id}/experts/elevator`)
+              .then((res) => (res.ok ? res.json() : null))
+              .then((data) => {
+                if (data?.result) setElevatorResult(data.result);
+              });
+          }}
+        >
+          <ArrowUpDown className="h-3.5 w-3.5" /> {t("Elevator", "电梯")}
         </Button>
       </div>
 
@@ -1835,6 +1875,35 @@ export function ExpertAgentsSection({ project }: ExpertAgentsSectionProps) {
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {activeTab === "elevator" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">
+                {t("Elevator Feasibility Agent", "电梯可行性 Agent")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "Deterministic rules first: find candidate shaft space from BIM, check dimensions, structure, and heritage constraints. AI design advice only when feasible.",
+                  "护栏模式：先从 BIM 识别候选井道、校验尺寸/结构/文保约束，仅在可行时生成 AI 设计建议。"
+                )}
+              </p>
+              <Button variant="copper" size="sm" onClick={runElevator} disabled={elevatorLoading}>
+                {elevatorLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {t("Run Elevator Feasibility", "运行电梯可行性判断")}
+              </Button>
+            </CardContent>
+          </Card>
+          {elevatorResult && <ElevatorFeasibilityPanel result={elevatorResult} />}
         </div>
       )}
     </div>

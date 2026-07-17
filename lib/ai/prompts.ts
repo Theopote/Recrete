@@ -1,5 +1,6 @@
 import type { ProjectWithRelations, ReportType } from "@/types";
 import type { ProjectAIContext } from "@/types/ai";
+import type { ElevatorFeasibilityResult } from "@/types/elevator-feasibility";
 import { formatProjectBasics } from "./renovation-context";
 
 export function buildDiagnosisPrompt(
@@ -92,7 +93,8 @@ export function buildStrategyPrompt(
   project: ProjectWithRelations,
   diagnosisItems: { title: string; severity: string; category: string; description: string }[],
   renovationContextBlock?: string,
-  briefConstraintsBlock?: string
+  briefConstraintsBlock?: string,
+  elevatorFeasibility?: ElevatorFeasibilityResult
 ): string {
   const diagnosisLines = diagnosisItems
     .slice(0, 14)
@@ -106,6 +108,10 @@ export function buildStrategyPrompt(
     ? `\n\n## Owner Brief Constraints (MANDATORY)\n${briefConstraintsBlock}`
     : "";
 
+  const elevatorSection = elevatorFeasibility
+    ? formatElevatorFeasibilityConstraint(elevatorFeasibility)
+    : "";
+
   return `You are a senior architect specializing in adaptive reuse and existing building renovation in China.
 
 Generate professionally credible renovation strategies grounded in project evidence — not generic templates.
@@ -114,7 +120,7 @@ Generate professionally credible renovation strategies grounded in project evide
 ${formatProjectBasics(project)}
 
 ## Diagnosis Context
-${diagnosisLines || "No diagnosis items yet — infer typical risks from building age, function change, and documents."}${contextSection}${briefSection}
+${diagnosisLines || "No diagnosis items yet — infer typical risks from building age, function change, and documents."}${contextSection}${briefSection}${elevatorSection}
 
 ## Strategy Requirements
 Propose exactly 3 strategies — one per intervention tier — using this unified schema:
@@ -132,6 +138,54 @@ Each strategy MUST include:
 - Strategies MUST explicitly satisfy owner brief constraints (program, objective, schedule, budget, and design constraints when present)
 
 Use concrete renovation terminology (柱网, 功能置换, 消防分区, 无障碍, 节能改造) where appropriate.`;
+}
+
+function formatElevatorFeasibilityConstraint(result: ElevatorFeasibilityResult): string {
+  if (result.verdict === "infeasible") {
+    return `\n\n## Elevator Addition Constraint (MANDATORY — verified)\n加装电梯：已确认不可行。${result.spaceCheck.note}\nDo NOT propose elevator addition in any strategy. State that existing conditions do not support shaft installation.`;
+  }
+  if (result.verdict === "insufficient_data") {
+    return "";
+  }
+  const heritage = result.heritageFlag
+    ? `\n- Heritage: ${result.heritageFlag.note}`
+    : "";
+  return `\n\n## Elevator Addition Constraint (MANDATORY — verified)\n加装电梯：${result.verdict === "feasible" ? "可行" : "条件可行"}。\n- Candidate space: ${result.spaceCheck.candidateLabel ?? "—"} (${result.spaceCheck.width?.toFixed(2) ?? "?"}m × ${result.spaceCheck.depth?.toFixed(2) ?? "?"}m)\n- Space: ${result.spaceCheck.note}\n- Structure: ${result.structuralCheck.note}${heritage}\nIf any strategy involves an elevator, it MUST use this verified candidate location and respect the above constraints.`;
+}
+
+export function buildElevatorRecommendationPrompt(
+  project: ProjectWithRelations,
+  feasibilityResult: ElevatorFeasibilityResult
+): string {
+  const heritage = feasibilityResult.heritageFlag
+    ? `\n- 文保审批：${feasibilityResult.heritageFlag.note}`
+    : "";
+
+  const compliance = feasibilityResult.complianceChecks
+    .map((c) => `- [${c.ruleId}] ${c.status}: ${c.note}`)
+    .join("\n");
+
+  return `以下空间和结构条件已经过确定性规则校验，你的设计建议必须在这些条件范围内，不能建议其他位置或忽略这些限制。
+
+## 项目
+${formatProjectBasics(project)}
+
+## 已验证的硬约束（不可更改）
+- 综合结论：${feasibilityResult.verdict}
+- 候选井道：${feasibilityResult.spaceCheck.candidateLabel ?? "—"}，尺寸 ${feasibilityResult.spaceCheck.width?.toFixed(2) ?? "?"}m × ${feasibilityResult.spaceCheck.depth?.toFixed(2) ?? "?"}m
+- 空间判断：${feasibilityResult.spaceCheck.note}
+- 结构判断：${feasibilityResult.structuralCheck.note}${heritage}
+
+## 合规检查
+${compliance || "无额外合规项"}
+
+## 你的任务
+仅回答设计层面的问题（不要重新判断可行性）：
+1. 电梯如何与现有流线衔接
+2. 井道开洞对周边空间的影响如何处理
+3. 如涉及文保建筑，外观如何处理才不显突兀
+
+请用 3–5 段简洁中文回答，引用具体候选空间名称。`;
 }
 
 export function buildReportPrompt(
