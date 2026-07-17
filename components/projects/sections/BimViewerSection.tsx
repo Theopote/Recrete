@@ -330,7 +330,12 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
               <CardContent className="p-4 text-xs text-muted-foreground space-y-3">
                 {selectedId === "sample" && (
                   <>
-                    <p>{t("Demo model loaded from That Open sample library.", "演示模型来自 That Open 示例库。")}</p>
+                    <p>
+                      {t(
+                        "Demo model bundled locally (That Open small.ifc sample).",
+                        "演示模型为本地内置示例（That Open small.ifc）。"
+                      )}
+                    </p>
                     <a
                       href={SAMPLE_IFC_URL}
                       target="_blank"

@@ -26,5 +26,5 @@ export function detectBimFormat(filename: string): {
 
 export const BIM_ACCEPT = ".ifc,.dwg,.dxf,.IFC,.DWG,.DXF";
 
-export const SAMPLE_IFC_URL =
-  "https://thatopen.github.io/engine_components/resources/small.ifc";
+/** Bundled demo IFC (That Open `small.ifc`, v2.4.0). Served from /public/samples. */
+export const SAMPLE_IFC_URL = "/samples/small.ifc";
