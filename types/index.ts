@@ -206,6 +206,7 @@ export interface DiagnosisItem {
   recommendation?: string | null;
   relatedLocation?: string | null;
   requiresEngineerReview?: boolean;
+  linkedEvidenceIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

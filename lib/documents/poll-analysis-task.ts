@@ -3,6 +3,7 @@ export type AnalysisPollResult = "completed" | "failed" | "timeout";
 export interface AnalysisPollOutcome {
   result: AnalysisPollResult;
   error?: string;
+  message?: string;
 }
 
 export async function pollAnalysisTask(
@@ -28,7 +29,7 @@ export async function pollAnalysisTask(
 
     onUpdate?.(task.message ?? `分析中… ${task.progress}%`, task.progress);
 
-    if (task.status === "completed") return { result: "completed" };
+    if (task.status === "completed") return { result: "completed", message: task.message };
     if (task.status === "failed") {
       lastError = task.error ?? "分析失败";
       onUpdate?.(lastError);

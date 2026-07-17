@@ -14,6 +14,8 @@ import { navigateToBuildingCondition } from "@/lib/building-condition/client-nav
 import { shouldOpenBuildingCondition } from "@/lib/building-condition/cad-file-utils";
 import type { ProjectWithRelations } from "@/types";
 import { Sparkles, Loader2, FileSearch, Building2 } from "lucide-react";
+import { PhaseCompletenessPanel } from "@/components/documents/PhaseCompletenessPanel";
+import { computeProjectPhaseCompleteness } from "@/lib/documents/phase-completeness";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
 import { useLocale } from "@/lib/i18n/use-locale";
 
@@ -27,6 +29,7 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
   const [analyzing, setAnalyzing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const documents = project.documents ?? [];
+  const phaseReport = computeProjectPhaseCompleteness(documents, project.status);
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -66,7 +69,16 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
               "文档已分析，但缺失信息检测失败，请重试。"
             )
           );
-        } else if (
+        } else if (poll.completed > 0) {
+          setNotice(
+            t(
+              "Document evidence updated — consider refreshing diagnosis.",
+              "文档证据已更新 — 建议刷新诊断。"
+            )
+          );
+        }
+
+        if (
           poll.completed > 0 &&
           documents.some((d) => shouldOpenBuildingCondition(d.name, d.category))
         ) {
@@ -142,25 +154,12 @@ export function SurveyIntelligenceSection({ project }: SurveyIntelligenceSection
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
-            <DataCompletenessScore score={project.dataCompletenessScore} />
+            <DataCompletenessScore score={phaseReport.overallScore} />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="md:col-span-2">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">
-              {t("Documents on file", "已归档文档")}
-            </p>
-            <p className="text-2xl font-semibold tabular-nums">{documents.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">
-              {t("AI-analyzed", "AI 已分析")}
-            </p>
-            <p className="text-2xl font-semibold tabular-nums">
-              {documents.filter((d) => d.aiSummary).length}
-            </p>
+            <PhaseCompletenessPanel documents={documents} projectStatus={project.status} />
           </CardContent>
         </Card>
       </div>

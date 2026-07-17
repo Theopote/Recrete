@@ -16,6 +16,7 @@ import { useLocale } from "@/lib/i18n/use-locale";
 import { cn } from "@/lib/utils";
 import { EvidenceTrail, EngineerReviewBadge } from "@/components/diagnosis/EvidenceTrail";
 import type { DiagnosisItem } from "@/types";
+import { stripEvidenceTags } from "@/lib/documents/evidence-tags";
 import type { SourceEvidence } from "@/types/ai";
 import { MapPin, Pencil } from "lucide-react";
 
@@ -80,7 +81,7 @@ export function DiagnosisCard({ item, relatedEvidence = [], onEdit }: DiagnosisC
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
               {t("Evidence", "依据")}
             </p>
-            <p className="text-xs">{item.evidence}</p>
+            <p className="text-xs">{stripEvidenceTags(item.evidence)}</p>
           </div>
         )}
 

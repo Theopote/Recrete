@@ -21,6 +21,7 @@ import {
   failDocumentAnalysisTask,
   updateDocumentAnalysisTask,
 } from "@/lib/ai/tasks/document-analysis-tasks";
+import { formatIngestCompletionMessage } from "@/lib/documents/ingest-diagnosis-bridge";
 import {
   formatAnalysisTimeoutError,
   getDocumentAnalysisTimeoutMs,
@@ -59,6 +60,8 @@ export interface DocumentIngestResult {
   issuesCreated: import("@/types").SiteIssue[];
   analysisRun: AIAnalysisRun;
   buildingMemory?: BuildingMemory | null;
+  evidenceCount: number;
+  suggestDiagnosisRefresh: boolean;
 }
 
 export async function runDocumentIngestWorkflow(
@@ -219,7 +222,10 @@ export async function runDocumentIngestWorkflow(
   }
 
   if (taskId) {
-    await completeDocumentAnalysisTask(taskId, `Analyzed ${doc.name} (${analysis.kind})`);
+    await completeDocumentAnalysisTask(
+      taskId,
+      formatIngestCompletionMessage(doc.name, analysis.kind, evidence.length)
+    );
   }
 
   return {
@@ -229,6 +235,8 @@ export async function runDocumentIngestWorkflow(
     issuesCreated,
     analysisRun,
     buildingMemory,
+    evidenceCount: evidence.length,
+    suggestDiagnosisRefresh: evidence.length > 0,
   };
   } catch (error) {
     if (taskId) {

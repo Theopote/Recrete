@@ -18,7 +18,7 @@ import { Sparkles, Stethoscope, Plus, FileText } from "lucide-react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { EvidenceTrail } from "@/components/diagnosis/EvidenceTrail";
 import { AIDisclaimer } from "@/components/ai/AIDisclaimer";
-import type { SourceEvidence } from "@/types/ai";
+import { resolveEvidenceForDiagnosis } from "@/lib/documents/evidence-tags";
 
 interface DiagnosisSectionProps {
   project: ProjectWithRelations;
@@ -44,20 +44,8 @@ export function DiagnosisSection({ project: initialProject }: DiagnosisSectionPr
     (initialProject.documents ?? []).map((d) => [d.id, d.name])
   );
 
-  const evidenceForItem = (item: DiagnosisItem): SourceEvidence[] => {
-    if (projectEvidence.length === 0) return [];
-    const needle = item.evidence?.toLowerCase() ?? "";
-    return projectEvidence.filter((ev) => {
-      if (!needle) return false;
-      const quote = ev.quote?.toLowerCase() ?? "";
-      const labelText = ev.locationLabel?.toLowerCase() ?? "";
-      return (
-        (quote && needle.includes(quote.slice(0, 24))) ||
-        (labelText && needle.includes(labelText)) ||
-        (ev.documentId && needle.includes(ev.documentId))
-      );
-    });
-  };
+  const evidenceForItem = (item: DiagnosisItem) =>
+    resolveEvidenceForDiagnosis(item, projectEvidence);
 
   const handleGenerate = async () => {
     setIsGenerating(true);

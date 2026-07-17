@@ -7,6 +7,8 @@ import {
   addTasks,
   addAnalysisRun,
   updateBuildingMemory,
+  getProjectEvidence,
+  updateDiagnosisItem,
 } from "@/lib/db/repository";
 import { getAIService, getAIPlatform } from "@/lib/ai";
 import {
@@ -24,6 +26,7 @@ import { diagnosisSummaryUsesAI } from "@/lib/ai/diagnosis-executive-summary";
 import { isOpenAIConfigured } from "@/lib/ai/openai-config";
 import type { DiagnosisItem } from "@/types";
 import type { AIInsight, AITask, BuildingMemory, AIAnalysisRun } from "@/types/ai";
+import { enrichDiagnosisItemsWithEvidence } from "@/lib/ai/diagnosis-evidence-linker";
 
 export interface DiagnosisWorkflowOptions {
   includeExpertAgents?: boolean;
@@ -117,6 +120,35 @@ export async function runDiagnosisWorkflow(
     dedupeDiagnosisItems(mergedItems)
   );
 
+  const evidence =
+    (project.sourceEvidence?.length ?? 0) > 0
+      ? project.sourceEvidence!
+      : await getProjectEvidence(projectId);
+
+  const enrichedDrafts = enrichDiagnosisItemsWithEvidence(
+    diagnosisItems,
+    evidence,
+    project.documents ?? []
+  );
+
+  const enrichedDiagnosisItems: DiagnosisItem[] = [];
+  for (const draft of enrichedDrafts) {
+    const original = diagnosisItems.find((d) => d.id === draft.id)!;
+    if (draft.linkedEvidenceIds.length === 0) {
+      enrichedDiagnosisItems.push(original);
+      continue;
+    }
+    const updated = await updateDiagnosisItem(draft.id, {
+      evidence: draft.evidence,
+    });
+    enrichedDiagnosisItems.push({
+      ...(updated ?? original),
+      linkedEvidenceIds: draft.linkedEvidenceIds,
+    });
+  }
+
+  const finalDiagnosisItems = enrichedDiagnosisItems;
+
   const expertSummaryText = includeExpertAgents
     ? buildExpertSummaryText({
         structuralItemCount,
@@ -133,26 +165,26 @@ export async function runDiagnosisWorkflow(
 
   const executiveSummary = await runDiagnosisExecutiveSummaryChain({
     project,
-    diagnosisItems,
+    diagnosisItems: finalDiagnosisItems,
     expertSummary: expertSummaryText,
     knowledge,
   });
 
-  const insightDrafts = await generateDiagnosisInsights(project, diagnosisItems);
+  const insightDrafts = await generateDiagnosisInsights(project, finalDiagnosisItems);
 
   const executiveInsight: Omit<AIInsight, "id" | "projectId" | "createdAt" | "updatedAt"> = {
     title: "Diagnosis Executive Summary",
     type: "risk",
     priority:
-      diagnosisItems.some((d) => d.severity === "critical")
+      finalDiagnosisItems.some((d) => d.severity === "critical")
         ? "critical"
-        : diagnosisItems.some((d) => d.severity === "high")
+        : finalDiagnosisItems.some((d) => d.severity === "high")
           ? "high"
           : "medium",
     summary: executiveSummary.slice(0, 500),
     evidence: expertSummaryText ?? null,
     recommendation: "Review full diagnosis matrix and prioritize engineer reviews.",
-    confidence: executiveInsightConfidence(diagnosisItems, {
+    confidence: executiveInsightConfidence(finalDiagnosisItems, {
       expertSummary: expertSummaryText,
       aiEnriched: diagnosisSummaryUsesAI({
         langChainEnabled: isLangChainEnabled(),
@@ -164,7 +196,7 @@ export async function runDiagnosisWorkflow(
     sourceId: null,
   };
 
-  const taskDrafts = await generateTasksFromDiagnosis(project, diagnosisItems, {
+  const taskDrafts = await generateTasksFromDiagnosis(project, finalDiagnosisItems, {
     insightsSummary: executiveSummary.slice(0, 400),
   });
 
@@ -176,7 +208,7 @@ export async function runDiagnosisWorkflow(
     analysisType: "diagnosis_generation",
     inputSummary: `Diagnosis pipeline — base + ${includeExpertAgents ? "expert agents" : "no experts"}${isLangChainEnabled() ? " + LangChain" : isOpenAIConfigured() ? " + OpenAI summary" : " + rule summary"}`,
     outputSummary: executiveSummary.slice(0, 500),
-    generatedItemCount: diagnosisItems.length + insights.length + tasks.length,
+    generatedItemCount: finalDiagnosisItems.length + insights.length + tasks.length,
     modelName: isLangChainEnabled()
       ? langChainModelLabel("diagnosis")
       : isOpenAIConfigured()
@@ -191,7 +223,7 @@ export async function runDiagnosisWorkflow(
   }
 
   return {
-    diagnosisItems,
+    diagnosisItems: finalDiagnosisItems,
     insights,
     tasks,
     analysisRun,
