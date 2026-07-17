@@ -70,7 +70,7 @@ export function countMeasurementCompleteness(
   return {
     filled,
     total,
-    ratio: total === 0 ? 0 : filled / total,
+    ratio: filled / total,
   };
 }
 
