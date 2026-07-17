@@ -20,6 +20,8 @@ import {
   rankStrategies,
   resolveStrategyLabParams,
 } from "@/lib/utils/strategy-ranking";
+import { normalizeStrategyBatch, enrichStrategiesWithProfiles } from "@/lib/ai/strategy-schema";
+import { loadProjectDrawingGraph } from "@/lib/ai/load-project-drawing-graph";
 import { diffStrategySnapshots, summarizeStrategyDiff } from "@/lib/utils/strategy-diff";
 import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
 import type { AIInsight, BuildingMemory, AIAnalysisRun, StrategyLabParams } from "@/types/ai";
@@ -80,7 +82,8 @@ export async function runStrategyWorkflow(
     project.diagnosis ?? [],
     resolvedParams
   );
-  const created = await replaceStrategies(projectId, strategies);
+  const normalizedStrategies = normalizeStrategyBatch(strategies);
+  const created = await replaceStrategies(projectId, normalizedStrategies);
 
   const evidence =
     (project.sourceEvidence?.length ?? 0) > 0
@@ -122,8 +125,16 @@ export async function runStrategyWorkflow(
 
   const rankings = rankStrategies(withMetrics, project, resolvedParams);
   const rankedStrategies = attachStrategyRankings(withMetrics, project, resolvedParams);
+  const documentNames = Object.fromEntries(
+    (project.documents ?? []).map((doc) => [doc.id, doc.name])
+  );
+  const drawingGraph = await loadProjectDrawingGraph(projectId, documentNames);
+  const enrichedStrategies = enrichStrategiesWithProfiles(rankedStrategies, {
+    drawingGraph,
+    diagnosis: project.diagnosis ?? [],
+  });
   const topRank = rankings[0];
-  const topRanked = rankedStrategies.find((strategy) => strategy.id === topRank?.strategyId);
+  const topRanked = enrichedStrategies.find((strategy) => strategy.id === topRank?.strategyId);
   let recommendationResult = null;
 
   if (topRank && topRanked) {
@@ -171,7 +182,7 @@ export async function runStrategyWorkflow(
   }
 
   return {
-    strategies: rankedStrategies,
+    strategies: enrichedStrategies,
     recommendation: recommendationResult,
     analysisRun,
     buildingMemory,

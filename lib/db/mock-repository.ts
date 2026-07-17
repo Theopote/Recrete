@@ -32,6 +32,8 @@ import {
 } from "@/lib/mock-data";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 import { attachStrategyRankings } from "@/lib/utils/strategy-ranking";
+import { enrichStrategiesWithProfiles } from "@/lib/ai/strategy-schema";
+import { loadProjectDrawingGraph } from "@/lib/ai/load-project-drawing-graph";
 import type { StrategyWithMetrics } from "@/types";
 
 let store = createMockStore();
@@ -827,7 +829,15 @@ export async function getStrategiesWithMetrics(
       computeStrategyMetrics(s, project ? { ...project, strategies } : null, strategies),
   }));
   if (!project) return withMetrics;
-  return attachStrategyRankings(withMetrics, { ...project, strategies });
+  const ranked = attachStrategyRankings(withMetrics, { ...project, strategies });
+  const documentNames = Object.fromEntries(
+    (project.documents ?? []).map((doc) => [doc.id, doc.name])
+  );
+  const drawingGraph = await loadProjectDrawingGraph(projectId, documentNames);
+  return enrichStrategiesWithProfiles(ranked, {
+    drawingGraph,
+    diagnosis: project.diagnosis ?? [],
+  });
 }
 
 export {

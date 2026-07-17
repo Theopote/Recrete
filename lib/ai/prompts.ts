@@ -113,18 +113,18 @@ ${formatProjectBasics(project)}
 ${diagnosisLines || "No diagnosis items yet — infer typical risks from building age, function change, and documents."}${contextSection}
 
 ## Strategy Requirements
-Propose exactly 3 strategies differentiated by intervention depth:
-1. **Light renewal** (type: light_renewal) — minimal structural change, MEP upgrade, envelope refresh
-2. **Medium renovation** (type: medium_renovation OR adaptive_reuse) — spatial reconfiguration, selective structural work
-3. **Deep recreation** (type: deep_recreation) — major structural/envelope transformation
+Propose exactly 3 strategies — one per intervention tier — using this unified schema:
+1. **Light renewal** (type: \`light_renewal\`) — minimal structural change, MEP upgrade, envelope refresh
+2. **Medium renovation** (type: \`medium_renovation\`) — spatial reconfiguration, selective structural work
+3. **Deep recreation** (type: \`deep_recreation\`) — major structural/envelope transformation
 
-For EACH strategy provide specific, actionable content in:
-- spatialStrategy (reference actual layout/function change needs)
-- structuralStrategy (address diagnosis structural items if any)
-- facadeStrategy (envelope and identity)
-- mepStrategy (capacity for target function)
-- pros/cons tied to THIS building's constraints (budget, heritage, evidence)
-- recommendationReason on exactly ONE strategy that best balances feasibility + goal
+Each strategy MUST include:
+- \`summary\`, \`designGoal\`
+- \`spatialStrategy\` — reference specific rooms/zones from the Drawing Knowledge Graph when provided (use room labels)
+- \`structuralStrategy\`, \`facadeStrategy\`, \`mepStrategy\` — scoped to the tier (minimal / selective / comprehensive)
+- \`costLevel\`, \`scheduleLevel\`, \`riskLevel\`
+- \`pros[]\`, \`cons[]\` tied to THIS building
+- Do NOT set \`recommendationReason\` — ranking engine selects the recommendation
 
 Use concrete renovation terminology (柱网, 功能置换, 消防分区, 无障碍, 节能改造) where appropriate.`;
 }

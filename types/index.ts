@@ -352,6 +352,8 @@ export interface StrategyWithMetrics extends RenovationStrategy {
   scoreWeights?: import("@/types/ai").StrategyScoreWeights;
   rankSummary?: string;
   lifecycleBonus?: number;
+  tierProfile?: import("@/types/strategy-profile").StrategyTierProfile;
+  linkedGraphNodeIds?: string[];
 }
 
 export interface DiagnosisWithProject extends DiagnosisItem {

@@ -58,7 +58,7 @@ export class OpenAIService implements AIService {
         {
           role: "system",
           content:
-            'Return JSON: { "strategies": [ { name, type, summary, designGoal, spatialStrategy, structuralStrategy, facadeStrategy, mepStrategy, costLevel, scheduleLevel, riskLevel, pros[], cons[], recommendationReason } ] }. Generate exactly 3 strategies: light_renewal, medium_renovation or adaptive_reuse, deep_recreation. Each strategy must reference specific project evidence or diagnosis — avoid generic boilerplate. Set recommendationReason on exactly one strategy.',
+            'Return JSON: { "strategies": [ { name, type, summary, designGoal, spatialStrategy, structuralStrategy, facadeStrategy, mepStrategy, costLevel, scheduleLevel, riskLevel, pros[], cons[] } ] }. Generate exactly 3 strategies with types light_renewal, medium_renovation, deep_recreation only. spatialStrategy must reference drawing graph room labels when provided. Do not include recommendationReason.',
         },
         { role: "user", content: prompt },
       ],

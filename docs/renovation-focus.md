@@ -25,9 +25,11 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 
 ### P1 · 方案专业可信度
 
-- 统一 light / medium / deep 三档输出 schema
-- 空间策略与 drawing graph 关联
-- 造价 Cost & Risk 接入 cost-estimator（✅ 案例/基准驱动；种子数据需标注）
+| 项 | 状态 | 说明 |
+|----|------|------|
+| 统一 light / medium / deep 三档输出 schema | ✅ | `types/strategy-profile.ts` + `normalizeStrategyBatch` |
+| 空间策略与 drawing graph 关联 | ✅ | `strategy-drawing-linker` + Strategy Lab UI |
+| 造价 Cost & Risk 接入 cost-estimator | ✅ | 案例/基准驱动；种子数据需标注 |
 
 ### P2 · 交付物
 
@@ -71,6 +73,8 @@ lib/ai/agents/strategy-agent.ts
 lib/ai/workflow/document-ingest-workflow.ts
 lib/ai/workflow/diagnosis-workflow.ts
 lib/ai/workflow/strategy-workflow.ts
+lib/ai/strategy-schema.ts
+lib/ai/strategy-drawing-linker.ts
 components/projects/sections/StrategiesSection.tsx
 ```
 

@@ -16,6 +16,8 @@ import { knowledgeArticles } from "@/lib/mock-data/knowledge";
 import { strategyMetrics, getAIInsightsSummary } from "@/lib/mock-data";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 import { attachStrategyRankings } from "@/lib/utils/strategy-ranking";
+import { enrichStrategiesWithProfiles } from "@/lib/ai/strategy-schema";
+import { loadProjectDrawingGraph } from "@/lib/ai/load-project-drawing-graph";
 import type {
   CreateProjectInput,
   DiagnosisItem,
@@ -928,7 +930,9 @@ export async function getStrategiesWithMetrics(projectId: string): Promise<Strat
     building: projectRow.building ? mapBuilding(projectRow.building) : null,
   } as ProjectWithRelations;
 
-  return attachStrategyRankings(withMetrics, rankingProject);
+  const ranked = attachStrategyRankings(withMetrics, rankingProject);
+  const drawingGraph = await loadProjectDrawingGraph(projectId);
+  return enrichStrategiesWithProfiles(ranked, { drawingGraph });
 }
 
 export async function getUserById(id: string): Promise<User | undefined> {

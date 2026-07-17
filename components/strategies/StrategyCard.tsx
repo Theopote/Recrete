@@ -8,6 +8,7 @@ import { StrategyReviewThread } from "@/components/strategies/StrategyReviewThre
 import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
 import { StrategyLinkedSources } from "@/components/strategies/StrategyLinkedSources";
 import { StrategyScoreBreakdown } from "@/components/strategies/StrategyScoreBreakdown";
+import { StrategyTierProfilePanel } from "@/components/strategies/StrategyTierProfilePanel";
 import { strategyTypeLabels, strategyTypeLabelsZh, riskLevelLabels, riskLevelLabelsZh } from "@/lib/utils/labels";
 import { useLocale } from "@/lib/i18n/use-locale";
 import { cn, levelToPercent } from "@/lib/utils";
@@ -22,6 +23,7 @@ interface StrategyCardProps {
     metrics?: StrategyWithMetrics["metrics"];
     scoreContributions?: StrategyWithMetrics["scoreContributions"];
     scoreWeights?: StrategyWithMetrics["scoreWeights"];
+    tierProfile?: StrategyWithMetrics["tierProfile"];
     lifecycleBonus?: number;
   });
   isRecommended?: boolean;
@@ -88,6 +90,10 @@ export function StrategyCard({
           <StrategyField label={t("Facade", "立面策略")} value={strategy.facadeStrategy} />
           <StrategyField label={t("MEP", "机电策略")} value={strategy.mepStrategy} className="col-span-2" />
         </div>
+
+        {strategy.tierProfile && (
+          <StrategyTierProfilePanel profile={strategy.tierProfile} />
+        )}
 
         <div className="grid grid-cols-3 gap-3">
           <LevelBar label={t("Cost", "成本")} level={strategy.costLevel} />

@@ -71,10 +71,6 @@ export class MockAIService implements AIService {
   > {
     await delay(1500);
 
-    const criticalCount = diagnosisItems.filter(
-      (d) => d.severity === "critical" || d.severity === "high"
-    ).length;
-
     const target = project.targetFunction.toLowerCase();
     const budgetNote =
       project.budgetLevel === "low"
@@ -87,7 +83,8 @@ export class MockAIService implements AIService {
         type: "light_renewal",
         summary: `Preserve existing layout with targeted repairs to facade, roof, and essential MEP upgrades for ${project.name}. ${budgetNote}`,
         designGoal: `Quick reopening with minimal spatial changes for basic ${target} programming.`,
-        spatialStrategy: "Retain existing partition layout. Convert largest rooms to primary program spaces.",
+        spatialStrategy:
+          "Retain 办公室 Office and 走廊 Corridor layout. Adapt 会议室 Meeting Room for small exhibition nook. Keep 疏散楼梯 Stair location unchanged.",
         structuralStrategy: "Localized repairs only. No structural modifications.",
         facadeStrategy: "Repair and refresh existing facade. Replace windows in critical zones.",
         mepStrategy: "Upgrade electrical panel and HVAC in program-critical zones only.",
@@ -100,10 +97,11 @@ export class MockAIService implements AIService {
       },
       {
         name: "Medium Reconfiguration — 中度功能重组",
-        type: "adaptive_reuse",
+        type: "medium_renovation",
         summary: `Transform interior into open, flexible spaces for ${target} while preserving the ${project.structureType.toLowerCase()} and adding a new facade identity.`,
         designGoal: `Create a vibrant ${target} with exhibition, gathering, and flexible program spaces.`,
-        spatialStrategy: "Remove non-structural partitions on lower floors for open gallery. Reconfigure circulation for public access.",
+        spatialStrategy:
+          "Merge 办公室 Office and 会议室 Meeting Room into open gallery zone. Reconfigure 走廊 Corridor for public circulation toward 主入口. Retain 疏散楼梯 Stair core.",
         structuralStrategy: "Verify capacity for selective floor openings. Strengthen select beams for new loads.",
         facadeStrategy: "New perforated screen or cladding over existing structure. Replace all windows.",
         mepStrategy: "Complete MEP replacement with energy-efficient systems.",
@@ -112,19 +110,15 @@ export class MockAIService implements AIService {
         riskLevel: "medium",
         pros: ["Strong design value", "Meets program goals", "Improves energy performance"],
         cons: ["Moderate cost", "Requires structural verification", "Temporary relocation during construction"],
-        recommendationReason:
-          criticalCount >= 2 || project.budgetLevel !== "low"
-            ? `Best balance of preservation, program fit, and feasibility for ${target}. Aligns with owner's renovation vision.`
-            : project.budgetLevel === "low"
-              ? "Recommended when budget allows phased medium intervention after light-renewal compliance work."
-              : null,
+        recommendationReason: null,
       },
       {
         name: "Deep Recreation — 深度再造",
         type: "deep_recreation",
         summary: `Comprehensive transformation of ${project.name} with new vertical circulation, potential rooftop extension, and complete envelope replacement.`,
         designGoal: `Maximize building potential as a landmark ${target} destination.`,
-        spatialStrategy: "Full interior reconfiguration. New atrium and vertical circulation core. Rooftop terrace addition if structurally feasible.",
+        spatialStrategy:
+          "Subdivide 办公室 Office wing for mixed program pods. Merge central zones for atrium. Remove partitions around 会议室 Meeting Room. Upgrade 疏散楼梯 Stair and 走廊 Corridor for code-compliant egress.",
         structuralStrategy: "Major structural modifications including new core and rooftop load analysis.",
         facadeStrategy: "Complete new facade system with high-performance envelope.",
         mepStrategy: "All-new systems with smart building integration.",
@@ -134,35 +128,6 @@ export class MockAIService implements AIService {
         pros: ["Maximum design potential", "Best long-term performance", "Landmark-quality outcome"],
         cons: ["Highest cost", "Longest schedule", "Highest construction and permitting risk"],
         recommendationReason: null,
-      },
-      {
-        name: "Green Energy Retrofit — 绿色节能改造",
-        type: "energy_retrofit",
-        summary: `Envelope-first energy upgrade for ${project.name}: high-performance glazing, insulation, HVAC replacement, and optional rooftop PV with measurable ROI.`,
-        designGoal: `Reduce operating energy by 30–40% while preserving existing spatial layout and structure.`,
-        spatialStrategy: "Minimal spatial change. Focus on envelope and MEP plant upgrades with phased tenant coordination.",
-        structuralStrategy: "No structural modifications unless rooftop PV ballast requires load check.",
-        facadeStrategy: "External insulation with new high-performance windows. Target U-value compliance per GB 50189.",
-        mepStrategy: "Replace aging HVAC with VRF/high-efficiency systems. LED lighting with smart controls.",
-        costLevel: project.budgetLevel === "low" ? "medium" : "medium",
-        scheduleLevel: "medium",
-        riskLevel: "low",
-        pros: [
-          "Strong ROI and payback (typically 6–10 years)",
-          "Low disruption to building use",
-          "Eligible for green financing and subsidies",
-        ],
-        cons: [
-          "Limited design transformation",
-          "Requires accurate energy baseline data",
-          "Savings depend on occupancy and tariffs",
-        ],
-        recommendationReason:
-          project.renovationGoal.toLowerCase().includes("energy") ||
-          project.renovationGoal.includes("节能") ||
-          project.budgetLevel === "low"
-            ? "Best fit when primary goal is operational cost reduction with limited capital for deep recreation."
-            : null,
       },
     ];
   }
