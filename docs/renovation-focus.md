@@ -43,7 +43,7 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 | 项 | 状态 | 说明 |
 |----|------|------|
 | 资料治理：版本 / 法规·任务书分类 / 元数据 | ✅ | `DocumentGovernancePanel` + versions API + 删除清理 storage |
-| AI 结构化消化（法规/任务书/扫描专类） | ⬜ | P3-B |
+| AI 结构化消化（法规/任务书/扫描专类） | ✅ | `document-structured-extract.ts` + preview facts panel + Building Memory merge |
 | 阶段完备度 + 诊断溯源 + ingest 串联 | ⬜ | P3-C |
 
 ## 明确暂缓（往后放）

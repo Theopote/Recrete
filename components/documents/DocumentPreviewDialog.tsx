@@ -164,11 +164,12 @@ export function DocumentPreviewDialog({
           <>
             <DocumentStructuredFactsPanel document={document} />
             <DocumentGovernancePanel
-            projectId={projectId}
-            document={document}
-            onUpdated={onDocumentUpdated}
-            onVersionUploaded={onDocumentUpdated}
-          />
+              projectId={projectId}
+              document={document}
+              onUpdated={onDocumentUpdated}
+              onVersionUploaded={onDocumentUpdated}
+            />
+          </>
         )}
       </div>
     </div>

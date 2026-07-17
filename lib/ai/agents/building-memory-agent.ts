@@ -2,8 +2,7 @@ import type { ProjectWithRelations } from "@/types";
 import type { BuildingMemory, AIAnalysisRun } from "@/types/ai";
 import { withMockDelay, MOCK_MODEL, mockConfidence } from "../providers/utils";
 import { isOpenAIConfigured } from "../openai-config";
-import { parseStoredDocumentExtract } from "@/lib/documents/structured-extract-storage";
-import { memoryFactsFromStructuredExtract } from "@/lib/documents/structured-extract-storage";
+import { parseStoredDocumentExtract, memoryFactsFromStructuredExtract } from "@/lib/documents/structured-extract-storage";
 
 export async function initializeBuildingMemory(
   project: ProjectWithRelations

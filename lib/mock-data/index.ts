@@ -21,6 +21,74 @@ import {
   mockSourceEvidence,
   documentAISummaries,
 } from "@/lib/mock-data/ai-native";
+import { wrapExtractedText } from "@/lib/documents/structured-extract-storage";
+import type { DocumentStructuredExtract } from "@/types/document-facts";
+
+const demoRegulationExtract: DocumentStructuredExtract = {
+  kind: "regulations",
+  summary: "3 fire code clauses extracted for occupancy change review (GB 50016).",
+  facts: [
+    {
+      id: "reg-1",
+      codeRef: "GB 50016",
+      section: "第5.3.2条",
+      requirement: "防火分区面积不应超过允许的最大值，疏散距离应满足本章规定",
+      applicability: "Public assembly conversion",
+      priority: "critical",
+      remediationHint: "Verify compartment sizes with fire engineer before permit submission.",
+    },
+    {
+      id: "reg-2",
+      codeRef: "GB 50016",
+      section: "第5.5.8条",
+      requirement: "应设置不少于2个安全出口",
+      applicability: "Egress capacity for increased occupancy",
+      priority: "high",
+    },
+    {
+      id: "reg-3",
+      codeRef: "GB 50016",
+      requirement: "疏散门应向疏散方向开启，且不应采用侧拉门、卷帘门",
+      applicability: "Renovation egress upgrades",
+      priority: "high",
+    },
+  ],
+  modelName: "recrete-regulation-rules-v1",
+  confidence: 0.72,
+};
+
+const demoBriefExtract: DocumentStructuredExtract = {
+  kind: "project_brief",
+  summary: "4 brief fields extracted from community cultural center design task document.",
+  facts: [
+    {
+      id: "brief-1",
+      field: "objective",
+      label: "Project objective",
+      value: "Serve community cultural activities and public benefit programs",
+    },
+    {
+      id: "brief-2",
+      field: "program",
+      label: "Program",
+      value: "Multi-purpose exhibition hall, lecture theater, and maker space",
+    },
+    {
+      id: "brief-3",
+      field: "metric",
+      label: "Gross floor area",
+      value: "3,200 sqm",
+    },
+    {
+      id: "brief-4",
+      field: "schedule",
+      label: "Schedule",
+      value: "18 months from design approval",
+    },
+  ],
+  modelName: "recrete-brief-rules-v1",
+  confidence: 0.7,
+};
 
 const now = new Date("2026-06-15T10:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
@@ -435,7 +503,10 @@ export const mockDocuments: DocumentAsset[] = [
     mimeType: "application/pdf",
     category: "regulations",
     aiSummary: "Fire compartment and egress requirements relevant to public assembly conversion.",
-    extractedText: null,
+    extractedText: wrapExtractedText(
+      "GB 50016-2014 第5.3.2条 防火分区面积不应超过允许的最大值。应设置不少于2个安全出口。疏散门应向疏散方向开启，且不应采用侧拉门。",
+      demoRegulationExtract
+    ),
     description: "Applicable fire code sections for occupancy change review.",
     uploadedById: "user-2",
     tags: ["fire", "GB50016", "compliance"],
@@ -456,7 +527,10 @@ export const mockDocuments: DocumentAsset[] = [
     mimeType: "application/pdf",
     category: "project_brief",
     aiSummary: "Owner brief defining target program, public benefit goals, and schedule constraints.",
-    extractedText: null,
+    extractedText: wrapExtractedText(
+      "建设目标: 服务社区文化活动\n功能定位: 多功能展厅与报告厅\n总建筑面积: 3200㎡\n工期: 18个月",
+      demoBriefExtract
+    ),
     description: "Official design task document from client.",
     uploadedById: "user-1",
     tags: ["brief", "program", "owner"],
