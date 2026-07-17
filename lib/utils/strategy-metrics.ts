@@ -5,7 +5,13 @@ import type { ProjectWithRelations, RenovationStrategy, StrategyComparisonMetric
 export function computeStrategyMetrics(
   strategy: Pick<
     RenovationStrategy,
-    "costLevel" | "scheduleLevel" | "riskLevel" | "type" | "feasibilityScore"
+    | "costLevel"
+    | "scheduleLevel"
+    | "riskLevel"
+    | "type"
+    | "feasibilityScore"
+    | "designValueScore"
+    | "preservationScore"
   >,
   project?: ProjectWithRelations | null,
   allStrategies?: RenovationStrategy[]

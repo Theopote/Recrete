@@ -265,5 +265,5 @@ export function findStrategyForInstruction(
     return strategies.find((s) => s.type === "deep_recreation");
   }
 
-  return strategies.find((s) => s.rank === 1) ?? strategies.find((s) => s.recommendationReason) ?? strategies[0];
+  return strategies.find((s) => s.recommendationReason) ?? strategies[0];
 }

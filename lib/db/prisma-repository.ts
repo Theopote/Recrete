@@ -10,6 +10,7 @@ import {
   mapIssue,
   mapReport,
   mapUser,
+  mapBuilding,
 } from "@/lib/db/mappers";
 import { knowledgeArticles } from "@/lib/mock-data/knowledge";
 import { strategyMetrics, getAIInsightsSummary } from "@/lib/mock-data";
@@ -901,15 +902,10 @@ export async function getBuildingMemoryHistory(projectId: string, limit = 10) {
 }
 
 export async function getStrategiesWithMetrics(projectId: string): Promise<StrategyWithMetrics[]> {
-  const [projectRow, strategies] = await Promise.all([
+  const [projectRow, strategyRows] = await Promise.all([
     prisma.project.findUnique({
       where: { id: projectId },
-      include: {
-        building: true,
-        diagnosis: true,
-        documents: true,
-        strategies: true,
-      },
+      include: { building: true },
     }),
     prisma.renovationStrategy.findMany({
       where: { projectId },
@@ -917,21 +913,22 @@ export async function getStrategiesWithMetrics(projectId: string): Promise<Strat
     }),
   ]);
 
-  const mappedStrategies = strategies.map(mapStrategy);
+  const mappedStrategies = strategyRows.map(mapStrategy);
   const withMetrics = mappedStrategies.map((strategy) => ({
     ...strategy,
     metrics:
       strategyMetrics[strategy.id] ??
-      computeStrategyMetrics(
-        strategy,
-        projectRow ? mapProjectWithRelations({ ...projectRow, strategies: mappedStrategies }) : null,
-        mappedStrategies
-      ),
+      computeStrategyMetrics(strategy, null, mappedStrategies),
   }));
 
   if (!projectRow) return withMetrics;
-  const project = mapProjectWithRelations({ ...projectRow, strategies: mappedStrategies });
-  return attachStrategyRankings(withMetrics, project);
+
+  const rankingProject = {
+    ...mapProject(projectRow),
+    building: projectRow.building ? mapBuilding(projectRow.building) : null,
+  } as ProjectWithRelations;
+
+  return attachStrategyRankings(withMetrics, rankingProject);
 }
 
 export async function getUserById(id: string): Promise<User | undefined> {
