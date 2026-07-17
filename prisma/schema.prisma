@@ -31,6 +31,11 @@ enum ProjectStatus {
   archived
 }
 
+enum ProjectLifecycleAction {
+  archived
+  deleted
+}
+
 enum RiskLevel {
   low
   medium
@@ -298,6 +303,7 @@ model Organization {
   projects        Project[]
   aiUsageEvents   AIUsageEvent[]
   trialFeedbacks  TrialFeedback[]
+  lifecycleAudits ProjectLifecycleAudit[]
 }
 
 model User {
@@ -319,6 +325,7 @@ model User {
   createdReports      Report[]
   aiConversations     AIConversation[]
   passwordResetTokens PasswordResetToken[]
+  lifecycleAudits     ProjectLifecycleAudit[]
 }
 
 model PasswordResetToken {
@@ -420,6 +427,27 @@ model ProjectElevatorFeasibility {
   updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+/// Audit trail for project archive and permanent deletion (survives project delete)
+model ProjectLifecycleAudit {
+  id              String                 @id @default(cuid())
+  organizationId  String
+  projectId       String?
+  projectCode     String
+  projectName     String
+  action          ProjectLifecycleAction
+  previousStatus  String?
+  reason          String?                @db.Text
+  performedById   String
+  performedByName String
+  deletionSummary Json?
+  createdAt       DateTime               @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  performer      User         @relation(fields: [performedById], references: [id])
+
+  @@index([organizationId, createdAt])
 }
 
 model BuildingMemory {

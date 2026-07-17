@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { AppShell } from "@/components/app/AppShell";
 import { TopBar } from "@/components/app/TopBar";
 import { ProjectCard } from "@/components/app/ProjectCard";
@@ -21,10 +22,16 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   if (!user) redirect("/login");
 
   const params = await searchParams;
-  const projects = await getProjects(user.organizationId, params);
+  const allProjects = await getProjects(user.organizationId, params);
+  const projects =
+    params.status && params.status !== "all"
+      ? allProjects
+      : allProjects.filter((p) => p.status !== "archived" && p.status !== "completed");
 
-  const buildingTypes = [...new Set(projects.map((p) => p.buildingType))];
-  const targetFunctions = [...new Set(projects.map((p) => p.targetFunction))];
+  const archivedCount = allProjects.filter((p) => p.status === "archived").length;
+
+  const buildingTypes = [...new Set(allProjects.map((p) => p.buildingType))];
+  const targetFunctions = [...new Set(allProjects.map((p) => p.targetFunction))];
 
   return (
     <AppShell>
@@ -49,6 +56,16 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
             targetFunctions={targetFunctions}
             currentFilters={params}
           />
+
+          {archivedCount > 0 && !params.status && (
+            <p className="text-xs text-muted-foreground">
+              {archivedCount} {archivedCount === 1 ? "archived project" : "archived projects"}{" "}
+              hidden.{" "}
+              <Link href="/settings" className="text-copper hover:underline">
+                View in Settings → Archived Projects
+              </Link>
+            </p>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {projects.map((project) => (

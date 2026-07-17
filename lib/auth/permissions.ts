@@ -10,7 +10,9 @@ export type ProjectAction =
   | "manage_issues"
   | "publish_report"
   | "manage_collaboration"
-  | "manage_members";
+  | "manage_members"
+  | "archive_project"
+  | "delete_project";
 
 const ROLE_PERMISSIONS: Record<UserRole, ProjectAction[]> = {
   admin: [
@@ -24,6 +26,8 @@ const ROLE_PERMISSIONS: Record<UserRole, ProjectAction[]> = {
     "publish_report",
     "manage_collaboration",
     "manage_members",
+    "archive_project",
+    "delete_project",
   ],
   architect: [
     "view",
@@ -34,6 +38,7 @@ const ROLE_PERMISSIONS: Record<UserRole, ProjectAction[]> = {
     "manage_issues",
     "publish_report",
     "manage_collaboration",
+    "archive_project",
   ],
   engineer: [
     "view",
@@ -59,6 +64,8 @@ const ROLE_PERMISSIONS: Record<UserRole, ProjectAction[]> = {
     "publish_report",
     "manage_collaboration",
     "manage_members",
+    "archive_project",
+    "delete_project",
   ],
   owner: ["view", "approve_strategy", "manage_collaboration"],
   viewer: ["view"],

@@ -927,7 +927,7 @@ export type MockStore = {
 
 export function createMockStore(): MockStore {
   return {
-    projects: [...mockProjects],
+    projects: mockProjects.map((p) => ({ ...p })),
     buildings: [...mockBuildings],
     buildingMemories: [...mockBuildingMemories],
     documents: [...mockDocuments],

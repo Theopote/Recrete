@@ -16,6 +16,10 @@ import {
   getElevatorFeasibilityResult,
   saveElevatorFeasibilityResult,
 } from "@/lib/db/elevator-feasibility-store";
+import {
+  archiveProject,
+  deleteProjectPermanently,
+} from "@/lib/db/project-lifecycle-store";
 import { runComplianceEngine } from "@/lib/ai/compliance";
 import type { BimModel } from "@/types/bim";
 import type { ProjectWithRelations } from "@/types";
@@ -226,6 +230,34 @@ check("ProjectElevatorFeasibility persistence", async () => {
   }
 
   await prisma.projectElevatorFeasibility.delete({ where: { projectId } });
+});
+
+check("Project lifecycle archive audit", async () => {
+  const projectId = await getDemoProjectId();
+  const user = await prisma.user.findFirst();
+  if (!user) throw new Error("No users in database");
+
+  const archived = await archiveProject({
+    projectId,
+    organizationId: "org-1",
+    performedById: user.id,
+    performedByName: user.name,
+    reason: "acceptance test",
+  });
+  if (!archived || archived.status !== "archived") {
+    throw new Error("Failed to archive demo project");
+  }
+
+  const row = await prisma.project.findUnique({ where: { id: projectId } });
+  if (row?.status !== "archived") {
+    throw new Error("Project status not updated to archived");
+  }
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { status: "diagnosis" },
+  });
+  await prisma.projectLifecycleAudit.deleteMany({ where: { projectId } });
 });
 
 check("BackgroundJob enqueue/process", async () => {

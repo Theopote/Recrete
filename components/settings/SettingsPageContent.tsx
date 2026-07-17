@@ -7,6 +7,7 @@ import { SettingsForm } from "@/components/settings/SettingsForm";
 import { AccountSettingsCard } from "@/components/settings/AccountSettingsCard";
 import { AIServiceStatusCard } from "@/components/settings/AIServiceStatusCard";
 import { OrganizationMembersPanel } from "@/components/settings/OrganizationMembersPanel";
+import { ArchivedProjectsPanel } from "@/components/settings/ArchivedProjectsPanel";
 import { TrialFeedbackPanel } from "@/components/trial/TrialFeedbackPanel";
 import { useLocale } from "@/lib/i18n/use-locale";
 
@@ -33,6 +34,8 @@ export function SettingsPageContent() {
           <AIServiceStatusCard />
 
           <OrganizationMembersPanel />
+
+          <ArchivedProjectsPanel />
 
           <Card>
             <CardContent className="p-5 space-y-4">

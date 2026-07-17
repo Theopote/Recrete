@@ -154,6 +154,43 @@ export async function updateProjectStatus(
   return true;
 }
 
+export function getMockProjectRow(projectId: string, organizationId: string) {
+  return store.projects.find((p) => p.id === projectId && p.organizationId === organizationId);
+}
+
+export function countMockProjectRelations(projectId: string) {
+  return {
+    documentCount: store.documents.filter((d) => d.projectId === projectId).length,
+    diagnosisCount: store.diagnosis.filter((d) => d.projectId === projectId).length,
+    strategyCount: store.strategies.filter((s) => s.projectId === projectId).length,
+    reportCount: store.reports.filter((r) => r.projectId === projectId).length,
+    issueCount: store.issues.filter((i) => i.projectId === projectId).length,
+    bimModelCount: 0,
+  };
+}
+
+export function removeMockProjectCascade(projectId: string): boolean {
+  const index = store.projects.findIndex((p) => p.id === projectId);
+  if (index === -1) return false;
+
+  store.projects.splice(index, 1);
+  store.buildings = store.buildings.filter((b) => b.projectId !== projectId);
+  store.buildingMemories = store.buildingMemories.filter((m) => m.projectId !== projectId);
+  store.documents = store.documents.filter((d) => d.projectId !== projectId);
+  store.insights = store.insights.filter((i) => i.projectId !== projectId);
+  store.tasks = store.tasks.filter((t) => t.projectId !== projectId);
+  store.analysisRuns = store.analysisRuns.filter((r) => r.projectId !== projectId);
+  store.evidence = store.evidence.filter((e) => e.projectId !== projectId);
+  store.diagnosis = store.diagnosis.filter((d) => d.projectId !== projectId);
+  store.strategies = store.strategies.filter((s) => s.projectId !== projectId);
+  store.issues = store.issues.filter((i) => i.projectId !== projectId);
+  store.reports = store.reports.filter((r) => r.projectId !== projectId);
+  store.conversations = store.conversations.filter((c) => c.projectId !== projectId);
+  store.strategyVersions = store.strategyVersions.filter((v) => v.projectId !== projectId);
+  store.buildingMemoryHistory = store.buildingMemoryHistory.filter((h) => h.projectId !== projectId);
+  return true;
+}
+
 export async function updateProjectDataCompletenessScore(
   projectId: string,
   score: number

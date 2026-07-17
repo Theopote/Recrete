@@ -21,6 +21,7 @@ import { Brain } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/i18n/use-locale";
 import { computeProjectPhaseCompleteness } from "@/lib/documents/phase-completeness";
+import { ProjectLifecyclePanel } from "@/components/projects/ProjectLifecyclePanel";
 
 interface OverviewSectionProps {
   project: ProjectWithRelations;
@@ -250,6 +251,8 @@ export function OverviewSection({ project }: OverviewSectionProps) {
           <AnalysisRunTimeline runs={project.analysisRuns ?? []} limit={4} />
         </div>
       </div>
+
+      <ProjectLifecyclePanel project={project} />
     </div>
   );
 }
