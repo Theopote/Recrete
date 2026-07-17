@@ -205,7 +205,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
         }
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr] lg:items-start">
         <Card>
           <CardContent className="p-3 space-y-2">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -271,6 +271,7 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
             </Button>
           </div>
 
+          <div className="shrink-0">
           {selectedId === "sample" && viewerEngine === "openbim" && (
             <OpenBimViewer modelUrl={SAMPLE_IFC_URL} />
           )}
@@ -311,19 +312,21 @@ export function BimViewerSection({ project }: BimViewerSectionProps) {
           {selected &&
             isCadFormat(selected.format) &&
             selected.status === "processing" && (
-              <div className="flex min-h-[420px] flex-col items-center justify-center rounded-md border bg-muted/20 gap-2">
+              <div className="flex h-[420px] flex-col items-center justify-center rounded-md border bg-muted/20 gap-2">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">{conversionMessage}</p>
               </div>
             )}
 
           {(selected?.status === "failed" || selected?.status === "unsupported") && (
-            <div className="flex min-h-[420px] items-center justify-center rounded-md border bg-destructive/5 p-6 text-center">
+            <div className="flex h-[420px] items-center justify-center rounded-md border bg-destructive/5 p-6 text-center">
               <p className="text-xs text-destructive">
                 {selected.errorMessage ?? t("Model processing failed", "模型处理失败")}
               </p>
             </div>
           )}
+
+          </div>
 
           {(selectedId === "sample" || selected) && (
             <Card>

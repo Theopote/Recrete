@@ -30,6 +30,7 @@ export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.domElement.style.display = "block";
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -113,8 +114,8 @@ export function IfcModelViewer({ modelUrl, className }: IfcModelViewerProps) {
   }, [modelUrl, t]);
 
   return (
-    <div className={cn("relative h-full min-h-[420px] w-full rounded-md border bg-muted/20", className)}>
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className={cn("relative h-[420px] w-full overflow-hidden rounded-md border bg-muted/20", className)}>
+      <div ref={containerRef} className="absolute inset-0 overflow-hidden" />
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/60">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

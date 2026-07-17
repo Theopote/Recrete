@@ -98,11 +98,13 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
     return () => {
       disposed = true;
       components?.dispose();
+      container.innerHTML = "";
     };
   }, [modelUrl, t]);
 
   return (
-    <div className={cn("relative min-h-[420px] overflow-hidden rounded-md border bg-muted/20", className)}>
+    <div className={cn("relative h-[420px] w-full overflow-hidden rounded-md border bg-muted/20", className)}>
+      <div ref={containerRef} className="absolute inset-0 overflow-hidden" />
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -113,7 +115,6 @@ export function OpenBimViewer({ modelUrl, className }: OpenBimViewerProps) {
           {error}
         </div>
       )}
-      <div ref={containerRef} className="h-full min-h-[420px] w-full" />
     </div>
   );
 }
