@@ -385,6 +385,7 @@ model Project {
   complianceChecks ComplianceCheckRecord[]
   buildingMemoryHistory BuildingMemoryHistory[]
   siteMeasurements    ProjectSiteMeasurements?
+  elevatorFeasibility ProjectElevatorFeasibility?
 }
 
 /// Project-level site measurements for compliance and expert agents
@@ -405,6 +406,18 @@ model ProjectSiteMeasurements {
   notes                 String?  @db.Text
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+/// Latest elevator addition feasibility assessment for a project (guardrail-mode result)
+model ProjectElevatorFeasibility {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  verdict   String
+  result    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }

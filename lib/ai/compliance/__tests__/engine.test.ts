@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { runComplianceEngine, getScenariosForProject } from "@/lib/ai/compliance";
+import { COMPLIANCE_MEASUREMENT_KEYS } from "@/lib/ai/compliance/measurements";
 import type { ProjectWithRelations, HeritageLevel } from "@/types";
 
 function demoBuilding(heritageLevel: HeritageLevel = "none") {
@@ -159,7 +160,7 @@ describe("compliance engine", () => {
     });
 
     expect(report.measurementCoverage.fieldsFilled).toBe(3);
-    expect(report.measurementCoverage.fieldsTotal).toBe(11);
+    expect(report.measurementCoverage.fieldsTotal).toBe(COMPLIANCE_MEASUREMENT_KEYS.length);
     expect(report.measurementCoverage.dataDependentRules).toBeGreaterThan(0);
     expect(report.measurementCoverage.missingFields).toContain("fireCompartmentArea");
   });

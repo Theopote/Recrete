@@ -12,6 +12,10 @@ import { upsertDrawingAsset, listDrawingAssetsByProject } from "@/lib/db/drawing
 import { enqueueJob, getJob } from "@/lib/jobs/jobs-store";
 import { processJobById } from "@/lib/jobs/processor";
 import { saveComplianceRun } from "@/lib/db/compliance-store";
+import {
+  getElevatorFeasibilityResult,
+  saveElevatorFeasibilityResult,
+} from "@/lib/db/elevator-feasibility-store";
 import { runComplianceEngine } from "@/lib/ai/compliance";
 import type { BimModel } from "@/types/bim";
 import type { ProjectWithRelations } from "@/types";
@@ -193,6 +197,35 @@ check("ComplianceCheckRun persistence", async () => {
 
   await prisma.complianceCheckRecord.deleteMany({ where: { runId: run.id } });
   await prisma.complianceCheckRun.delete({ where: { id: run.id } });
+});
+
+check("ProjectElevatorFeasibility persistence", async () => {
+  const projectId = await getDemoProjectId();
+  const sample = {
+    verdict: "conditional" as const,
+    spaceCheck: {
+      candidateRoomId: "rm-storage-se",
+      candidateLabel: "三层东南角储藏间",
+      width: 2.4,
+      depth: 2.3,
+      meetsMinimum: true,
+      note: "Mock acceptance check",
+    },
+    structuralCheck: { compliant: "unknown" as const, note: "Not evaluated in acceptance" },
+    complianceChecks: [],
+    generatedAt: new Date().toISOString(),
+  };
+
+  await saveElevatorFeasibilityResult(projectId, sample);
+  const loaded = await getElevatorFeasibilityResult(projectId);
+  if (!loaded || loaded.verdict !== "conditional") {
+    throw new Error("Elevator feasibility result not persisted or read back correctly");
+  }
+  if (loaded.spaceCheck.candidateLabel !== sample.spaceCheck.candidateLabel) {
+    throw new Error("Elevator feasibility JSON payload mismatch");
+  }
+
+  await prisma.projectElevatorFeasibility.delete({ where: { projectId } });
 });
 
 check("BackgroundJob enqueue/process", async () => {
