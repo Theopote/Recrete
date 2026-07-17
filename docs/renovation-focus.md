@@ -38,6 +38,14 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 | 方案条件化报告（引用选中策略 + 合规 remediation） | ✅ | `strategy-conditioned-report.ts` + Reports 策略选择器 |
 | 诊断 executive summary 默认开启 | ✅ | 规则模板 / OpenAI 直连；不依赖 `LANGCHAIN_ENABLED` |
 
+### P3 · 项目资料中枢（进行中）
+
+| 项 | 状态 | 说明 |
+|----|------|------|
+| 资料治理：版本 / 法规·任务书分类 / 元数据 | ✅ | `DocumentGovernancePanel` + versions API + 删除清理 storage |
+| AI 结构化消化（法规/任务书/扫描专类） | ⬜ | P3-B |
+| 阶段完备度 + 诊断溯源 + ingest 串联 | ⬜ | P3-C |
+
 ## 明确暂缓（往后放）
 
 | 模块 | 路径 | 原因 |

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addDocument } from "@/lib/db/repository";
+import { addDocument, getProjectById } from "@/lib/db/repository";
 import { requireProjectAccess } from "@/lib/auth/authorize";
 import { getCurrentUserId } from "@/lib/auth/session";
 import { saveUploadedFile } from "@/lib/storage/upload";
@@ -10,6 +10,10 @@ import {
   shouldOpenBuildingCondition,
   syncDocumentCadToBimModel,
 } from "@/lib/building-condition/unified-cad-sync";
+import { inferDocumentCategory } from "@/lib/storage/category-detect";
+import { parseDocumentUploadMetadata } from "@/lib/documents/parse-upload-metadata";
+import { defaultPhaseForProjectStatus } from "@/lib/documents/governance";
+import { isDocumentCategory } from "@/lib/documents/constants";
 
 export async function POST(
   request: Request,
@@ -32,8 +36,17 @@ export async function POST(
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    const meta = parseDocumentUploadMetadata(formData);
+    const project = await getProjectById(projectId, access.user.organizationId);
     const saved = await saveUploadedFile(projectId, file);
-    const category = (formData.get("category") as string) ?? "others";
+    const categoryRaw = formData.get("category");
+    const category =
+      meta.category ??
+      (typeof categoryRaw === "string" &&
+      categoryRaw !== "auto" &&
+      isDocumentCategory(categoryRaw)
+        ? categoryRaw
+        : inferDocumentCategory(file.name, file.type));
 
     const doc = await addDocument(projectId, {
       name: saved.name,
@@ -41,12 +54,14 @@ export async function POST(
       fileUrl: saved.fileUrl,
       fileSize: saved.fileSize,
       mimeType: saved.mimeType,
-      category: category as import("@/types").DocumentCategory,
-      description: (formData.get("description") as string) ?? null,
+      category,
+      description: meta.description ?? null,
+      tags: meta.tags ?? [],
+      projectPhase: meta.projectPhase ?? (project ? defaultPhaseForProjectStatus(project.status) : "general"),
       uploadedById: userId ?? "user-1",
     });
 
-    const autoAnalyze = formData.get("autoAnalyze") !== "false";
+    const autoAnalyze = meta.autoAnalyze !== false;
     let analysisTaskId: string | undefined;
     if (autoAnalyze) {
       const task = await createDocumentAnalysisTask({
@@ -87,6 +102,8 @@ export async function POST(
     mimeType: body.mimeType ?? "application/octet-stream",
     category: body.category ?? "others",
     description: body.description ?? null,
+    tags: Array.isArray(body.tags) ? body.tags : [],
+    projectPhase: body.projectPhase ?? "general",
     uploadedById: userId ?? "user-1",
   });
 

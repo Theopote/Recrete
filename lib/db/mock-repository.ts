@@ -16,6 +16,15 @@ import type {
   SiteIssue,
   StrategyWithProject,
 } from "@/types";
+import {
+  applyNewDocumentDefaults,
+  isCurrentProjectDocument,
+  nextDocumentVersionNumber,
+  normalizeDocumentAsset,
+  type AddDocumentInput,
+  type DocumentMetadataUpdate,
+} from "@/lib/documents/governance";
+import { deleteUploadedFile } from "@/lib/storage/delete-upload";
 import type { AIProjectDraft } from "@/lib/ai/agents/project-creation-agent";
 import { knowledgeArticles } from "@/lib/mock-data/knowledge";
 import {
@@ -79,7 +88,9 @@ export async function getProjectById(
     ...project,
     building: store.buildings.find((b) => b.projectId === id) ?? null,
     buildingMemory: store.buildingMemories.find((m) => m.projectId === id) ?? null,
-    documents: store.documents.filter((d) => d.projectId === id),
+    documents: store.documents
+      .filter((d) => d.projectId === id && isCurrentProjectDocument(d))
+      .map(normalizeDocumentAsset),
     insights: store.insights.filter((i) => i.projectId === id),
     tasks: store.tasks.filter((t) => t.projectId === id),
     analysisRuns: store.analysisRuns.filter((r) => r.projectId === id),
@@ -433,27 +444,43 @@ export async function replaceStrategies(
 
 export async function addDocument(
   projectId: string,
-  doc: Omit<DocumentAsset, "id" | "projectId" | "createdAt" | "updatedAt">
+  doc: AddDocumentInput
 ): Promise<DocumentAsset> {
   const now = new Date();
-  const created: DocumentAsset = {
-    ...doc,
-    id: generateId("doc"),
+  const id = generateId("doc");
+  const created = normalizeDocumentAsset({
+    ...applyNewDocumentDefaults(doc, {
+      id,
+      versionGroupId: doc.versionGroupId,
+      versionNumber: doc.versionNumber,
+      isCurrentVersion: doc.isCurrentVersion,
+    }),
     projectId,
     createdAt: now,
     updatedAt: now,
-  };
+  });
   store.documents.push(created);
   return created;
 }
 
 export async function getDocumentById(documentId: string): Promise<DocumentAsset | null> {
-  return store.documents.find((d) => d.id === documentId) ?? null;
+  const doc = store.documents.find((d) => d.id === documentId);
+  return doc ? normalizeDocumentAsset(doc) : null;
+}
+
+export async function getDocumentVersions(documentId: string): Promise<DocumentAsset[]> {
+  const doc = await getDocumentById(documentId);
+  if (!doc) return [];
+  return store.documents
+    .filter((d) => d.versionGroupId === doc.versionGroupId)
+    .map(normalizeDocumentAsset)
+    .sort((a, b) => (b.versionNumber ?? 1) - (a.versionNumber ?? 1));
 }
 
 export async function updateDocument(
   documentId: string,
-  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description" | "category">>
+  data: DocumentMetadataUpdate &
+    Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "isCurrentVersion">>
 ): Promise<DocumentAsset | null> {
   const doc = store.documents.find((d) => d.id === documentId);
   if (!doc) return null;
@@ -461,14 +488,75 @@ export async function updateDocument(
   if (data.extractedText !== undefined) doc.extractedText = data.extractedText;
   if (data.description !== undefined) doc.description = data.description;
   if (data.category !== undefined) doc.category = data.category;
+  if (data.tags !== undefined) doc.tags = data.tags;
+  if (data.projectPhase !== undefined) doc.projectPhase = data.projectPhase;
+  if (data.isCurrentVersion !== undefined) doc.isCurrentVersion = data.isCurrentVersion;
   doc.updatedAt = new Date();
-  return doc;
+  return normalizeDocumentAsset(doc);
+}
+
+export async function addDocumentVersion(
+  projectId: string,
+  baseDocumentId: string,
+  doc: AddDocumentInput
+): Promise<DocumentAsset | null> {
+  const base = await getDocumentById(baseDocumentId);
+  if (!base || base.projectId !== projectId) return null;
+
+  const versions = await getDocumentVersions(baseDocumentId);
+  for (const existing of versions) {
+    if (existing.isCurrentVersion) {
+      existing.isCurrentVersion = false;
+    }
+  }
+
+  const id = generateId("doc");
+  const now = new Date();
+  const created = normalizeDocumentAsset({
+    ...applyNewDocumentDefaults(
+      {
+        ...doc,
+        category: doc.category ?? base.category,
+        description: doc.description ?? base.description,
+        tags: doc.tags ?? base.tags,
+        projectPhase: doc.projectPhase ?? base.projectPhase,
+      },
+      {
+        id,
+        versionGroupId: base.versionGroupId,
+        versionNumber: nextDocumentVersionNumber(versions),
+        isCurrentVersion: true,
+      }
+    ),
+    projectId,
+    createdAt: now,
+    updatedAt: now,
+  });
+  store.documents.push(created);
+  return created;
 }
 
 export async function deleteDocument(documentId: string): Promise<boolean> {
+  const doc = store.documents.find((d) => d.id === documentId);
+  if (!doc) return false;
+
+  await deleteUploadedFile(doc.fileUrl);
+
   const idx = store.documents.findIndex((d) => d.id === documentId);
   if (idx < 0) return false;
   store.documents.splice(idx, 1);
+
+  const normalized = normalizeDocumentAsset(doc);
+  if (normalized.isCurrentVersion) {
+    const siblings = store.documents
+      .filter((d) => d.versionGroupId === normalized.versionGroupId)
+      .map(normalizeDocumentAsset)
+      .sort((a, b) => (b.versionNumber ?? 1) - (a.versionNumber ?? 1));
+    if (siblings.length > 0) {
+      siblings[0].isCurrentVersion = true;
+    }
+  }
+
   return true;
 }
 

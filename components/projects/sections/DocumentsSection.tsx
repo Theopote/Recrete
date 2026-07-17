@@ -9,12 +9,17 @@ import { SectionHeader } from "@/components/app/SectionHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
-import { inferDocumentCategory } from "@/lib/storage/category-detect";
+import {
+  documentCategoryLabels,
+  documentCategoryLabelsZh,
+  documentProjectPhaseLabels,
+  documentProjectPhaseLabelsZh,
+} from "@/lib/utils/labels";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
 import { openBuildingConditionAfterIngest } from "@/lib/building-condition/client-navigation";
 import { useLocale } from "@/lib/i18n/use-locale";
-import type { DocumentAsset, DocumentCategory, ProjectWithRelations } from "@/types";
+import type { DocumentAsset, DocumentCategory, DocumentProjectPhase, ProjectWithRelations } from "@/types";
+import { defaultPhaseForProjectStatus } from "@/lib/documents/governance";
 import { FileText, Trash2, Tags } from "lucide-react";
 
 interface DocumentsSectionProps {
@@ -27,6 +32,11 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
   const [documents, setDocuments] = useState(initialProject.documents ?? []);
   const [filter, setFilter] = useState<string>("all");
   const [uploadCategory, setUploadCategory] = useState<DocumentCategory | "auto">("auto");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadTags, setUploadTags] = useState("");
+  const [uploadPhase, setUploadPhase] = useState<DocumentProjectPhase>(
+    defaultPhaseForProjectStatus(initialProject.status)
+  );
   const [previewDoc, setPreviewDoc] = useState<DocumentAsset | null>(null);
   const [uploading, setUploading] = useState(false);
   const [analysisNotice, setAnalysisNotice] = useState<string | null>(null);
@@ -43,12 +53,15 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
       for (const file of files) {
         const category =
           uploadCategory === "auto"
-            ? inferDocumentCategory(file.name, file.type)
+            ? "auto"
             : uploadCategory;
 
         const formData = new FormData();
         formData.append("file", file);
         formData.append("category", category);
+        if (uploadDescription.trim()) formData.append("description", uploadDescription.trim());
+        if (uploadTags.trim()) formData.append("tags", uploadTags.trim());
+        formData.append("projectPhase", uploadPhase);
 
         const res = await fetch(`/api/projects/${initialProject.id}/documents`, {
           method: "POST",
@@ -234,11 +247,50 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
             </option>
           ))}
         </Select>
+        <label className="text-xs text-muted-foreground">
+          {t("Project phase", "项目阶段")}
+        </label>
+        <Select
+          value={uploadPhase}
+          onChange={(e) => setUploadPhase(e.target.value as DocumentProjectPhase)}
+          className="w-52 h-8 text-xs"
+        >
+          {Object.keys(documentProjectPhaseLabels).map((key) => (
+            <option key={key} value={key}>
+              {label(
+                documentProjectPhaseLabels,
+                documentProjectPhaseLabelsZh,
+                key as DocumentProjectPhase
+              )}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">{t("Description", "描述")}</label>
+          <input
+            value={uploadDescription}
+            onChange={(e) => setUploadDescription(e.target.value)}
+            className="w-full rounded-md border bg-background px-3 py-2 text-xs"
+            placeholder={t("Optional note for this upload", "可选：说明本次上传内容")}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">{t("Tags", "标签")}</label>
+          <input
+            value={uploadTags}
+            onChange={(e) => setUploadTags(e.target.value)}
+            className="w-full rounded-md border bg-background px-3 py-2 text-xs"
+            placeholder={t("fire, heritage, 1986", "防火, 文保, 1986")}
+          />
+        </div>
       </div>
 
       <UploadDropzone
         onUpload={handleUpload}
-        accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png,.zip"
+        accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png,.zip,.tif,.tiff"
         disabled={uploading}
       />
       {uploading && (
@@ -354,7 +406,14 @@ export function DocumentsSection({ project: initialProject }: DocumentsSectionPr
 
       <DocumentPreviewDialog
         document={previewDoc}
+        projectId={initialProject.id}
         onClose={() => setPreviewDoc(null)}
+        onDocumentUpdated={(updated) => {
+          setDocuments((prev) =>
+            prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d))
+          );
+          setPreviewDoc(updated);
+        }}
       />
     </div>
   );

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatFileSize, formatDate } from "@/lib/utils";
-import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
+import { documentCategoryLabels, documentCategoryLabelsZh, documentProjectPhaseLabels, documentProjectPhaseLabelsZh } from "@/lib/utils/labels";
 import { useLocale } from "@/lib/i18n/use-locale";
 import { isPdf } from "@/lib/storage/file-utils";
 import { pollAnalysisTask } from "@/lib/documents/poll-analysis-task";
@@ -185,10 +185,36 @@ export function DocumentCard({
                   document.category
                 )}
               </Badge>
+              {(document.versionNumber ?? 1) > 1 || document.isCurrentVersion === false ? (
+                <Badge variant="secondary" className="text-[10px]">
+                  v{document.versionNumber ?? 1}
+                </Badge>
+              ) : null}
+              {document.projectPhase && document.projectPhase !== "general" && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {label(
+                    documentProjectPhaseLabels,
+                    documentProjectPhaseLabelsZh,
+                    document.projectPhase
+                  )}
+                </Badge>
+              )}
               <span className="text-[10px] text-muted-foreground uppercase">
                 {document.type}
               </span>
             </div>
+            {(document.tags?.length ?? 0) > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {document.tags!.slice(0, 4).map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
             {document.aiSummary ? (
               <p className="mt-2 text-xs text-muted-foreground line-clamp-3">
                 {document.aiSummary}

@@ -120,6 +120,9 @@ export const documentCategoryLabels: LabelMap<DocumentCategory> = {
   cost_documents: "Cost Documents",
   meeting_records: "Meeting Records",
   reports: "Reports",
+  regulations: "Regulations & Codes",
+  project_brief: "Project Brief",
+  scanned_archive: "Scanned Archive",
   others: "Others",
 };
 
@@ -132,7 +135,32 @@ export const documentCategoryLabelsZh: LabelMap<DocumentCategory> = {
   cost_documents: "造价资料",
   meeting_records: "会议记录",
   reports: "报告",
+  regulations: "法规规范",
+  project_brief: "任务书/简报",
+  scanned_archive: "扫描档案",
   others: "其他",
+};
+
+export const documentProjectPhaseLabels: LabelMap<
+  import("@/types").DocumentProjectPhase
+> = {
+  survey: "Survey",
+  diagnosis: "Diagnosis",
+  strategy: "Strategy",
+  design: "Design",
+  construction: "Construction",
+  general: "General",
+};
+
+export const documentProjectPhaseLabelsZh: LabelMap<
+  import("@/types").DocumentProjectPhase
+> = {
+  survey: "勘察",
+  diagnosis: "诊断",
+  strategy: "方案",
+  design: "设计",
+  construction: "施工",
+  general: "通用",
 };
 
 export const strategyTypeLabels: LabelMap<StrategyType> = {

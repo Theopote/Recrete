@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/use-locale";
 import { documentCategoryLabels, documentCategoryLabelsZh } from "@/lib/utils/labels";
 import type { DocumentAsset } from "@/types";
+import { DocumentGovernancePanel } from "@/components/documents/DocumentGovernancePanel";
+import { DocumentStructuredFactsPanel } from "@/components/documents/DocumentStructuredFactsPanel";
 
 interface PdfViewerProps {
   fileUrl: string;
@@ -105,10 +107,17 @@ function PdfViewer({ fileUrl, className }: PdfViewerProps) {
 
 interface DocumentPreviewDialogProps {
   document: DocumentAsset | null;
+  projectId?: string;
   onClose: () => void;
+  onDocumentUpdated?: (document: DocumentAsset) => void;
 }
 
-export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDialogProps) {
+export function DocumentPreviewDialog({
+  document,
+  projectId,
+  onClose,
+  onDocumentUpdated,
+}: DocumentPreviewDialogProps) {
   const { t, label } = useLocale();
   if (!document) return null;
 
@@ -149,6 +158,17 @@ export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDial
               <Button variant="outline" size="sm">{t("Download File", "下载文件")}</Button>
             </a>
           </div>
+        )}
+
+        {projectId && document && (
+          <>
+            <DocumentStructuredFactsPanel document={document} />
+            <DocumentGovernancePanel
+            projectId={projectId}
+            document={document}
+            onUpdated={onDocumentUpdated}
+            onVersionUploaded={onDocumentUpdated}
+          />
         )}
       </div>
     </div>

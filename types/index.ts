@@ -30,7 +30,19 @@ export type DocumentCategory =
   | "cost_documents"
   | "meeting_records"
   | "reports"
+  | "regulations"
+  | "project_brief"
+  | "scanned_archive"
   | "others";
+
+/** Project phase tag for document governance (when the material was collected / applies). */
+export type DocumentProjectPhase =
+  | "survey"
+  | "diagnosis"
+  | "strategy"
+  | "design"
+  | "construction"
+  | "general";
 
 export type DiagnosisCategory =
   | "architecture"
@@ -171,6 +183,11 @@ export interface DocumentAsset {
   aiSummary?: string | null;
   extractedText?: string | null;
   description?: string | null;
+  tags?: string[];
+  projectPhase?: DocumentProjectPhase;
+  versionGroupId?: string;
+  versionNumber?: number;
+  isCurrentVersion?: boolean;
   uploadedById?: string | null;
   createdAt: Date;
   updatedAt: Date;

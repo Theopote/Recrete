@@ -17,6 +17,17 @@ import { runDocumentSummaryChain } from "./langchain/chains";
 import { buildDrawingKnowledgeGraph } from "./knowledge/drawing-knowledge-graph";
 import { isPdf } from "@/lib/storage/file-utils";
 import type { DocumentAnalysisOutput, VisionAnalysisOptions } from "./vision/types";
+import type { DocumentStructuredExtract } from "@/types/document-facts";
+import { isStructuredExtractCategory } from "@/types/document-facts";
+import {
+  buildStructuredFactEvidence,
+  runStructuredDocumentExtract,
+  type StructuredExtractContext,
+  wrapExtractedText,
+  structuredSummaryForDisplay,
+} from "./document-structured-extract";
+
+export type DocumentAnalysisProjectContext = StructuredExtractContext;
 
 export interface DrawingPageResult {
   pageNumber: number;
@@ -34,6 +45,7 @@ export interface PipelineResult extends DocumentAnalysisOutput {
   suggestedIssues?: SuggestedIssue[];
   openCvResult?: import("./vision/opencv-analyzer").OpenCvAnalysisResult | null;
   drawingPages?: DrawingPageResult[];
+  structuredExtract?: DocumentStructuredExtract;
 }
 
 export interface SuggestedIssue {
@@ -53,6 +65,9 @@ const REPORT_CATEGORIES: DocumentCategory[] = [
   "historical_documents",
   "cost_documents",
   "meeting_records",
+  "regulations",
+  "project_brief",
+  "scanned_archive",
 ];
 
 export function resolveAnalysisKind(doc: DocumentAsset): DocumentAnalysisOutput["kind"] {
@@ -69,7 +84,8 @@ export async function analyzeDocumentAsset(
   projectId: string,
   doc: DocumentAsset,
   options: VisionAnalysisOptions = {},
-  buildingAge?: number
+  buildingAge?: number,
+  projectContext?: DocumentAnalysisProjectContext
 ): Promise<PipelineResult> {
   const kind = resolveAnalysisKind(doc);
 
@@ -79,7 +95,7 @@ export async function analyzeDocumentAsset(
     case "photo":
       return analyzePhotoDocument(projectId, doc, options, buildingAge);
     case "report":
-      return analyzeReportDocument(projectId, doc, options);
+      return analyzeReportDocument(projectId, doc, options, projectContext);
     default:
       return analyzeGenericDocument(projectId, doc, options);
   }
@@ -358,10 +374,42 @@ async function analyzePhotoDocument(
   };
 }
 
+async function enrichReportWithStructuredExtract(
+  projectId: string,
+  result: PipelineResult,
+  doc: DocumentAsset,
+  rawText: string,
+  projectContext?: DocumentAnalysisProjectContext
+): Promise<PipelineResult> {
+  if (!isStructuredExtractCategory(doc.category)) return result;
+
+  const structured = await runStructuredDocumentExtract({
+    category: doc.category,
+    text: rawText || result.extractedText || doc.description || doc.name,
+    document: doc,
+    context: projectContext,
+  });
+
+  if (!structured || structured.facts.length === 0) return result;
+
+  const factEvidence = buildStructuredFactEvidence(projectId, doc.id, structured);
+
+  return {
+    ...result,
+    structuredExtract: structured,
+    aiSummary: `${result.aiSummary}\n\n--- Structured extract ---\n${structuredSummaryForDisplay(structured)}`,
+    extractedText: wrapExtractedText(rawText || result.extractedText, structured),
+    confidence: Math.max(result.confidence, structured.confidence),
+    modelName: `${result.modelName}+${structured.modelName}`,
+    evidence: [...result.evidence, ...factEvidence],
+  };
+}
+
 async function analyzeReportDocument(
   projectId: string,
   doc: DocumentAsset,
-  options: VisionAnalysisOptions
+  options: VisionAnalysisOptions,
+  projectContext?: DocumentAnalysisProjectContext
 ): Promise<PipelineResult> {
   if (isPdf(doc.mimeType, doc.name)) {
     try {
@@ -379,16 +427,22 @@ async function analyzeReportDocument(
           category: doc.category,
         });
 
-        return {
-          documentId: doc.id,
-          kind: "report",
-          aiSummary: aiSummary || extracted.summary,
-          extractedText: extracted.extractedText,
-          confidence: 0.88,
-          modelName: `${pdfText.extractor}${aiSummary ? "+langchain" : ""}`,
-          document: extracted,
-          evidence: buildReportEvidence(projectId, doc.id, extracted),
-        };
+        return enrichReportWithStructuredExtract(
+          projectId,
+          {
+            documentId: doc.id,
+            kind: "report",
+            aiSummary: aiSummary || extracted.summary,
+            extractedText: extracted.extractedText,
+            confidence: 0.88,
+            modelName: `${pdfText.extractor}${aiSummary ? "+langchain" : ""}`,
+            document: extracted,
+            evidence: buildReportEvidence(projectId, doc.id, extracted),
+          },
+          doc,
+          pdfText.fullText,
+          projectContext
+        );
       }
 
       const imageData = await readFileAsDataUrl(doc.fileUrl, "application/pdf");
@@ -398,16 +452,22 @@ async function analyzeReportDocument(
         { ...options, extractTables: true, includeOCR: true }
       );
 
-      return {
-        documentId: doc.id,
-        kind: "report",
-        aiSummary: extracted.summary,
-        extractedText: extracted.extractedText,
-        confidence: 0.82,
-        modelName: documentExtractor.modelName,
-        document: extracted,
-        evidence: buildReportEvidence(projectId, doc.id, extracted),
-      };
+      return enrichReportWithStructuredExtract(
+        projectId,
+        {
+          documentId: doc.id,
+          kind: "report",
+          aiSummary: extracted.summary,
+          extractedText: extracted.extractedText,
+          confidence: 0.82,
+          modelName: documentExtractor.modelName,
+          document: extracted,
+          evidence: buildReportEvidence(projectId, doc.id, extracted),
+        },
+        doc,
+        extracted.extractedText,
+        projectContext
+      );
     } catch (error) {
       console.error("PDF analysis error:", error);
     }
@@ -421,16 +481,22 @@ async function analyzeReportDocument(
       { ...options, extractTables: true, includeOCR: true }
     );
 
-    return {
-      documentId: doc.id,
-      kind: "report",
-      aiSummary: extracted.summary,
-      extractedText: extracted.extractedText,
-      confidence: 0.8,
-      modelName: documentExtractor.modelName,
-      document: extracted,
-      evidence: buildReportEvidence(projectId, doc.id, extracted),
-    };
+    return enrichReportWithStructuredExtract(
+      projectId,
+      {
+        documentId: doc.id,
+        kind: "report",
+        aiSummary: extracted.summary,
+        extractedText: extracted.extractedText,
+        confidence: 0.8,
+        modelName: documentExtractor.modelName,
+        document: extracted,
+        evidence: buildReportEvidence(projectId, doc.id, extracted),
+      },
+      doc,
+      extracted.extractedText,
+      projectContext
+    );
   }
 
   return analyzeGenericDocument(projectId, doc, options);

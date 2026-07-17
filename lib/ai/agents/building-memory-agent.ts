@@ -2,6 +2,8 @@ import type { ProjectWithRelations } from "@/types";
 import type { BuildingMemory, AIAnalysisRun } from "@/types/ai";
 import { withMockDelay, MOCK_MODEL, mockConfidence } from "../providers/utils";
 import { isOpenAIConfigured } from "../openai-config";
+import { parseStoredDocumentExtract } from "@/lib/documents/structured-extract-storage";
+import { memoryFactsFromStructuredExtract } from "@/lib/documents/structured-extract-storage";
 
 export async function initializeBuildingMemory(
   project: ProjectWithRelations
@@ -41,6 +43,19 @@ function updateBuildingMemoryFromTemplate(
     (d) => `"${d.name}": ${d.aiSummary!.slice(0, 140)}${d.aiSummary!.length > 140 ? "…" : ""}`
   );
 
+  const structuredKnownFacts: string[] = [];
+  const structuredOwnerRequirements: string[] = [];
+  const structuredConstraints: string[] = [];
+
+  for (const doc of analyzedDocs) {
+    const stored = parseStoredDocumentExtract(doc.extractedText);
+    if (!stored?.structured) continue;
+    const merged = memoryFactsFromStructuredExtract(stored.structured, doc.name);
+    structuredKnownFacts.push(...merged.knownFacts);
+    structuredOwnerRequirements.push(...merged.ownerRequirements);
+    structuredConstraints.push(...merged.designConstraints);
+  }
+
   return {
     projectId: project.id,
     summary: `Updated AI understanding of ${project.name}: ${critical.length} high/critical diagnosis items, ${documents.length} documents on file (${analyzedDocs.length} analyzed). Primary focus areas: ${[...new Set(critical.map((d) => d.category))].slice(0, 3).join(", ") || "survey completion"}.`,
@@ -49,6 +64,7 @@ function updateBuildingMemoryFromTemplate(
       `${diagnosis.length} diagnosis items recorded`,
       `${documents.length} documents uploaded (${analyzedDocs.length} AI-analyzed)`,
       project.building?.currentCondition ?? "Condition assessment in progress",
+      ...structuredKnownFacts,
       ...documentFacts,
     ].filter(Boolean) as string[],
     missingInformation: [
@@ -69,8 +85,9 @@ function updateBuildingMemoryFromTemplate(
       ...(project.building?.heritageLevel !== "none"
         ? [`Heritage level: ${project.building?.heritageLevel}`]
         : []),
+      ...structuredConstraints,
     ],
-    ownerRequirements: [project.renovationGoal],
+    ownerRequirements: [project.renovationGoal, ...structuredOwnerRequirements],
     importantDecisions: [
       ...(project.strategies?.some((s) => s.recommendationReason)
         ? [`Strategy direction: ${project.strategies.find((s) => s.recommendationReason)?.name}`]

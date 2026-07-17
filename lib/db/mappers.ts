@@ -10,6 +10,8 @@ import type {
   User,
 } from "@/types";
 import type { BuildingMemory, AIInsight, AITask, SourceEvidence, BuildingMemoryHistoryEntry } from "@/types/ai";
+import { normalizeDocumentAsset } from "@/lib/documents/governance";
+import { parseTagsFromStorage, serializeTagsForStorage } from "@/lib/documents/tags";
 import type {
   Project as PrismaProject,
   Building as PrismaBuilding,
@@ -69,11 +71,24 @@ export function mapBuilding(b: PrismaBuilding): Building {
 }
 
 export function mapDocument(d: PrismaDocument): DocumentAsset {
-  return {
-    ...d,
+  const ext = d as PrismaDocument & {
+    tags?: string | null;
+    projectPhase?: DocumentAsset["projectPhase"];
+    versionGroupId?: string;
+    versionNumber?: number;
+    isCurrentVersion?: boolean;
+  };
+
+  return normalizeDocumentAsset({
+    ...ext,
     aiSummary: d.aiSummary,
     extractedText: d.extractedText,
-  };
+    tags: parseTagsFromStorage(ext.tags),
+    projectPhase: ext.projectPhase,
+    versionGroupId: ext.versionGroupId,
+    versionNumber: ext.versionNumber,
+    isCurrentVersion: ext.isCurrentVersion,
+  });
 }
 
 export function mapDiagnosis(d: PrismaDiagnosis): DiagnosisItem {
@@ -244,7 +259,9 @@ export function mapProjectWithRelationsExtended(
           ...p.buildingMemory,
         } satisfies BuildingMemory)
       : null,
-    documents: p.documents.map(mapDocument),
+    documents: p.documents
+      .filter((d) => (d as { isCurrentVersion?: boolean }).isCurrentVersion !== false)
+      .map(mapDocument),
     insights: p.insights?.map((i) => ({ ...i })) ?? [],
     tasks: p.tasks?.map((t) => ({ ...t, dueDate: t.dueDate })) ?? [],
     sourceEvidence: (p.sourceEvidence ?? p.evidence)?.map((e) => ({ ...e })) ?? [],

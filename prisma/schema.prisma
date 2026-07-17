@@ -54,7 +54,19 @@ enum DocumentCategory {
   cost_documents
   meeting_records
   reports
+  regulations
+  project_brief
+  scanned_archive
   others
+}
+
+enum DocumentProjectPhase {
+  survey
+  diagnosis
+  strategy
+  design
+  construction
+  general
 }
 
 enum DiagnosisCategory {
@@ -519,25 +531,33 @@ model Building {
 }
 
 model DocumentAsset {
-  id           String           @id @default(cuid())
-  projectId    String
-  name         String
-  type         String
-  fileUrl      String
-  fileSize     Int
-  mimeType     String
-  category     DocumentCategory
-  aiSummary    String?          @db.Text
-  extractedText String?         @db.Text
-  description  String?
-  uploadedById String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id                String               @id @default(cuid())
+  projectId         String
+  name              String
+  type              String
+  fileUrl           String
+  fileSize          Int
+  mimeType          String
+  category          DocumentCategory
+  aiSummary         String?              @db.Text
+  extractedText     String?              @db.Text
+  description       String?
+  tags              String?              @db.Text
+  projectPhase      DocumentProjectPhase @default(general)
+  versionGroupId    String
+  versionNumber     Int                  @default(1)
+  isCurrentVersion  Boolean              @default(true)
+  uploadedById      String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   uploadedBy    User?          @relation(fields: [uploadedById], references: [id])
   drawingAssets DrawingAsset[]
   analysisTasks DocumentAnalysisTaskRecord[]
+
+  @@index([versionGroupId])
+  @@index([projectId, isCurrentVersion])
 }
 
 model DiagnosisItem {

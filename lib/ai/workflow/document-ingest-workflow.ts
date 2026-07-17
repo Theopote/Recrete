@@ -105,7 +105,13 @@ export async function runDocumentIngestWorkflow(
       projectId,
       doc,
       { language, includeOCR: true, extractTables: true, detectDefects: true },
-      buildingAge
+      buildingAge,
+      {
+        projectName: project.name,
+        targetFunction: project.targetFunction,
+        location: project.location,
+        renovationGoal: project.renovationGoal,
+      }
     ),
     doc.name
   );

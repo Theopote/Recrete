@@ -137,6 +137,20 @@ export async function deleteDocument(documentId: string) {
   return (await resolveDb()) ? db.deleteDocument(documentId) : mock.deleteDocument(documentId);
 }
 
+export async function getDocumentVersions(documentId: string) {
+  return (await resolveDb()) ? db.getDocumentVersions(documentId) : mock.getDocumentVersions(documentId);
+}
+
+export async function addDocumentVersion(
+  projectId: string,
+  baseDocumentId: string,
+  doc: Parameters<typeof mock.addDocumentVersion>[2]
+) {
+  return (await resolveDb())
+    ? db.addDocumentVersion(projectId, baseDocumentId, doc)
+    : mock.addDocumentVersion(projectId, baseDocumentId, doc);
+}
+
 export async function addSourceEvidence(
   evidence: Parameters<typeof mock.addSourceEvidence>[0]
 ) {

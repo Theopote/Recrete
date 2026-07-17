@@ -36,6 +36,8 @@ export const API_ACTION_GUARDS: Record<string, ProjectAction> = {
   "POST /api/projects/*/strategies": "create_strategy",
   "POST /api/projects/*/strategies/iterate": "create_strategy",
   "POST /api/projects/*/documents": "upload_documents",
+  "PATCH /api/projects/*/documents/*": "upload_documents",
+  "POST /api/projects/*/documents/*/versions": "upload_documents",
   "DELETE /api/projects/*/documents/*": "upload_documents",
   "POST /api/projects/*/documents/*/analyze": "run_ai_analysis",
   "POST /api/projects/*/bim-models": "upload_documents",

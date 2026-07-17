@@ -18,6 +18,14 @@ import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
 import { attachStrategyRankings } from "@/lib/utils/strategy-ranking";
 import { enrichStrategiesWithProfiles } from "@/lib/ai/strategy-schema";
 import { loadProjectDrawingGraph } from "@/lib/ai/load-project-drawing-graph";
+import {
+  nextDocumentVersionNumber,
+  normalizeDocumentAsset,
+  type AddDocumentInput,
+  type DocumentMetadataUpdate,
+} from "@/lib/documents/governance";
+import { serializeTagsForStorage } from "@/lib/documents/tags";
+import { deleteUploadedFile } from "@/lib/storage/delete-upload";
 import type {
   CreateProjectInput,
   DiagnosisItem,
@@ -82,7 +90,7 @@ export async function getProjectById(
     include: {
       building: true,
       buildingMemory: true,
-      documents: { orderBy: { createdAt: "desc" } },
+      documents: { where: { isCurrentVersion: true }, orderBy: { createdAt: "desc" } },
       diagnosis: { orderBy: { updatedAt: "desc" } },
       strategies: { orderBy: { updatedAt: "desc" } },
       issues: { orderBy: { updatedAt: "desc" } },
@@ -335,11 +343,37 @@ export async function addStrategies(
 
 export async function addDocument(
   projectId: string,
-  doc: Omit<DocumentAsset, "id" | "projectId" | "createdAt" | "updatedAt">
+  doc: AddDocumentInput
 ): Promise<DocumentAsset> {
   const created = await prisma.documentAsset.create({
-    data: { ...doc, projectId },
+    data: {
+      projectId,
+      name: doc.name,
+      type: doc.type,
+      fileUrl: doc.fileUrl,
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      category: doc.category,
+      aiSummary: doc.aiSummary ?? null,
+      extractedText: doc.extractedText ?? null,
+      description: doc.description ?? null,
+      tags: serializeTagsForStorage(doc.tags),
+      projectPhase: doc.projectPhase ?? "general",
+      versionGroupId: doc.versionGroupId ?? "pending",
+      versionNumber: doc.versionNumber ?? 1,
+      isCurrentVersion: doc.isCurrentVersion ?? true,
+      uploadedById: doc.uploadedById ?? null,
+    },
   });
+
+  if (!doc.versionGroupId) {
+    const updated = await prisma.documentAsset.update({
+      where: { id: created.id },
+      data: { versionGroupId: created.id },
+    });
+    return mapDocument(updated);
+  }
+
   return mapDocument(created);
 }
 
@@ -348,14 +382,33 @@ export async function getDocumentById(documentId: string): Promise<DocumentAsset
   return doc ? mapDocument(doc) : null;
 }
 
+export async function getDocumentVersions(documentId: string): Promise<DocumentAsset[]> {
+  const doc = await getDocumentById(documentId);
+  if (!doc) return [];
+  const rows = await prisma.documentAsset.findMany({
+    where: { versionGroupId: doc.versionGroupId },
+    orderBy: { versionNumber: "desc" },
+  });
+  return rows.map(mapDocument);
+}
+
 export async function updateDocument(
   documentId: string,
-  data: Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "description" | "category">>
+  data: DocumentMetadataUpdate &
+    Partial<Pick<DocumentAsset, "aiSummary" | "extractedText" | "isCurrentVersion">>
 ): Promise<DocumentAsset | null> {
   try {
     const updated = await prisma.documentAsset.update({
       where: { id: documentId },
-      data,
+      data: {
+        aiSummary: data.aiSummary,
+        extractedText: data.extractedText,
+        description: data.description,
+        category: data.category,
+        projectPhase: data.projectPhase,
+        isCurrentVersion: data.isCurrentVersion,
+        tags: data.tags !== undefined ? serializeTagsForStorage(data.tags) : undefined,
+      },
     });
     return mapDocument(updated);
   } catch {
@@ -363,13 +416,69 @@ export async function updateDocument(
   }
 }
 
+export async function addDocumentVersion(
+  projectId: string,
+  baseDocumentId: string,
+  doc: AddDocumentInput
+): Promise<DocumentAsset | null> {
+  const base = await getDocumentById(baseDocumentId);
+  if (!base || base.projectId !== projectId) return null;
+
+  const versions = await getDocumentVersions(baseDocumentId);
+  await prisma.documentAsset.updateMany({
+    where: { versionGroupId: base.versionGroupId, isCurrentVersion: true },
+    data: { isCurrentVersion: false },
+  });
+
+  const created = await prisma.documentAsset.create({
+    data: {
+      projectId,
+      name: doc.name,
+      type: doc.type,
+      fileUrl: doc.fileUrl,
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      category: doc.category ?? base.category,
+      aiSummary: doc.aiSummary ?? null,
+      extractedText: doc.extractedText ?? null,
+      description: doc.description ?? base.description ?? null,
+      tags: serializeTagsForStorage(doc.tags ?? base.tags),
+      projectPhase: doc.projectPhase ?? base.projectPhase ?? "general",
+      versionGroupId: base.versionGroupId ?? base.id,
+      versionNumber: nextDocumentVersionNumber(versions),
+      isCurrentVersion: true,
+      uploadedById: doc.uploadedById ?? null,
+    },
+  });
+  return mapDocument(created);
+}
+
 export async function deleteDocument(documentId: string): Promise<boolean> {
+  const doc = await getDocumentById(documentId);
+  if (!doc) return false;
+
+  await deleteUploadedFile(doc.fileUrl);
+
   try {
     await prisma.documentAsset.delete({ where: { id: documentId } });
-    return true;
   } catch {
     return false;
   }
+
+  if (doc.isCurrentVersion) {
+    const sibling = await prisma.documentAsset.findFirst({
+      where: { versionGroupId: doc.versionGroupId, id: { not: documentId } },
+      orderBy: { versionNumber: "desc" },
+    });
+    if (sibling) {
+      await prisma.documentAsset.update({
+        where: { id: sibling.id },
+        data: { isCurrentVersion: true },
+      });
+    }
+  }
+
+  return true;
 }
 
 export async function addSourceEvidence(

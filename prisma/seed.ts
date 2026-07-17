@@ -13,6 +13,7 @@ import {
   mockIssues,
   mockReports,
 } from "../lib/mock-data";
+import { serializeTagsForStorage } from "../lib/documents/tags";
 import { DEMO_PASSWORD } from "../lib/auth/demo-users";
 
 const prisma = new PrismaClient();
@@ -65,7 +66,17 @@ async function main() {
   }
 
   for (const doc of mockDocuments) {
-    await prisma.documentAsset.create({ data: doc });
+    const { tags, ...rest } = doc;
+    await prisma.documentAsset.create({
+      data: {
+        ...rest,
+        tags: serializeTagsForStorage(tags),
+        projectPhase: doc.projectPhase ?? "general",
+        versionGroupId: doc.versionGroupId ?? doc.id,
+        versionNumber: doc.versionNumber ?? 1,
+        isCurrentVersion: doc.isCurrentVersion ?? true,
+      },
+    });
   }
 
   for (const item of mockDiagnosis) {
