@@ -2,11 +2,14 @@ import "server-only";
 
 import { getAIServiceMode, isOpenAIConfigured } from "@/lib/ai/model-router";
 import { getUsageSummary } from "@/lib/ai/usage";
+import { getWebSearchProvider, isWebSearchConfigured } from "@/lib/ai/knowledge/web-search";
 
 export interface AIStatusPayload {
   mode: "mock" | "openai";
   live: boolean;
   langChainEnabled: boolean;
+  webSearchEnabled: boolean;
+  webSearchProvider: string | null;
   usage?: {
     dailyUsed: number;
     dailyLimit: number;
@@ -25,6 +28,8 @@ export async function getAIStatus(
     mode,
     live: isOpenAIConfigured(),
     langChainEnabled: process.env.LANGCHAIN_ENABLED === "true",
+    webSearchEnabled: isWebSearchConfigured(),
+    webSearchProvider: getWebSearchProvider(),
   };
 
   if (organizationId) {

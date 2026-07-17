@@ -6,12 +6,19 @@ export interface CostKnowledgeSnapshot {
   benchmarkCount: number;
 }
 
+export interface MarketCostWebContext {
+  region: string;
+  buildingType: string;
+  strategyType?: string;
+}
+
 export function buildCostDataSourceNote(
   snapshot: CostKnowledgeSnapshot,
   options?: {
     projectActualRecordCount?: number;
     hasBenchmark?: boolean;
     baselineSources?: string[];
+    webMarketNote?: string;
   }
 ): string {
   const parts: string[] = [];
@@ -40,6 +47,10 @@ export function buildCostDataSourceNote(
 
   if (options?.baselineSources?.length) {
     parts.push(`baseline: ${options.baselineSources.join(", ")}`);
+  }
+
+  if (options?.webMarketNote) {
+    parts.push(`market web reference: ${options.webMarketNote}`);
   }
 
   if (

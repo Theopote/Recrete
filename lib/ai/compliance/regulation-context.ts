@@ -2,6 +2,12 @@ import type { DocumentAsset, ProjectWithRelations } from "@/types";
 import type { RegulationFact } from "@/types/document-facts";
 import { parseStoredDocumentExtract } from "@/lib/documents/structured-extract-storage";
 import { formatDocTag } from "@/lib/documents/evidence-tags";
+import {
+  formatWebSearchSnippets,
+  isWebSearchConfigured,
+  searchRegulationsOnline,
+  type WebSearchResult,
+} from "@/lib/ai/knowledge/web-search";
 import type { ComplianceCategory, ComplianceCheck } from "./types";
 
 export interface RegulationFactWithSource extends RegulationFact {
@@ -109,25 +115,82 @@ export function findRegulationFactsForCheck(
 export function enrichComplianceEvidenceWithRegulations(
   baseEvidence: string,
   check: Pick<ComplianceCheck, "code" | "section" | "requirement" | "requirementZh" | "category">,
-  facts: RegulationFactWithSource[]
+  facts: RegulationFactWithSource[],
+  webResults?: WebSearchResult[]
 ): string {
   const relevant = findRegulationFactsForCheck(check, facts);
-  if (relevant.length === 0) return baseEvidence;
+  const parts = [baseEvidence];
 
-  const snippets = relevant.map((fact) => {
-    const section = fact.section ? ` ${fact.section}` : "";
-    const quote = (fact.sourceQuote ?? fact.requirement).slice(0, 120);
-    return `${fact.codeRef}${section}: ${quote} ${formatDocTag(fact.documentName)}`.trim();
+  if (relevant.length > 0) {
+    const snippets = relevant.map((fact) => {
+      const section = fact.section ? ` ${fact.section}` : "";
+      const quote = (fact.sourceQuote ?? fact.requirement).slice(0, 120);
+      return `${fact.codeRef}${section}: ${quote} ${formatDocTag(fact.documentName)}`.trim();
+    });
+    parts.push(...snippets);
+  }
+
+  if (webResults?.length) {
+    parts.push(
+      formatWebSearchSnippets(webResults, {
+        prefix: "联网检索（需核实官方文本）",
+        maxItems: 2,
+      })
+    );
+  }
+
+  return parts.filter(Boolean).join(" · ");
+}
+
+export async function enrichComplianceEvidenceWithWebSearch(
+  baseEvidence: string,
+  check: Pick<ComplianceCheck, "code" | "section" | "requirement" | "requirementZh" | "category">,
+  facts: RegulationFactWithSource[]
+): Promise<string> {
+  const relevant = findRegulationFactsForCheck(check, facts);
+  if (relevant.length > 0 || !isWebSearchConfigured()) {
+    return enrichComplianceEvidenceWithRegulations(baseEvidence, check, facts);
+  }
+
+  const web = await searchRegulationsOnline({
+    codeRef: check.code,
+    section: check.section,
+    requirement: check.requirementZh ?? check.requirement,
+    category: check.category,
   });
 
-  return [baseEvidence, ...snippets].filter(Boolean).join(" · ");
+  return enrichComplianceEvidenceWithRegulations(
+    baseEvidence,
+    check,
+    facts,
+    web.results
+  );
+}
+
+export async function fetchWebRegulationContextForCheck(
+  check: Pick<ComplianceCheck, "code" | "section" | "requirement" | "requirementZh" | "category">
+): Promise<WebSearchResult[]> {
+  if (!isWebSearchConfigured()) return [];
+  const web = await searchRegulationsOnline({
+    codeRef: check.code,
+    section: check.section,
+    requirement: check.requirementZh ?? check.requirement,
+    category: check.category,
+  });
+  return web.results;
 }
 
 export function formatStructuredRegulationsBlock(
-  facts: RegulationFactWithSource[]
+  facts: RegulationFactWithSource[],
+  webRegulationBlock?: string
 ): string {
   if (facts.length === 0) {
-    return "## Structured Regulation Extracts\nNo structured regulation clauses extracted from uploaded code documents yet.";
+    const webNote = webRegulationBlock
+      ? `\n\n${webRegulationBlock}`
+      : isWebSearchConfigured()
+        ? "\n\nNo uploaded regulation documents matched. Web search is enabled and will be queried per compliance check."
+        : "\n\nNo uploaded regulation documents. Configure TAVILY_API_KEY or BRAVE_SEARCH_API_KEY to enable live code lookup.";
+    return `## Structured Regulation Extracts\nNo structured regulation clauses extracted from uploaded code documents yet.${webNote}`;
   }
 
   const lines = facts.slice(0, 12).map((fact, i) => {
@@ -166,5 +229,37 @@ export function loadStructuredRegulationContext(project: ProjectWithRelations): 
     facts,
     promptBlock: formatStructuredRegulationsBlock(facts),
     chainSnippets: formatStructuredRegulationsForComplianceChain(facts),
+  };
+}
+
+export async function loadStructuredRegulationContextAsync(
+  project: ProjectWithRelations
+): Promise<{
+  facts: RegulationFactWithSource[];
+  promptBlock: string;
+  chainSnippets: string;
+  webRegulationBlock?: string;
+}> {
+  const facts = collectStructuredRegulationFacts(project.documents);
+  let webRegulationBlock: string | undefined;
+
+  if (facts.length === 0 && isWebSearchConfigured()) {
+    const web = await searchRegulationsOnline({
+      codeRef: "GB 50016 GB 50352",
+      requirement: `${project.targetFunction} 改造 防火 无障碍`,
+    });
+    if (web.results.length > 0) {
+      webRegulationBlock = formatWebSearchSnippets(web.results, {
+        prefix: "联网规范参考",
+        maxItems: 4,
+      });
+    }
+  }
+
+  return {
+    facts,
+    promptBlock: formatStructuredRegulationsBlock(facts, webRegulationBlock),
+    chainSnippets: formatStructuredRegulationsForComplianceChain(facts),
+    webRegulationBlock,
   };
 }

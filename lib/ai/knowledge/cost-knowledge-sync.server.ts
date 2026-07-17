@@ -12,6 +12,13 @@ import {
   costEstimatorAgent,
   type CostEstimateInput,
 } from "../agents/cost-estimator-agent";
+import { inferRegion } from "./prompt-context";
+import {
+  formatWebSearchSnippets,
+  isWebSearchConfigured,
+  searchMarketCostsOnline,
+} from "./web-search";
+import type { MarketCostWebContext } from "./cost-knowledge-sync";
 
 export type { CostKnowledgeSnapshot } from "./cost-knowledge-sync";
 
@@ -46,15 +53,44 @@ export async function prepareCostEstimateContext(projectId: string): Promise<{
   return { snapshot, projectRecords };
 }
 
+export async function fetchMarketCostWebNote(
+  context: MarketCostWebContext
+): Promise<string | undefined> {
+  if (!isWebSearchConfigured()) return undefined;
+
+  const web = await searchMarketCostsOnline({
+    region: context.region,
+    buildingType: context.buildingType,
+    strategyType: context.strategyType,
+  });
+
+  if (web.results.length === 0) return undefined;
+
+  return formatWebSearchSnippets(web.results, {
+    prefix: "联网造价参考（需本地核实）",
+    maxItems: 2,
+  });
+}
+
 export async function prepareAndEstimateProjectCost(
   project: ProjectWithRelations,
   strategy?: RenovationStrategy | null,
   input: CostEstimateInput = {}
 ) {
   const { snapshot, projectRecords } = await prepareCostEstimateContext(project.id);
+  const region = inferRegion(project.location);
+  const webMarketNote =
+    input.webMarketNote ??
+    (await fetchMarketCostWebNote({
+      region,
+      buildingType: project.buildingType,
+      strategyType: input.strategyType ?? strategy?.type,
+    }));
+
   return costEstimatorAgent.estimateProjectCost(project, strategy, {
     ...input,
     projectCostRecords: input.projectCostRecords ?? projectRecords,
     costKnowledge: input.costKnowledge ?? snapshot,
+    webMarketNote,
   });
 }

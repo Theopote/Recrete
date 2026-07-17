@@ -6,6 +6,11 @@ import {
   type RenovationCase,
 } from "./case-library";
 import { searchKnowledgeForProjectAsync, searchKnowledgeForProject } from "./embedding-search";
+import {
+  isWebSearchConfigured,
+  searchRenovationCasesOnline,
+  type WebSearchResult,
+} from "./web-search";
 
 export interface SimilarCaseResult {
   id: string;
@@ -23,11 +28,21 @@ export interface SimilarCaseResult {
   matchReasons: string[];
 }
 
+export interface WebCaseResult {
+  title: string;
+  url: string;
+  snippet: string;
+  source?: string;
+  publishedDate?: string;
+}
+
 export interface SimilarCasesResponse {
   successCases: SimilarCaseResult[];
   warningCases: SimilarCaseResult[];
   allCases: SimilarCaseResult[];
   failureWarnings: CaseFailureWarning[];
+  webCases: WebCaseResult[];
+  webSearchEnabled: boolean;
 }
 
 export interface CaseFailureWarning {
@@ -100,6 +115,20 @@ function scoreCaseMatch(project: ProjectWithRelations, c: RenovationCase): { sco
   }
 
   return { score: Math.min(1, score), reasons };
+}
+
+function toWebCaseResult(result: WebSearchResult): WebCaseResult {
+  return {
+    title: result.title,
+    url: result.url,
+    snippet: result.snippet,
+    source: result.source,
+    publishedDate: result.publishedDate,
+  };
+}
+
+function emptyWebCases(): WebCaseResult[] {
+  return [];
 }
 
 function toSimilarCaseResult(
@@ -210,6 +239,8 @@ export function searchSimilarCases(
     warningCases,
     allCases,
     failureWarnings: options.includeWarnings !== false ? buildFailureWarnings(allCases) : [],
+    webCases: emptyWebCases(),
+    webSearchEnabled: isWebSearchConfigured(),
   };
 }
 
@@ -245,10 +276,23 @@ export async function searchSimilarCasesAsync(
   const successCases = allCases.filter((c) => c.outcome === "success");
   const warningCases = allCases.filter((c) => c.outcome === "failure" || c.outcome === "partial");
 
+  let webCases: WebCaseResult[] = [];
+  if (isWebSearchConfigured()) {
+    const web = await searchRenovationCasesOnline({
+      location: project.location,
+      buildingType: project.buildingType,
+      targetFunction: project.targetFunction,
+      strategyType: project.strategies?.[0]?.type,
+    });
+    webCases = web.results.map(toWebCaseResult);
+  }
+
   return {
     successCases,
     warningCases,
     allCases,
     failureWarnings: options.includeWarnings !== false ? buildFailureWarnings(allCases) : [],
+    webCases,
+    webSearchEnabled: isWebSearchConfigured(),
   };
 }

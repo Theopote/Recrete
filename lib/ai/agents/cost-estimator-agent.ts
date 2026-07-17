@@ -19,6 +19,7 @@ export interface CostEstimateInput {
   contingencyPercent?: number;
   projectCostRecords?: ProjectCostRecord[];
   costKnowledge?: CostKnowledgeSnapshot;
+  webMarketNote?: string;
 }
 
 export interface CostEstimateProvenance {
@@ -377,6 +378,7 @@ export class CostEstimatorAgent {
         projectActualRecordCount: projectActuals.length,
         hasBenchmark: Boolean(benchmark),
         baselineSources,
+        webMarketNote: input.webMarketNote,
       }),
     };
 
