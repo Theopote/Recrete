@@ -7,6 +7,7 @@ import { StrategyRefineDialog } from "@/components/strategies/StrategyRefineDial
 import { StrategyReviewThread } from "@/components/strategies/StrategyReviewThread";
 import { StrategyVersionHistory } from "@/components/strategies/StrategyVersionHistory";
 import { StrategyLinkedSources } from "@/components/strategies/StrategyLinkedSources";
+import { StrategyScoreBreakdown } from "@/components/strategies/StrategyScoreBreakdown";
 import { strategyTypeLabels, strategyTypeLabelsZh, riskLevelLabels, riskLevelLabelsZh } from "@/lib/utils/labels";
 import { useLocale } from "@/lib/i18n/use-locale";
 import { cn, levelToPercent } from "@/lib/utils";
@@ -117,11 +118,19 @@ export function StrategyCard({
         </div>
 
         {strategy.recommendationReason && (
-          <div className="rounded-md bg-copper/5 border border-copper/20 p-3">
+          <div className="rounded-md bg-copper/5 border border-copper/20 p-3 space-y-2">
             <p className="text-[10px] font-medium uppercase tracking-wider text-copper mb-1">
               {t("Why Recommended", "推荐理由")}
             </p>
             <p className="text-xs">{strategy.recommendationReason}</p>
+            {strategy.scoreContributions && strategy.scoreContributions.length > 0 && (
+              <StrategyScoreBreakdown
+                contributions={strategy.scoreContributions}
+                compositeScore={strategy.compositeScore}
+                lifecycleBonus={strategy.lifecycleBonus}
+                compact
+              />
+            )}
           </div>
         )}
 

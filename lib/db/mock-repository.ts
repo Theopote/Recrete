@@ -31,6 +31,7 @@ import {
   strategyMetrics,
 } from "@/lib/mock-data";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
+import { attachStrategyRankings } from "@/lib/utils/strategy-ranking";
 import type { StrategyWithMetrics } from "@/types";
 
 let store = createMockStore();
@@ -819,12 +820,14 @@ export async function getStrategiesWithMetrics(
 ): Promise<StrategyWithMetrics[]> {
   const project = store.projects.find((p) => p.id === projectId) ?? null;
   const strategies = store.strategies.filter((s) => s.projectId === projectId);
-  return strategies.map((s) => ({
+  const withMetrics = strategies.map((s) => ({
     ...s,
     metrics:
       strategyMetrics[s.id] ??
       computeStrategyMetrics(s, project ? { ...project, strategies } : null, strategies),
   }));
+  if (!project) return withMetrics;
+  return attachStrategyRankings(withMetrics, { ...project, strategies });
 }
 
 export {

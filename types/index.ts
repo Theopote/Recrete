@@ -347,6 +347,11 @@ export interface StrategyWithMetrics extends RenovationStrategy {
   rank?: number;
   compositeScore?: number;
   areaFitScore?: number;
+  scoreBreakdown?: import("@/types/ai").StrategyRankEntry["breakdown"];
+  scoreContributions?: import("@/types/ai").StrategyCriterionContribution[];
+  scoreWeights?: import("@/types/ai").StrategyScoreWeights;
+  rankSummary?: string;
+  lifecycleBonus?: number;
 }
 
 export interface DiagnosisWithProject extends DiagnosisItem {

@@ -167,6 +167,26 @@ export interface StrategyLabParams {
   riskTolerance: "low" | "medium" | "high";
 }
 
+export type StrategyCriterionKey =
+  | "cost"
+  | "schedule"
+  | "risk"
+  | "designValue"
+  | "feasibility"
+  | "preservation"
+  | "areaFit";
+
+export type StrategyScoreWeights = Record<StrategyCriterionKey, number>;
+
+export interface StrategyCriterionContribution {
+  key: StrategyCriterionKey;
+  labelEn: string;
+  labelZh: string;
+  rawScore: number;
+  weight: number;
+  weightedPoints: number;
+}
+
 export interface StrategyRankEntry {
   strategyId: string;
   rank: number;
@@ -181,6 +201,9 @@ export interface StrategyRankEntry {
     preservation: number;
     areaFit: number;
   };
+  contributions: StrategyCriterionContribution[];
+  weights: StrategyScoreWeights;
+  lifecycleBonus: number;
   summary: string;
 }
 

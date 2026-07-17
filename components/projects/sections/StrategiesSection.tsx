@@ -79,6 +79,7 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
 
   const recommended =
     strategies.find((s) => s.id === recommendation?.strategyId) ??
+    strategies.find((s) => s.rank === 1) ??
     strategies.find((s) => s.recommendationReason);
 
   const riskOptions = [
@@ -136,7 +137,9 @@ export function StrategiesSection({ project, strategiesWithMetrics: initialMetri
 
       {recommendation && (
         <div className="rounded-lg border border-copper/30 bg-copper/5 px-4 py-3 text-xs">
-          <p className="font-medium text-copper">{t("AI Recommended Strategy", "AI 推荐方案")}</p>
+          <p className="font-medium text-copper">
+            {t("Recommended Strategy (multi-criteria)", "推荐方案（多准则评分）")}
+          </p>
           <p className="mt-1 text-muted-foreground leading-relaxed">{recommendation.reason}</p>
         </div>
       )}

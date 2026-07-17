@@ -21,7 +21,7 @@ Recrete 的差异化不在「又一个 AI 聊天窗口」，而在：
 | Building Memory LLM 合成 | ✅ | `synthesizeBuildingMemory`（有 OpenAI Key 时） |
 | 方案迭代 LLM 精修 | ✅ | `refineRenovationStrategy`（有 Key 时） |
 | 合规测量 ← 图纸自动提取 | ✅ | 启发式提取 + 手动录入 + 项目存储 |
-| 推荐引擎多准则评分 | 🔲 | 下一步 |
+| 推荐引擎多准则评分 | ✅ | 七维加权 + 贡献分解 + 推荐理由 |
 
 ### P1 · 方案专业可信度
 

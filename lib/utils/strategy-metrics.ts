@@ -43,9 +43,9 @@ export function computeStrategyMetrics(
     cost,
     schedule,
     risk,
-    designValue: designValueMap[strategy.type] ?? 55,
+    designValue: strategy.designValueScore ?? designValueMap[strategy.type] ?? 55,
     constructionDifficulty: Math.round((cost + schedule) / 2),
-    preservationLevel: preservationMap[strategy.type] ?? 60,
+    preservationLevel: strategy.preservationScore ?? preservationMap[strategy.type] ?? 60,
     feasibility:
       strategy.feasibilityScore ??
       (strategy.type === "light_renewal" ? 88 : strategy.type === "adaptive_reuse" ? 72 : 55),

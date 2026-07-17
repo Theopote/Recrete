@@ -14,7 +14,12 @@ import {
 import { linkStrategiesToSources } from "@/lib/ai/strategy-evidence-linker";
 import { getAIPlatform } from "@/lib/ai";
 import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
-import { rankStrategies } from "@/lib/utils/strategy-ranking";
+import {
+  attachStrategyRankings,
+  buildRecommendationReason,
+  rankStrategies,
+  resolveStrategyLabParams,
+} from "@/lib/utils/strategy-ranking";
 import { diffStrategySnapshots, summarizeStrategyDiff } from "@/lib/utils/strategy-diff";
 import type { RenovationStrategy, StrategyWithMetrics } from "@/types";
 import type { AIInsight, BuildingMemory, AIAnalysisRun, StrategyLabParams } from "@/types/ai";
@@ -54,16 +59,7 @@ function resolveParams(
   project: NonNullable<Awaited<ReturnType<typeof getProjectById>>>,
   params?: Partial<StrategyLabParams>
 ): StrategyLabParams {
-  return {
-    targetFunction: params?.targetFunction ?? project.targetFunction,
-    budgetLevel: params?.budgetLevel ?? project.budgetLevel,
-    grossFloorArea: params?.grossFloorArea ?? project.grossFloorArea,
-    preservationLevel: params?.preservationLevel ?? (project.building?.heritageLevel !== "none" ? "high" : "medium"),
-    constructionIntensity: params?.constructionIntensity ?? "medium",
-    scheduleRequirement: params?.scheduleRequirement ?? "moderate",
-    designAmbition: params?.designAmbition ?? "balanced",
-    riskTolerance: params?.riskTolerance ?? (project.riskLevel === "high" ? "low" : "medium"),
-  };
+  return resolveStrategyLabParams(project, params);
 }
 
 export async function runStrategyWorkflow(
@@ -125,30 +121,36 @@ export async function runStrategyWorkflow(
   }));
 
   const rankings = rankStrategies(withMetrics, project, resolvedParams);
-  const rankMap = new Map(rankings.map((r) => [r.strategyId, r]));
-  const rankedStrategies: StrategyWithMetrics[] = withMetrics
-    .map((s) => {
-      const rankEntry = rankMap.get(s.id);
-      return {
-        ...s,
-        rank: rankEntry?.rank,
-        compositeScore: rankEntry?.compositeScore,
-        areaFitScore: rankEntry?.areaFitScore,
-      };
-    })
-    .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
-
-  const recommendation = await platform.strategy.recommendStrategy(project, linkedCreated);
+  const rankedStrategies = attachStrategyRankings(withMetrics, project, resolvedParams);
+  const topRank = rankings[0];
+  const topRanked = rankedStrategies.find((strategy) => strategy.id === topRank?.strategyId);
   let recommendationResult = null;
 
-  if (recommendation) {
-    await updateStrategy(recommendation.strategyId, {
-      recommendationReason: recommendation.reason,
+  if (topRank && topRanked) {
+    const reason = buildRecommendationReason(topRank, topRanked.name, resolvedParams);
+
+    await updateStrategy(topRanked.id, {
+      recommendationReason: reason,
     });
-    const [insight] = await addInsights(projectId, [recommendation.insight]);
+
+    const [insight] = await addInsights(projectId, [
+      {
+        title: `Recommended: ${topRanked.name}`,
+        type: "design_strategy",
+        priority: "medium",
+        summary: topRank.summary,
+        evidence: `Multi-criteria score ${topRank.compositeScore}/100 across ${linkedCreated.length} strategies`,
+        recommendation: reason,
+        confidence: 0.88,
+        status: "open",
+        sourceType: "strategy",
+        sourceId: topRanked.id,
+      },
+    ]);
+
     recommendationResult = {
-      strategyId: recommendation.strategyId,
-      reason: recommendation.reason,
+      strategyId: topRanked.id,
+      reason,
       insight,
     };
   }
@@ -157,8 +159,8 @@ export async function runStrategyWorkflow(
     projectId,
     analysisType: "strategy_generation",
     inputSummary: `Strategy Lab — ambition: ${resolvedParams.designAmbition}, preservation: ${resolvedParams.preservationLevel}`,
-    outputSummary: `Generated ${linkedCreated.length} strategies${recommendation ? `, recommended ${recommendation.strategyId}` : ""}`,
-    generatedItemCount: linkedCreated.length + (recommendation ? 1 : 0),
+    outputSummary: `Generated ${linkedCreated.length} strategies${recommendationResult ? `, recommended ${recommendationResult.strategyId}` : ""}`,
+    generatedItemCount: linkedCreated.length + (recommendationResult ? 1 : 0),
     modelName: "recrete-strategy-v1",
     confidence: 0.88,
   });
@@ -263,5 +265,5 @@ export function findStrategyForInstruction(
     return strategies.find((s) => s.type === "deep_recreation");
   }
 
-  return strategies.find((s) => s.recommendationReason) ?? strategies[0];
+  return strategies.find((s) => s.rank === 1) ?? strategies.find((s) => s.recommendationReason) ?? strategies[0];
 }

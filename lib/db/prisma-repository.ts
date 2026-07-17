@@ -13,6 +13,8 @@ import {
 } from "@/lib/db/mappers";
 import { knowledgeArticles } from "@/lib/mock-data/knowledge";
 import { strategyMetrics, getAIInsightsSummary } from "@/lib/mock-data";
+import { computeStrategyMetrics } from "@/lib/utils/strategy-metrics";
+import { attachStrategyRankings } from "@/lib/utils/strategy-ranking";
 import type {
   CreateProjectInput,
   DiagnosisItem,
@@ -899,23 +901,37 @@ export async function getBuildingMemoryHistory(projectId: string, limit = 10) {
 }
 
 export async function getStrategiesWithMetrics(projectId: string): Promise<StrategyWithMetrics[]> {
-  const strategies = await prisma.renovationStrategy.findMany({
-    where: { projectId },
-    orderBy: { updatedAt: "desc" },
-  });
-  return strategies.map((s) => ({
-    ...mapStrategy(s),
-    metrics: strategyMetrics[s.id] ?? {
-      cost: 50,
-      schedule: 50,
-      risk: 50,
-      designValue: 50,
-      constructionDifficulty: 50,
-      preservationLevel: 50,
-      feasibility: 50,
-      lifecycleCost: 50,
-    },
+  const [projectRow, strategies] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        building: true,
+        diagnosis: true,
+        documents: true,
+        strategies: true,
+      },
+    }),
+    prisma.renovationStrategy.findMany({
+      where: { projectId },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
+
+  const mappedStrategies = strategies.map(mapStrategy);
+  const withMetrics = mappedStrategies.map((strategy) => ({
+    ...strategy,
+    metrics:
+      strategyMetrics[strategy.id] ??
+      computeStrategyMetrics(
+        strategy,
+        projectRow ? mapProjectWithRelations({ ...projectRow, strategies: mappedStrategies }) : null,
+        mappedStrategies
+      ),
   }));
+
+  if (!projectRow) return withMetrics;
+  const project = mapProjectWithRelations({ ...projectRow, strategies: mappedStrategies });
+  return attachStrategyRankings(withMetrics, project);
 }
 
 export async function getUserById(id: string): Promise<User | undefined> {
